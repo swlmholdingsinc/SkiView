@@ -653,7 +653,7 @@ namespace SkiView
                     float aRight = vel.magnitude * headRate;
                     float latF = aRight * turnGain - Mathf.Sign(side) * Mathf.Min(1f, Mathf.Abs(side) / ropeSideFull) * ropePullG * 9.81f * pull;
                     float leanT = Mathf.Clamp(Mathf.Atan2(latF, 9.81f) * Mathf.Rad2Deg, -Mathf.Min(maxLeanDeg, rollLimit), Mathf.Min(maxLeanDeg, rollLimit));
-                    leanRightDeg = vlean <= 0f ? leanT : Mathf.MoveTowards(leanRightDeg, Mathf.Lerp(leanRightDeg, leanT, 1f - Mathf.Exp(-vlean / 0.12f)), 240f * vlean);   // b9.1: <= 4 deg/frame at 60 fps (Holly)
+                    leanRightDeg = vlean <= 0f ? leanT : Mathf.MoveTowards(leanRightDeg, Mathf.Lerp(leanRightDeg, leanT, 1f - Mathf.Exp(-vlean / 0.12f)), Mathf.Lerp(rollRateLongDegS, rollRateShortDegS, Mathf.InverseLerp(SkierSim.ROPE_M[0], SkierSim.ROPE_M[7], sim.ropeM)) * vlean);   // feel/skier-pose: 240 -> 300 deg/s at short line   // b9.1: <= 4 deg/frame at 60 fps (Holly)
                     // keep every body part out of the water: the rig reports its lowest clearance, back the limit off
                     if (rig != null) rollLimit = rig.WaterClearance < 0.03f ? Mathf.Max(30f, Mathf.Abs(leanRightDeg) - 4f) : Mathf.MoveTowards(rollLimit, maxLeanDeg, 30f * Mathf.Max(vlean, 0.016f));
                     float roll = -leanRightDeg;   // positive Euler z tips the body to the skier's left
