@@ -1,0 +1,167 @@
+{
+ "note": "Cedar Bend shoreline source. Pass 16: 'source': 'layout' + 'layout': 'cedarbend_layout_m_v2.json' = Holly's v2 re-trace (shore_build, islands and course from that file; v2 islands traced, no shift). 'source': 'edge_table' = the earlier by-eye water-edge offsets (rows [along_toward_NNE_m, WNW_edge_p_m, ESE_edge_p_m]; use edge_table_moorage_slip / edge_table_island_shift_north_m with it). A newer re-trace drops in by changing 'layout', or as roadmap/venue/lakes/cedarbend_shore_retrace.json {\"shore_build\": [[x_east, y_south], ...]} which wins when present. moorage_slip: course-frame a_south range, mouth_p (riprap line) and inner_p (back wall), metres from the course line on the ESE side.",
+ "source": "layout",
+ "edge_table": [
+  [
+   -267,
+   -22,
+   -22
+  ],
+  [
+   -254,
+   -40,
+   1
+  ],
+  [
+   -240,
+   -43,
+   7
+  ],
+  [
+   -225,
+   -45,
+   12.5
+  ],
+  [
+   -200,
+   -46.5,
+   25
+  ],
+  [
+   -175,
+   -46.5,
+   32
+  ],
+  [
+   -150,
+   -46.5,
+   33
+  ],
+  [
+   -125,
+   -46,
+   41
+  ],
+  [
+   -100,
+   -45,
+   44
+  ],
+  [
+   -50,
+   -44,
+   45
+  ],
+  [
+   0,
+   -42.5,
+   41
+  ],
+  [
+   50,
+   -42.5,
+   41
+  ],
+  [
+   100,
+   -42.5,
+   41
+  ],
+  [
+   150,
+   -40,
+   41
+  ],
+  [
+   175,
+   -40,
+   42
+  ],
+  [
+   200,
+   -37.5,
+   45
+  ],
+  [
+   225,
+   -35,
+   47
+  ],
+  [
+   250,
+   -30,
+   50
+  ],
+  [
+   275,
+   -25,
+   50
+  ],
+  [
+   300,
+   -22.5,
+   47.5
+  ],
+  [
+   325,
+   -27,
+   42
+  ],
+  [
+   350,
+   -32,
+   37
+  ],
+  [
+   372,
+   -32.5,
+   25
+  ],
+  [
+   384,
+   -26,
+   12
+  ],
+  [
+   391,
+   -12,
+   -2
+  ]
+ ],
+ "edge_tips": {
+  "north": [
+   -391,
+   -7
+  ],
+  "south": [
+   262,
+   -22
+  ]
+ },
+ "moorage_slip": {
+  "a_south_from": 138,
+  "a_south_to": 162,
+  "inner_p": 63,
+  "mouth_p": 37
+ },
+ "island_shift_north_m": [
+  0,
+  0
+ ],
+ "edge_table_moorage_slip": {
+  "a_south_from": 138.0,
+  "a_south_to": 162.0,
+  "inner_p": 56.0
+ },
+ "edge_table_island_shift_north_m": [
+  0.0,
+  4.0
+ ],
+ "layout": "cedarbend_layout_m_v2.json",
+ "south_turn": {
+  "kind": "teardrop",
+  "radius_m": 34,
+  "centre_a_south_m": 252,
+  "note": "LAKE-LAYOUTS 1 Turnarounds (v2): south island ~8 m off the bank -> teardrop in the south bowl, end circle r 44.3 m -> R ~36 m; 34 m used so the circle keeps >= 8 m to both banks; island kept as dressing"
+ }
+}

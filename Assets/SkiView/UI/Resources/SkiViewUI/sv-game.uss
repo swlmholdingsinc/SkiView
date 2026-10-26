@@ -1,0 +1,260 @@
+/* Pass 18: game-side layout for the UI Toolkit overlay (HUD camera control + Settings + Credits), on top of Julia's sv-components.uss */
+.sv-hud { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.sv-menu { display: none; }
+.sv-menu--open { display: flex; }
+.sv-header { flex-direction: row; align-items: center; margin-bottom: var(--s3); }
+.sv-header > .sv-btn--icon { margin-right: var(--s3); }
+.sv-header__right { flex-grow: 1; flex-direction: row; justify-content: flex-end; }
+.sv-body { flex-direction: row; flex-grow: 1; }
+.sv-tabs { width: 380px; margin-right: var(--s3); }
+.sv-tab > .sv-icon { width: 32px; height: 32px; margin-right: var(--s2); -unity-background-image-tint-color: var(--sv-text-2); }
+.sv-tab--on > .sv-icon { -unity-background-image-tint-color: var(--sv-text); }
+.sv-panel { flex-grow: 1; padding: var(--s3) var(--s4); }
+.srow { flex-direction: row; align-items: center; justify-content: space-between; padding: 18px 0; border-bottom-width: 2px; border-color: var(--sv-line); }
+.srow__txt { flex-shrink: 1; margin-right: var(--s3); }
+.sv-seg > .sv-seg__item { border-width: 0; background-color: rgba(0,0,0,0); margin-left: 0; margin-top: 0; margin-bottom: 0; }
+.sv-seg > .sv-seg__item--on { background-color: var(--sv-accent); }
+.sv-credits-text { white-space: normal; font-size: 24px; color: var(--sv-text); margin-bottom: 14px; }
+.sv-credits-h { -unity-font-definition: var(--sv-font-cond-700); font-size: 34px; letter-spacing: 1.4px; margin-top: 18px; margin-bottom: 8px; color: var(--sv-text); }
+.sv-key { -unity-font-definition: var(--sv-font-cond-700); font-size: 22px; padding: 2px 10px; margin-right: 8px; border-width: 2px; border-color: var(--sv-line-strong); border-radius: 3px; }
+.sv-cam-hint { border-width: 0; margin: 0; }
+.sv-cam-hint > .sv-icon { width: 32px; height: 32px; margin: 0 12px 0 4px; background-image: url("project://database/Assets/SkiView/UI/Resources/SkiViewUI/Icons/camera.svg"); }
+.sv-cam-btn > Label { margin: 0; padding: 0; }
+.sv-build { position: absolute; left: 0; bottom: 0; }
+
+/* ---- pass 19: 16:9 overflow fix - menu bodies shrink to the safe box and scroll inside it (Controls / Credits ran off the bottom) ---- */
+.sv-menu > .sv-safe { flex-direction: column; }
+.sv-body { flex-shrink: 1; min-height: 0; }
+.sv-panel { flex-shrink: 1; min-height: 0; }
+.sv-menu .sv-plate--card { min-height: 0; flex-shrink: 1; }
+.sv-menu ScrollView { min-height: 0; flex-shrink: 1; }
+/* key caps with SVG arrows (the Barlow faces have no arrow glyphs) */
+.sv-key19 { flex-direction: row; align-items: center; justify-content: center; min-width: 44px; height: 40px; padding: 0 10px; }
+.sv-key19__icon { width: 24px; height: 24px; -unity-background-image-tint-color: var(--sv-text); }
+.sv-key19__txt { -unity-font-definition: var(--sv-font-cond-700); font-size: 22px; margin: 0; padding: 0; }
+/* kit HUD */
+.sv-bug19 { left: 0; top: 0; }
+.sv-bug19 .t-hud-val { font-size: 44px; }
+.sv-pips19 { position: absolute; left: 0; top: 116px; flex-direction: row; align-items: center; padding: 8px 12px; background-color: var(--sv-plate-soft); border-radius: var(--sv-r-btn); }
+.sv-call19 { bottom: 150px; }
+.sv-call19__t { -unity-font-definition: var(--sv-font-cond-700); font-size: 40px; letter-spacing: 4.8px; color: var(--sv-text); margin: 0; padding: 0; }
+.sv-skip19 { position: absolute; bottom: 72px; align-self: center; height: 56px; padding: 0 28px; border-radius: 28px; border-width: 2px; border-color: var(--sv-line-strong); background-color: var(--sv-plate-soft); }
+.sv-skip19__t { -unity-font-definition: var(--sv-font-cond-700); font-size: 26px; letter-spacing: 3px; color: var(--sv-text); }
+.sv-pause-btn19 { position: absolute; right: 0; top: 0; }
+.sv-tutskip19 { position: absolute; right: 112px; top: 12px; }
+.sv-steer19--left { left: 0; }
+/* pause */
+.sv-pause19 { width: 560px; }
+.sv-pause19 > .sv-btn { margin-bottom: 14px; }
+/* lake select */
+.sv-lakes19__list { width: 760px; margin-right: var(--s3); min-height: 0; flex-shrink: 1; }
+.sv-lakes19__row { height: 76px; }
+.sv-lakes19__row--dim { opacity: 0.45; }
+.sv-lakes19__num { width: 56px; }
+.sv-lakes19__name { flex-grow: 1; margin-left: 20px; }
+.sv-lakes19__chip { flex-direction: row; align-items: center; }
+.sv-lakes19__tag { -unity-font-definition: var(--sv-font-cond-600); font-size: 16px; letter-spacing: 1.6px; padding: 2px 8px; background-color: var(--sv-ink-600); color: var(--sv-text-2); border-radius: 2px; }
+.sv-lakes19__ok { border-width: 0; }
+.sv-lakes19__pct { color: var(--sv-accent); }
+.sv-lakes19__fail { -unity-font-definition: var(--sv-font-cond-800); font-size: 30px; color: var(--sv-miss); }
+.sv-lakes19__card { flex-grow: 1; overflow: hidden; min-height: 0; flex-shrink: 1; }
+.sv-lakes19__img { height: 340px; -unity-background-scale-mode: scale-and-crop; justify-content: flex-end; }
+.sv-lakes19__chips { flex-direction: row; margin: 16px; }
+.sv-lakes19__ev { -unity-font-definition: var(--sv-font-cond-600); font-size: 20px; letter-spacing: 1.8px; padding: 6px 14px; margin-right: 8px; background-color: var(--sv-plate); color: var(--sv-text); }
+.sv-lakes19__flag { position: absolute; right: 16px; top: 16px; }
+.sv-lakes19__txt { padding: 18px 28px 24px; flex-shrink: 1; }
+.sv-lakes19__blurb { white-space: normal; margin: 8px 0 14px; }
+.sv-lakes19__status { padding: 14px 20px; margin-bottom: 14px; background-color: var(--sv-ink-800); border-left-width: 4px; border-color: var(--sv-line-strong); }
+.sv-lakes19__status--fail { border-color: var(--sv-miss); }
+.sv-lakes19__status .t-caption { white-space: normal; }
+.sv-lakes19__bar { height: 10px; margin: 10px 0; background-color: var(--sv-line); border-radius: 5px; overflow: hidden; }
+.sv-lakes19__fill { height: 10px; background-color: var(--sv-accent); }
+.sv-lakes19__go { justify-content: center; }
+/* controls help */
+.sv-help19__left { width: 600px; margin-right: var(--s3); }
+.sv-help19__diag { height: 320px; flex-direction: row; border-radius: var(--sv-r-card); overflow: hidden; border-width: 2px; border-color: var(--sv-line-strong); margin-bottom: 14px; background-color: rgba(31, 78, 160, 0.55); }
+.sv-help19__zone { flex-grow: 1; align-items: center; justify-content: center; }
+.sv-help19__zone--r { border-left-width: 2px; border-color: rgba(255,255,255,0.5); }
+.sv-help19__zt { -unity-text-align: middle-center; white-space: normal; }
+.sv-help19__tap { position: absolute; bottom: 16px; left: 0; right: 0; -unity-text-align: middle-center; color: var(--sv-text-2); }
+.sv-help19__cam { position: absolute; right: 16px; bottom: 16px; width: 64px; height: 64px; border-width: 2px; border-color: #FFFFFF; border-radius: 4px; align-items: center; justify-content: center; }
+.sv-help19__pause { position: absolute; right: 16px; top: 16px; }
+.sv-help19__table { flex-grow: 1; }
+.sv-help19__row { flex-direction: row; align-items: center; height: 62px; border-bottom-width: 2px; border-color: var(--sv-line); }
+.sv-help19__row--h { height: 48px; }
+.sv-help19__a { width: 300px; }
+.sv-help19__c { flex-grow: 1; flex-basis: 0; flex-direction: row; align-items: center; }
+.sv-help19__kb { background-color: rgba(47, 123, 255, 0.12); padding-left: 10px; }
+.sv-help19__pad { color: var(--sv-text-3); }
+/* tutorial coach card */
+.sv-tut19 { position: absolute; left: 0; bottom: 0; width: 820px; padding: 22px 30px 22px 34px; }
+.sv-tut19__top { flex-direction: row; justify-content: space-between; align-items: center; }
+.sv-tut19__dots { flex-direction: row; }
+.sv-tut19__dot { width: 26px; height: 5px; margin-left: 6px; background-color: var(--sv-line-strong); }
+.sv-tut19__dot--done { background-color: var(--sv-text-2); }
+.sv-tut19__dot--on { background-color: var(--sv-accent); }
+.sv-tut19__text { white-space: normal; margin: 6px 0 12px; }
+.sv-tut19__keys { flex-direction: row; align-items: center; flex-wrap: wrap; }
+.sv-tut19__kl { margin: 0 22px 0 6px; color: var(--sv-text-2); }
+.sv-tut19__prog { margin-top: 10px; color: var(--sv-text-2); }
+/* pause v4 + results v4 (batch 4) */
+.sv-pause19__body { flex-direction: row; justify-content: space-between; flex-grow: 1; }
+.sv-pause19__cam { justify-content: space-between; }
+.sv-pause19__lab { -unity-font-definition: var(--sv-font-cond-700); font-size: 34px; letter-spacing: 1.4px; flex-grow: 1; }
+.sv-pause19__step { flex-direction: row; align-items: center; background-color: var(--sv-ink-800); border-radius: var(--sv-r-btn); }
+.sv-pause19__arrow { width: 64px; height: 64px; background-color: rgba(0,0,0,0); }
+.sv-pause19__view { width: 220px; -unity-text-align: middle-center; }
+.sv-pause19__this { width: 640px; align-self: center; padding: 26px 32px 26px 36px; }
+.sv-pause19__kv { flex-direction: row; align-items: center; height: 64px; border-bottom-width: 2px; border-color: var(--sv-line); }
+.sv-pause19__k { flex-grow: 1; margin-left: 12px; }
+.sv-pause19__pips { flex-direction: row; margin-top: 16px; }
+.sv-results19 { position: absolute; right: 0; top: 140px; width: 760px; padding: 28px 36px 28px 40px; }
+.sv-results19--pb > .sv-strip { background-color: var(--sv-gold); }
+.sv-results19--pb .sv-results19__num { color: var(--sv-gold); }
+.sv-results19__pb { -unity-font-definition: var(--sv-font-cond-700); font-size: 26px; letter-spacing: 3px; color: var(--sv-ink-900); background-color: var(--sv-gold); padding: 6px 14px; align-self: flex-start; margin-bottom: 10px; }
+.sv-results19__row { flex-direction: row; align-items: flex-end; }
+.sv-results19__num { font-size: 140px; }
+.sv-results19__act { flex-direction: row; margin-top: 18px; }
+.sv-results19__act > .sv-btn { margin-right: 14px; }
+/* ---- pass 19 batch 5: loading (16) + pack screens (16b-d) ---- */
+.sv-load19 { background-color: var(--sv-ink-900); }
+.sv-load19__art { position: absolute; left: 0; top: 0; right: 0; bottom: 0; -unity-background-scale-mode: scale-and-crop; }
+.sv-load19__scrim { background-color: rgba(11, 22, 34, 0.35); }
+.sv-load19__safe { position: absolute; left: 0; top: 0; right: 0; bottom: 0; flex-direction: column; justify-content: flex-end; align-items: flex-start; }
+.sv-load19__plate { width: 900px; padding: 28px 36px 28px 40px; margin-bottom: 70px; }
+.sv-load19__region { color: var(--sv-text-2); margin: 4px 0 10px; }
+.sv-load19__blurb { white-space: normal; margin-bottom: 18px; }
+.sv-load19__stat { margin-top: 6px; }
+.sv-load19__bar--fail > .sv-lakes19__fill { background-color: var(--sv-miss); }
+.sv-load19__sub { white-space: normal; color: var(--sv-text-2); }
+.sv-load19__acts { flex-direction: row; margin-top: 16px; }
+.sv-load19__btn { margin-right: 14px; }
+.sv-load19__tip { position: absolute; left: 0; right: 0; bottom: 12px; -unity-text-align: middle-center; color: var(--sv-text); white-space: normal; }
+.sv-lakes19__thumb { width: 96px; height: 54px; border-radius: 4px; margin: 0 14px 0 6px; -unity-background-scale-mode: scale-and-crop; background-color: var(--sv-ink-700); }
+.sv-coach19 { position: absolute; left: 0; right: 0; bottom: 112px; -unity-text-align: middle-center; color: var(--sv-text); white-space: normal; }
+.sv-hud--fp .sv-coach19 { bottom: auto; top: 236px; }
+/* Phase 1 review #5 (Julia 20e, T20 spec): controls help card grid, chips wrap instead of truncating */
+.sv-help19__table { padding: 8px 28px; }
+.sv-ctl-grid { flex-direction: column; flex-shrink: 0; margin-bottom: 24px; }
+.sv-ctl-pair { flex-direction: column; flex-shrink: 0; }
+.sv-ctl-grid--2 > .sv-ctl-pair { flex-direction: row; }
+.sv-ctl-row { width: 100%; flex-direction: row; align-items: center; min-height: 96px; padding: 12px 0; border-bottom-width: 2px; border-color: var(--sv-line); }
+.sv-ctl-grid--2 .sv-ctl-row { width: 48%; flex-grow: 1; margin-right: 2%; }
+.sv-ctl-row__a { width: 300px; flex-shrink: 0; white-space: normal; padding-right: 16px; }
+.sv-ctl-row__chips { flex-grow: 1; flex-shrink: 1; flex-basis: 0; flex-direction: row; flex-wrap: wrap; align-items: center; }
+.sv-ctl-chip { flex-direction: row; align-items: center; height: 52px; padding: 0 12px; margin: 4px 12px 4px 0; border-radius: 4px; border-width: 2px; border-color: rgba(255,255,255,0); background-color: rgba(255,255,255,0.07); }
+.sv-ctl-chip__icon { width: 24px; height: 24px; margin-right: 8px; -unity-background-image-tint-color: #B4BFCB; }
+.sv-ctl-chip__t { -unity-font-definition: var(--sv-font-cond-700); font-size: 22px; letter-spacing: 1px; color: #B4BFCB; margin: 0; padding: 0; }
+.sv-ctl-chip .sv-key19 { height: 36px; min-width: 36px; margin-right: 6px; }
+.sv-ctl-chip .sv-key19__txt { font-size: 18px; }
+.sv-ctl-chip--kb { background-color: rgba(47, 123, 255, 0.10); border-color: rgba(47, 123, 255, 0.85); }
+.input-touch .sv-ctl-chip--kb, .sv-ctl-grid--touch .sv-ctl-chip--kb { background-color: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0); }
+.input-touch .sv-ctl-chip--touch, .sv-ctl-grid--touch .sv-ctl-chip--touch { background-color: rgba(31, 78, 160, 0.55); border-color: rgba(47, 123, 255, 0.95); }
+.input-touch .sv-ctl-chip--touch .sv-ctl-chip__t, .sv-ctl-grid--touch .sv-ctl-chip--touch .sv-ctl-chip__t { color: #FFFFFF; }
+.sv-help19__table { width: 100%; }
+.sv-ctl-grid, .sv-ctl-pair { width: 100%; }
+
+/* T25 restyle */
+.sv-bug19 .sv-bug__cell { padding: 10px 22px; }
+.sv-bug19 .t-hud-val { font-size: 40px; color: var(--sv-text); }
+.sv-pips19__n { -unity-font-definition: var(--sv-font-cond-700); font-size: 24px; letter-spacing: 1.5px; color: var(--sv-text); margin-left: 12px; }
+.sv-results19__details { flex-direction: row; align-items: center; margin-top: 10px; padding-top: 10px; border-top-width: 2px; border-color: var(--sv-line); }
+.sv-results19__dk { color: var(--sv-text-2); margin-right: 14px; }
+.sv-results19__dv { color: var(--sv-text); flex-shrink: 1; white-space: normal; }
+.sv-pips19 { background-color: var(--sv-plate); }   /* T25 contrast: Buoys text 11.2:1 over a white sky vs 4.7:1 on plate-soft */
+/* b10.13 T28 Your ski picker (thumbs + hero + binding) */
+.sv-skipick { padding: 10px 0 18px 0; border-bottom-width: 2px; border-color: var(--sv-line); }
+.sv-skipick__kick { letter-spacing: 4px; color: #AEB9C6; margin-bottom: 2px; }
+.sv-skipick > .sv-skipick__title { font-size: 48px; color: #FFFFFF; margin-bottom: 2px; }
+.sv-skipick__body { flex-direction: row; margin-top: 12px; }
+.sv-skipick__list { width: 340px; flex-shrink: 0; margin-right: 18px; border-top-width: 1px; border-color: rgba(255,255,255,0.18); }
+/* b10.27 T24 D1: list rows ≥96 desktop; phone ≥100 (Done/Choose lake ≥144 via .sv-btn--start-tall) */
+.sv-skipick__it { flex-direction: row; align-items: center; height: 96px; min-height: 96px; padding: 0 14px 0 8px; margin: 0; border-width: 0; border-left-width: 4px; border-left-color: rgba(0,0,0,0); border-bottom-width: 1px; border-bottom-color: rgba(255,255,255,0.18); border-radius: 0; background-color: rgba(0,0,0,0); color: #E6ECF2; -unity-font-style: normal; }
+.sv-phone .sv-skipick__it { height: 100px; min-height: 100px; }
+.sv-skipick__it:hover { background-color: rgba(255,255,255,0.06); }
+/* D2: focused-but-not-selected = halo/left edge; selected = blue fill + Equipped */
+.sv-skipick__it:focus { background-color: rgba(255,255,255,0.10); border-left-color: rgba(255,255,255,0.85); }
+.sv-skipick__it--on { background-color: rgba(31,95,214,0.92); color: #FFFFFF; border-left-width: 4px; border-left-color: #FFFFFF; padding-left: 8px; }
+.sv-skipick__it--on:focus { background-color: rgba(31,95,214,0.92); border-left-color: #FFFFFF; }
+.sv-skipick__sw { width: 40px; height: 40px; flex-shrink: 0; border-radius: 4px; margin-right: 14px; background-color: #1a222c; -unity-background-scale-mode: scale-to-fit; border-width: 1px; border-color: rgba(255,255,255,0.22); }
+.sv-skipick__it-nm { font-size: 28px; letter-spacing: 2px; color: #E6ECF2; -unity-font-style: bold; }
+.sv-skipick__it--on .sv-skipick__it-nm { color: #FFFFFF; }
+.sv-skipick__eq { margin-left: auto; font-size: 18px; color: #FFFFFF; }
+.sv-skipick__hero { flex-grow: 1; flex-shrink: 1; flex-direction: column; }
+.sv-skipick__name { font-size: 44px; -unity-font-style: bold; color: #FFFFFF; margin-bottom: 6px; }
+.sv-skipick__img { flex-grow: 1; min-height: 220px; max-height: 280px; -unity-background-scale-mode: scale-to-fit; background-color: rgba(7,12,18,0.28); border-width: 1px; border-color: rgba(255,255,255,0.16); border-radius: 4px; margin-bottom: 8px; }
+.sv-skipick__cap { color: #AEB9C6; margin-bottom: 8px; }
+.sv-skipick__bind { flex-direction: row; align-items: center; justify-content: space-between; min-height: 72px; border-top-width: 1px; border-bottom-width: 1px; border-color: rgba(255,255,255,0.18); padding: 8px 0; }
+.sv-skipick__bind-lab { flex-direction: column; }
+.sv-skipick__bind-t { font-size: 24px; letter-spacing: 2px; color: #E6ECF2; -unity-font-style: bold; }
+.sv-skipick__op { flex-direction: row; }
+.sv-skipick__op-item { margin: 0 0 0 24px; padding: 6px 0; border-width: 0; border-bottom-width: 2px; border-color: rgba(0,0,0,0); border-radius: 0; background-color: rgba(0,0,0,0); color: #8E9AA8; font-size: 24px; letter-spacing: 2px; -unity-font-style: bold; min-width: 140px; }
+.sv-skipick__op-on { color: #FFFFFF; border-bottom-color: #FFFFFF; }
+
+/* b10.19 T32 Jump results overlay — left panel over live scene */
+.sv-results19--jump {
+    left: 96px; right: auto; top: 120px; width: 560px;
+    background-color: rgba(7, 12, 18, 0.90);
+    border-radius: 8px;
+    padding: 28px 32px 28px 36px;
+}
+.sv-results19--jump > .sv-strip { background-color: #1F5FD6; }
+.sv-results19--jump .sv-results19__num { font-size: 120px; color: #FFFFFF; }
+.sv-results19--jump .sv-results19__dv { white-space: normal; }
+.sv-results19--jump .sv-btn--primary {
+    background-color: #1F5FD6;
+    border-width: 4px; border-color: #FFFFFF;
+    min-height: 72px; min-width: 220px;
+}
+.sv-results19--jump .sv-btn--primary:hover { background-color: #2A6AE0; }
+/* phone-ish narrow: keep left bias, widen panel */
+.sv-phone .sv-results19--jump { left: 48px; width: 620px; max-width: 92%; }
+
+/* b10.19 T30 soft: FP HUD plates solid #0B1622 ≥0.88 */
+.sv-hud--fp .sv-bug { background-color: rgba(11, 22, 34, 0.95); border-width: 1px; border-color: #0B1218; }
+.sv-hud--fp .sv-pips19 { background-color: rgba(11, 22, 34, 0.95); }
+.sv-hud--fp .sv-call { background-color: rgba(11, 22, 34, 0.92); }
+.sv-hud--fp .sv-steer-hint { background-color: rgba(11, 22, 34, 0.92); }
+
+/* b10.20 T29 Tricks Phase A polish */
+.sv-wordmark {
+    position: absolute; left: 48px; top: 28px;
+    -unity-font-definition: var(--sv-font-cond-700);
+    font-size: 42px; letter-spacing: 6px; color: #FFFFFF;
+}
+.sv-panel--trick { background-color: rgba(7, 12, 18, 0.92); }
+.sv-results19--trick {
+    left: 96px; right: auto; top: 120px; width: 560px;
+    background-color: rgba(7, 12, 18, 0.92);
+    border-radius: 8px;
+}
+.sv-results19--trick > .sv-strip { background-color: #1F5FD6; }
+.sv-results19--trick .sv-results19__num { font-size: 110px; color: #FFFFFF; }
+.sv-results19--trick .sv-results19__dv { white-space: normal; color: #E6ECF2; }
+.sv-results19--trick .sv-btn--primary {
+    background-color: #1F5FD6; border-width: 4px; border-color: #FFFFFF;
+    min-height: 72px;
+}
+.sv-tbd-chip {
+    -unity-font-definition: var(--sv-font-cond-700);
+    font-size: 18px; letter-spacing: 2px;
+    color: #070C12; background-color: #D4A017;
+    padding: 4px 12px; margin: 6px 0 10px 0; align-self: flex-start;
+    border-radius: 4px;
+}
+
+/* b10.26 T17b real points chip (replaces gold TBD on Tricks setup) */
+.sv-pts-chip {
+    background-color: rgba(61, 214, 140, 0.18);
+    color: rgb(61, 214, 140);
+    border-radius: 6px;
+    padding: 4px 10px;
+    -unity-font-style: bold;
+    font-size: 13px;
+    margin-left: 8px;
+    white-space: nowrap;
+}
+.sv-btn--start-tall { min-height: 88px; }
+.sv-phone .sv-btn--start-tall { min-height: 144px; }
+.sv-panel--trick .sv-seg > .sv-seg__item { opacity: 0.40; }
+.sv-panel--trick .sv-seg > .sv-seg__item--on { opacity: 1.0; }

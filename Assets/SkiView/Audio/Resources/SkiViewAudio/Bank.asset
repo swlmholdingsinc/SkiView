@@ -1,0 +1,657 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57273ed9f0a2146ac9ccf5f14e203316, type: 3}
+  m_Name: Bank
+  m_EditorClassIdentifier: Assembly-CSharp::SkiView.SkiAudioBank
+  entries:
+  - id: boat_idle_loop
+    clip: {fileID: 8300000, guid: 340e2d90f524f27cba55d1e4bbb01c5f, type: 3}
+    lufs: -16
+    loopStart: 0
+    loopEnd: 705600
+    loop: 1
+  - id: boat_idle_onboard_loop
+    clip: {fileID: 8300000, guid: c2267c409a059d7e8b8657b0a48b1504, type: 3}
+    lufs: -16
+    loopStart: 0
+    loopEnd: 793800
+    loop: 1
+  - id: boat_throttle_up
+    clip: {fileID: 8300000, guid: 3bfa9c393162b7b7c9528d10c4e5a77f, type: 3}
+    lufs: -18.4
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: boat_throttle_up_onboard
+    clip: {fileID: 8300000, guid: 32047deb59ce2dbfa99a271d80e88ad3, type: 3}
+    lufs: -15.8
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: boat_hull_slap_loop
+    clip: {fileID: 8300000, guid: 6a5352bd2ac5c5a258f786ad44523571, type: 3}
+    lufs: -17.1
+    loopStart: 0
+    loopEnd: 1323000
+    loop: 1
+  - id: boat_wake_loop
+    clip: {fileID: 8300000, guid: a1549d4fc57f304a8aa7b5249e225e38, type: 3}
+    lufs: -16
+    loopStart: 0
+    loopEnd: 1323000
+    loop: 1
+  - id: boat_wake_shore_wash
+    clip: {fileID: 8300000, guid: 71a0d60c8aaa1a572836af68d0655755, type: 3}
+    lufs: -23.6
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_carve_spray
+    clip: {fileID: 8300000, guid: 060a81c31e7ce9178b5cae9f13c6adef, type: 3}
+    lufs: -18.3
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_edge_change
+    clip: {fileID: 8300000, guid: 21cf4e4b5ee27f08f8a7e630e54ecb6e, type: 3}
+    lufs: -27.8
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_buoy_pass
+    clip: {fileID: 8300000, guid: 16a242f4efe5f135dba472826f7ea9ed, type: 3}
+    lufs: -16
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_splash_fall
+    clip: {fileID: 8300000, guid: cb063fa9a1b86ed529e9e9ff04552e35, type: 3}
+    lufs: -16.4
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_ski_landing
+    clip: {fileID: 8300000, guid: d24dc37869c296c95914705de5b9a774, type: 3}
+    lufs: -22.4
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_big_crash
+    clip: {fileID: 8300000, guid: a2d28ef1686832152bc6a9fa8a645a70, type: 3}
+    lufs: -18.7
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_click_01
+    clip: {fileID: 8300000, guid: c389fc58ffe926c36ba4c21bf38b1eb6, type: 3}
+    lufs: 0
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_click_02
+    clip: {fileID: 8300000, guid: 64abffb23f13902d7a683104d5b4841b, type: 3}
+    lufs: 0
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_click_03
+    clip: {fileID: 8300000, guid: 4c90dbda3bee5a10aac5e9e19b085741, type: 3}
+    lufs: 0
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_click_04
+    clip: {fileID: 8300000, guid: 655a3f30d111cae698e6e31413144fb5, type: 3}
+    lufs: 0
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_confirm
+    clip: {fileID: 8300000, guid: a16851aec69e048d8a540747ea6df735, type: 3}
+    lufs: 0
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_back
+    clip: {fileID: 8300000, guid: 229a3ec30a06876df9e26eb182c7f1a2, type: 3}
+    lufs: 0
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_results_sting
+    clip: {fileID: 8300000, guid: 166c1a1e5394d8d51a7f8c2da17271cb, type: 3}
+    lufs: -11.9
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_results_sting_alt
+    clip: {fileID: 8300000, guid: 9e536e51bb0512cbf9e9e06b3b9f5472, type: 3}
+    lufs: -11.7
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_rope_tug
+    clip: {fileID: 8300000, guid: c1c03a5837c313cf7ad6f26052ab3f55, type: 3}
+    lufs: 0
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_plow_rush
+    clip: {fileID: 8300000, guid: 0abe2ba102261ae54a2deb436306d94f, type: 3}
+    lufs: -17.6
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_float_lap_loop
+    clip: {fileID: 8300000, guid: 72377b54a899703b484b5760494523ef, type: 3}
+    lufs: -17.8
+    loopStart: 0
+    loopEnd: 882000
+    loop: 1
+  - id: skier_jump_runup_hiss
+    clip: {fileID: 8300000, guid: fb90ad698ce0fcce3a4a35aa23139921, type: 3}
+    lufs: -14.3
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_jump_lip_pop
+    clip: {fileID: 8300000, guid: 94e388452a1a3412daba839e291dabbe, type: 3}
+    lufs: -22.2
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_flight_wind_loop
+    clip: {fileID: 8300000, guid: c7fa6382a0455d9da812c5783ba84cb2, type: 3}
+    lufs: -16
+    loopStart: 0
+    loopEnd: 529200
+    loop: 1
+  - id: skier_jump_whoosh
+    clip: {fileID: 8300000, guid: c2adabd9bcf5d0384b4c2a399dd028a0, type: 3}
+    lufs: -17
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: boat_gear_clunk
+    clip: {fileID: 8300000, guid: c8e5ac062b6b016cc97bb1d1a80aede1, type: 3}
+    lufs: 0
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_gate_tick
+    clip: {fileID: 8300000, guid: ad233aa29199658c6b561a6765b4f95d, type: 3}
+    lufs: 0
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_scoreboard_beep
+    clip: {fileID: 8300000, guid: 976a328b0c39768989e230e0d9b11098, type: 3}
+    lufs: 0
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_results_sting_fail
+    clip: {fileID: 8300000, guid: e9a50c4f25a0842f9b0e901e9be540bd, type: 3}
+    lufs: -10.4
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: music_menu_loop
+    clip: {fileID: 8300000, guid: 1008dc2b7aa66729a9d0cd9db68198ee, type: 3}
+    lufs: -18.7
+    loopStart: 0
+    loopEnd: 1410281
+    loop: 1
+  - id: amb_bird_sandhill_crane
+    clip: {fileID: 8300000, guid: 5055e72cb448ad8a4bf86486d79dad41, type: 3}
+    lufs: -20.9
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_bird_anhinga
+    clip: {fileID: 8300000, guid: 506e0d2393af4c57ab8a183f83b25c8f, type: 3}
+    lufs: -15
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_bird_osprey
+    clip: {fileID: 8300000, guid: c306b45ea2ff71b94a6d0623e3141523, type: 3}
+    lufs: -17
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_crowd_applause_cheer
+    clip: {fileID: 8300000, guid: 6e97ebf052e03201fbe47bcd7269b824, type: 3}
+    lufs: -22.2
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_pa_chime
+    clip: {fileID: 8300000, guid: 7580e75b9ecd60cd2991182ab6e27ea6, type: 3}
+    lufs: -15.5
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_show_pa_announce
+    clip: {fileID: 8300000, guid: b2b108cdc090a175d8251c6405ef04c1, type: 3}
+    lufs: -15.6
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: boat_cruise_v8_loop
+    clip: {fileID: 8300000, guid: 9e5eb0a73c1837dc58cb31a2e4a396be, type: 3}
+    lufs: -16
+    loopStart: 0
+    loopEnd: 286650
+    loop: 1
+  - id: boat_engine_decel_v8
+    clip: {fileID: 8300000, guid: 982dd6a55805586db9f6eb2fc8011ece, type: 3}
+    lufs: -18.1
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_clinic_lesson_start
+    clip: {fileID: 8300000, guid: 1bf04f65a3f23c4bead4df400ab0b18d, type: 3}
+    lufs: -12
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_clinic_pass
+    clip: {fileID: 8300000, guid: 59e146e2c9e537381a1ef0d6b21a94d6, type: 3}
+    lufs: -12
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_clinic_fail
+    clip: {fileID: 8300000, guid: 98e4d681aafa8a7a6ba4bda6da41f942, type: 3}
+    lufs: -13.8
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_clinic_tip_chime
+    clip: {fileID: 8300000, guid: 1aa87d369ffb94a78bf5d5861abed384, type: 3}
+    lufs: -16
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_beatwade_rung_unlock
+    clip: {fileID: 8300000, guid: ba4c3db446fa56c24a3977c2ec9c3029, type: 3}
+    lufs: -12.1
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_beatwade_win
+    clip: {fileID: 8300000, guid: 9b1b02746b82f3646af7346d911928a5, type: 3}
+    lufs: -14
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_beatwade_near_miss
+    clip: {fileID: 8300000, guid: e208839060389cb27a31f8871bd17268, type: 3}
+    lufs: -13
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_dws_splash
+    clip: {fileID: 8300000, guid: b9f3ca64a8b60885891c8d0fbe150961, type: 3}
+    lufs: -16.9
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_dws_rope_tension
+    clip: {fileID: 8300000, guid: abc44b17aae37c72399c8be68006ea59, type: 3}
+    lufs: -21.1
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_dws_planing
+    clip: {fileID: 8300000, guid: 4c7cae7df71ae232485ea1e958161e0f, type: 3}
+    lufs: -17.7
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: boat_engine_idle_driver_loop
+    clip: {fileID: 8300000, guid: 6fd08d4ebbd65eb5087721351362621a, type: 3}
+    lufs: -16
+    loopStart: 0
+    loopEnd: 793800
+    loop: 1
+  - id: ui_ski_unlock
+    clip: {fileID: 8300000, guid: fc9c8230995ea35b78d600775ba808f7, type: 3}
+    lufs: -12.1
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_personal_best
+    clip: {fileID: 8300000, guid: 582e06797e131e0ac9c15c2260b92058, type: 3}
+    lufs: -12.3
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_reed_rustle_01
+    clip: {fileID: 8300000, guid: f7c0f5221a798b1f8a9111d0e313fd2b, type: 3}
+    lufs: -26
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_reed_rustle_02
+    clip: {fileID: 8300000, guid: eefe93867d8790d5780f658d2bc7b439, type: 3}
+    lufs: -26
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_reed_rustle_03
+    clip: {fileID: 8300000, guid: aa7baa4382eb37229a6a8cd4e0deea58, type: 3}
+    lufs: -26
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_bank_lap_01
+    clip: {fileID: 8300000, guid: 7a25fe07a86019261be972f9cce4751a, type: 3}
+    lufs: -24
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_bank_lap_02
+    clip: {fileID: 8300000, guid: b2a472ba39ca86149946d12e8377729f, type: 3}
+    lufs: -24
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_bank_lap_03
+    clip: {fileID: 8300000, guid: 52c00c86a9938cc66b1a8f5660484a7a, type: 3}
+    lufs: -24.5
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_dock_creak_01
+    clip: {fileID: 8300000, guid: 1887c60e38ff8659bb00bf7d389d0093, type: 3}
+    lufs: -22
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_dock_creak_02
+    clip: {fileID: 8300000, guid: 2560b2ab3726d686d9d48976c2c4b685, type: 3}
+    lufs: -22
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_dock_creak_03
+    clip: {fileID: 8300000, guid: 5e8c09abe3b5de9bbbd1cbc1ca834be1, type: 3}
+    lufs: -22
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_carve_01
+    clip: {fileID: 8300000, guid: 35aef0de99e18d88fa30577d2100a399, type: 3}
+    lufs: -22.2
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_carve_02
+    clip: {fileID: 8300000, guid: 41c35fb0527c193438cd68c319175f57, type: 3}
+    lufs: -22.4
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_carve_03
+    clip: {fileID: 8300000, guid: 7a6f247d58ba72a168e0f4017ec88eec, type: 3}
+    lufs: -22.4
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_wake_pop_01
+    clip: {fileID: 8300000, guid: fc5172846b12817fdbfd415ce122112f, type: 3}
+    lufs: -21.9
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_wake_pop_02
+    clip: {fileID: 8300000, guid: ef8d8e2848c4bc4b7908547d3394f3ca, type: 3}
+    lufs: -22
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_wake_land_01
+    clip: {fileID: 8300000, guid: 24fd92f71fb99acf7b4f52c8392ca4b4, type: 3}
+    lufs: -20
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_wake_land_02
+    clip: {fileID: 8300000, guid: 777d8aa70cdbe6ac6be6b49665768047, type: 3}
+    lufs: -20
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_toestrap_on
+    clip: {fileID: 8300000, guid: 1b69c836e18b3ce9f947853bfe7f7187, type: 3}
+    lufs: -23.2
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_toehold_rope_01
+    clip: {fileID: 8300000, guid: 618d3ed2c1176f37989a9a5efd24e198, type: 3}
+    lufs: -24.8
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_toehold_rope_02
+    clip: {fileID: 8300000, guid: 2881e0abe40e0ba70b9eff2da014c89a, type: 3}
+    lufs: -23.7
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_flip_whoosh_01
+    clip: {fileID: 8300000, guid: 8efdfb9c241582775ab70cf8b4022c0b, type: 3}
+    lufs: -18
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_flip_whoosh_02
+    clip: {fileID: 8300000, guid: 429e5b781da1222b3a647be3609f6df9, type: 3}
+    lufs: -18
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_flip_land_splash
+    clip: {fileID: 8300000, guid: cad557f4326a81b76b4853451ef72cc2, type: 3}
+    lufs: -18.4
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_fall_splash_01
+    clip: {fileID: 8300000, guid: 35cafde0e855389268550d14f6665dbc, type: 3}
+    lufs: -17
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_fall_splash_02
+    clip: {fileID: 8300000, guid: 276fb983acbf78b0997ec38cfa60ab8a, type: 3}
+    lufs: -18.1
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_trick_tally_tick
+    clip: {fileID: 8300000, guid: dfe00c5f1e82b2f64bd1e4e3dce4aeb3, type: 3}
+    lufs: 0
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_trick_score_chime
+    clip: {fileID: 8300000, guid: 04c137773c50134929cf842c083b3089, type: 3}
+    lufs: -16
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_trick_score_chime_big
+    clip: {fileID: 8300000, guid: cdd2d777de12e7b6cbce75ee58ddd4b6, type: 3}
+    lufs: -15
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_trick_timer_beep
+    clip: {fileID: 8300000, guid: ba818aecfbd42f8f8aa4916b046ecefd, type: 3}
+    lufs: 0
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_trick_timer_final
+    clip: {fileID: 8300000, guid: 650df015d70fafb30a7bcc74f378aaff, type: 3}
+    lufs: -10.9
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: ui_trick_result_sting
+    clip: {fileID: 8300000, guid: b3253aa3bde67d8539c5fcc2d1ea1675, type: 3}
+    lufs: -13.2
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_spin_180_01
+    clip: {fileID: 8300000, guid: a2c0d3810a914a8aa8a9b7ab3ffe3263, type: 3}
+    lufs: -19
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_spin_180_02
+    clip: {fileID: 8300000, guid: 149ef86c9218e6e44abe1a824f5c4d10, type: 3}
+    lufs: -19
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_spin_360_01
+    clip: {fileID: 8300000, guid: e61e8a8bb9855f28aa97825ae53f4720, type: 3}
+    lufs: -19
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_spin_360_02
+    clip: {fileID: 8300000, guid: fe1c82df15f6135d4bfb4333f845f769, type: 3}
+    lufs: -19
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_trick_slide_loop
+    clip: {fileID: 8300000, guid: 11fd207b2bfa45515a370519046b669b, type: 3}
+    lufs: -20.6
+    loopStart: 0
+    loopEnd: 352800
+    loop: 1
+  - id: music_title_loop
+    clip: {fileID: 8300000, guid: 7dbb6141a0c10d477917306a0c203867, type: 3}
+    lufs: -20
+    loopStart: 0
+    loopEnd: 1764000
+    loop: 1
+  - id: boat_engine_rpm_low_loop
+    clip: {fileID: 8300000, guid: 53d0ceedf0efafadbb74408051ae5093, type: 3}
+    lufs: -16
+    loopStart: 0
+    loopEnd: 358312
+    loop: 1
+  - id: boat_engine_rpm_mid_loop
+    clip: {fileID: 8300000, guid: 5adce378bc1593a88a6ea20aaf5e966b, type: 3}
+    lufs: -16
+    loopStart: 0
+    loopEnd: 286650
+    loop: 1
+  - id: skier_rope_slap_01
+    clip: {fileID: 8300000, guid: 2a21005952bf2ae5c92be72b6c6f957e, type: 3}
+    lufs: -20.4
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_rope_slap_02
+    clip: {fileID: 8300000, guid: d8d7952703bdb6b339664cc7b4043045, type: 3}
+    lufs: -20.4
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_edge_chatter_01
+    clip: {fileID: 8300000, guid: 544e7e138c5006a6d9fd08c5f22cb08c, type: 3}
+    lufs: -20.9
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_edge_chatter_02
+    clip: {fileID: 8300000, guid: 7a2d0c6c2f1c4eca48994c6f94728406, type: 3}
+    lufs: -20
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_wake_thump_light
+    clip: {fileID: 8300000, guid: 2611ec1eed12ddbc8904719e057dce89, type: 3}
+    lufs: -22
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_wake_thump_heavy
+    clip: {fileID: 8300000, guid: 26b54d8609595968da8fb2d7a205b0b2, type: 3}
+    lufs: -19.1
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_jump_ramp_hit
+    clip: {fileID: 8300000, guid: 96470168846e2df31abc9fd673bfa330, type: 3}
+    lufs: -21.3
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: skier_jump_landing_heavy
+    clip: {fileID: 8300000, guid: d049dd0a5ba3cba2f9a8268f5788139d, type: 3}
+    lufs: -20.2
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: boat_engine_rpm_high_loop
+    clip: {fileID: 8300000, guid: e5835b586e51d45f8b0d12533cf66a5a, type: 3}
+    lufs: -16
+    loopStart: 0
+    loopEnd: 352800
+    loop: 1
+  - id: boat_passby_fast
+    clip: {fileID: 8300000, guid: 959241120df6680309ebf23286f76f9e, type: 3}
+    lufs: -21.1
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: boat_passby
+    clip: {fileID: 8300000, guid: 7754b47cc53ecb785aa445070673be98, type: 3}
+    lufs: -20.2
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: boat_engine_rpm_high_presence_loop
+    clip: {fileID: 8300000, guid: 1e4cdf98d12128415a6af1f223c0159b, type: 3}
+    lufs: -16
+    loopStart: 0
+    loopEnd: 352800
+    loop: 1
+  - id: amb_bed_tournament_jump_loop
+    clip: {fileID: 8300000, guid: 839eef560d5d2b63bb69246055f40702, type: 3}
+    lufs: -24.3
+    loopStart: 0
+    loopEnd: 2822400
+    loop: 1
+  - id: amb_crowd_react_big_01
+    clip: {fileID: 8300000, guid: 502b74ebaeab4a0ea8a7041801604850, type: 3}
+    lufs: -22
+    loopStart: 0
+    loopEnd: 0
+    loop: 0
+  - id: amb_crowd_react_big_02
+    clip: {fileID: 8300000, guid: f3b40d685e2c66349a47071c19e51e4e, type: 3}
+    lufs: -22.7
+    loopStart: 0
+    loopEnd: 0
+    loop: 0

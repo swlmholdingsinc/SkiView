@@ -1,0 +1,69 @@
+/* T22 Ski with Wade title screen. UI Toolkit USS. Reference 1920x1080 (Panel Settings: Scale With Screen Size, match 0.5).
+   INTERNAL: hero + logo are flag-gated (wadeBrandingEnabled + wadeLikenessEnabled); hero slot ship:false (see T22 spec). */
+:root {
+    --sv-accent: #2F7BFF; --sv-selected: #1F5FD6; --sv-plate: rgba(11, 22, 34, 0.86); --sv-ink-600: #1D3049;
+    --sv-text: #FFFFFF; --sv-text-2: #B4BFCB; --sv-text-dis: #93A1B0; --sv-gold: #FFC93C; --sv-ink-gold: #1A1300;
+    --ev-h: 124px; --sec-h: 88px; --hit: 88px;
+}
+.sv-title { flex-grow: 1; }
+.sv-title--phone { --ev-h: 144px; --sec-h: 144px; --hit: 144px; padding: 24px 88px; }
+.sv-title--phone-4x3 { --ev-h: 168px; }
+.sv-title__hero { position: absolute; right: 0; top: 0; bottom: 0; width: 58%; -unity-background-scale-mode: scale-and-crop; }
+.sv-title__scrim { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-image: url("scrim_menu_gradient.png"); -unity-background-scale-mode: stretch-to-fill; }
+.sv-title__left { position: absolute; left: 32px; top: 0; bottom: 0; width: 760px; justify-content: flex-start; }
+.sv-title--4x3 .sv-title__left { justify-content: center; width: 820px; }   /* 4:3: menu block vertically centred */
+.sv-logo-plate { position: absolute; left: 24px; top: 16px; width: 420px; height: 140px; background-image: none; -unity-background-scale-mode: scale-to-fit; }
+.sv-event-list { margin-top: 146px; }
+.sv-title--4x3 .sv-event-list { margin-top: 0; }
+.sv-event { height: var(--ev-h); margin-bottom: 14px; flex-direction: row; align-items: center; padding: 0 32px;
+    background-image: url("row_bg.png"); -unity-slice-left: 8; -unity-slice-right: 8; -unity-slice-top: 8; -unity-slice-bottom: 8;
+    transition-property: background-color, scale; transition-duration: 0.12s; }
+.sv-event:focus { background-image: url("row_bg_focused.png"); -unity-slice-left: 14; }
+.sv-event--selected { background-image: url("row_bg_selected.png"); }
+.sv-event__icon { width: 48px; height: 48px; margin-right: 24px; }
+.sv-event__name { font-size: 46px; -unity-font-style: bold; color: var(--sv-text); letter-spacing: 3px; }
+.sv-title--phone .sv-event__name { font-size: 48px; }
+.sv-event__sub { font-size: 22px; color: var(--sv-text-2); }
+.sv-event--selected .sv-event__sub { color: var(--sv-text); }
+.sv-event--disabled .sv-event__name, .sv-event--disabled .sv-event__icon { color: var(--sv-text-2); -unity-background-image-tint-color: var(--sv-text-2); }
+.sv-event--disabled .sv-event__sub { color: var(--sv-text-dis); }
+.sv-tag-soon { font-size: 18px; -unity-font-style: bold; color: var(--sv-ink-gold); background-color: var(--sv-gold); padding: 0 10px; border-radius: 3px; margin-left: 18px; }
+.sv-focus-ring { position: absolute; left: -8px; top: -8px; right: -8px; bottom: -8px; background-image: url("focus_ring.png");
+    -unity-slice-left: 16; -unity-slice-right: 16; -unity-slice-top: 16; -unity-slice-bottom: 16; display: none; }
+.sv-event:focus > .sv-focus-ring, .sv-sec:focus > .sv-focus-ring, .sv-btn:focus > .sv-focus-ring { display: flex; }
+.sv-sec-row { flex-direction: row; margin-top: 28px; }
+.sv-sec { flex-grow: 1; height: var(--sec-h); margin-right: 12px; align-items: center; justify-content: center; flex-direction: row;
+    background-image: url("row_bg.png"); -unity-slice-left: 8; -unity-slice-right: 8; -unity-slice-top: 8; -unity-slice-bottom: 8; font-size: 26px; color: var(--sv-text); }
+.sv-sec:last-child { margin-right: 0; }
+.sv-event-panel { position: absolute; right: 32px; bottom: 170px; width: 600px; padding: 26px 30px 30px 36px; background-image: url("panel_bg.png");
+    -unity-slice-left: 14; -unity-slice-right: 8; -unity-slice-top: 8; -unity-slice-bottom: 8; opacity: 0; translate: 16px 0;
+    transition-property: opacity, translate; transition-duration: 0.18s; }
+.sv-event-panel--open { opacity: 1; translate: 0 0; }
+.sv-title--phone .sv-event-panel { bottom: 90px; }
+.sv-btn { height: var(--hit); flex-grow: 1; margin-right: 14px; align-items: center; justify-content: center; }
+.sv-btn--primary { background-color: var(--sv-accent); }
+.sv-soon-toast { position: absolute; height: 88px; padding: 0 30px; flex-direction: row; align-items: center; background-image: url("toast_pill_bg.png");
+    -unity-slice-left: 44; -unity-slice-right: 44; -unity-slice-top: 44; -unity-slice-bottom: 44; font-size: 28px; color: var(--sv-text);
+    opacity: 0; transition-property: opacity; transition-duration: 0.15s; }
+.sv-soon-toast--show { opacity: 1; }
+.sv-rights-tag { position: absolute; right: 32px; bottom: 120px; font-size: 16px; color: var(--sv-text-2); background-color: rgba(11, 22, 34, 0.8); padding: 4px 10px; }
+.sv-title--phone .sv-rights-tag { bottom: 40px; }
+.sv-copyright { position: absolute; left: 32px; bottom: 70px; font-size: 18px; color: var(--sv-text-2); }
+.sv-watermark { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-image: url("watermark_internal.png"); -unity-background-scale-mode: scale-and-crop; }
+/* Entry motion (default). Code toggles --in after first frame. */
+.sv-title__hero { opacity: 0; translate: 24px 0; transition-property: opacity, translate; transition-duration: 0.4s, 1.2s; }
+.sv-title--in .sv-title__hero { opacity: 1; translate: 0 0; }
+.sv-event { translate: -40px 0; opacity: 0; transition-property: translate, opacity, background-color; transition-duration: 0.22s; }
+.sv-title--in .sv-event { translate: 0 0; opacity: 1; }   /* stagger 50 ms via transition-delay set per row in code */
+/* Reduced motion: add .sv-reduced-motion on the root. */
+.sv-reduced-motion .sv-title__hero, .sv-reduced-motion .sv-event, .sv-reduced-motion .sv-event-panel { translate: 0 0; transition-property: opacity; transition-duration: 0.15s; transition-delay: 0s; }
+.sv-reduced-motion .sv-event { transition-duration: 0s; }
+
+/* b10.20 T29: SKI VIEW wordmark (no Wade logo) */
+.sv-wordmark {
+    position: absolute; left: 32px; top: 28px;
+    -unity-font-definition: var(--sv-font-cond-700);
+    font-size: 42px; letter-spacing: 6px; color: #FFFFFF;
+    -unity-font-style: bold;
+}
+.sv-title--phone .sv-wordmark { font-size: 36px; left: 24px; top: 20px; }

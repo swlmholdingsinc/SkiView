@@ -1,0 +1,57 @@
+{
+  "_note": "Scott Oct 25 ~12:22 AM CT ship: Wade LICENSE GO \u2192 wadeLicenseSigned true (clears INTERNAL watermark). Wade logos OFF; skier SCOTT; product Ski View; greyboxTag cleared for release.",
+  "flags": {
+    "wadeBrandingEnabled": false,
+    "wadeLikenessEnabled": true,
+    "wadeLicenseSigned": true,
+    "wadeContentApproved": false,
+    "sponsorSlotsEnabled": false
+  },
+  "wade": {
+    "_status": "Ski View release \u2014 logos OFF; likeness look OK named SCOTT; license GO",
+    "verifiedFacts": {
+      "_note": "Unused while Wade branding flags are false."
+    },
+    "title": "SKI VIEW",
+    "skierDisplayName": "SCOTT",
+    "subtitle": "SLALOM / JUMP / FREE RIDE",
+    "badge": "SV",
+    "productName": "SKI VIEW",
+    "storeName": "Ski View",
+    "greyboxTag": "",
+    "logos": {
+      "primary": "Branding/slots/primary_logo",
+      "icon": "Branding/slots/icon",
+      "wordmark": "Branding/slots/wordmark",
+      "titleHero": ""
+    },
+    "colors": {
+      "accent": "#2F7DF6"
+    },
+    "links": {
+      "_source": "cleared while Wade branding off",
+      "home": "",
+      "about": "",
+      "clinics": "",
+      "podcast": ""
+    }
+  },
+  "slots": {
+    "title.hero": {
+      "asset": "",
+      "variants": {},
+      "requires": [
+        "wadeBrandingEnabled",
+        "wadeLikenessEnabled"
+      ],
+      "ship": false,
+      "rights": "Wade hero slots unused while branding off",
+      "replaceWith": null,
+      "fallback": null
+    }
+  },
+  "clinic": {
+    "modeName": "Clinic",
+    "_status": "Ski View \u2014 no Wade clinic title while branding off"
+  }
+}

@@ -1,0 +1,2339 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Core_Shared
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Core_Shared
+  m_GUID: 221b18b56df7cd9eb92c56082c2b2302
+  m_SerializeEntries:
+  - m_GUID: 001b3119207bf87649e1bee15d8f4948
+    m_Address: Assets/SkiView/Kits/gulf/textures/kit_gulf_estate_1s_glass.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 004893e8b9b26ff84971b207e5e5012d
+    m_Address: Assets/SkiView/Kits/Materials/kit_gulf_estate_1s_impostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 009eff554e4bb15909509cb9e00e98ba
+    m_Address: Assets/SkiView/ThirdParty/Mixamo/Remy@Edge Slip.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 00be3acb8e4b060f4ba96f7eb2d2e955
+    m_Address: Assets/SkiView/Environment/Materials/Reeds.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 01bfab6e34fa457e286f96d92836cbf5
+    m_Address: Assets/SkiView/Meshes/tree_BigleafMaple_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 01d856a78af49dc4abe999edc328c75b
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_leaf_b.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 01e36d6664776baff852dbdd9dec78fb
+    m_Address: Assets/SkiView/Kits/tournament/textures/kit_tour_start_dock_impostor.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0220ea14e663219b3870ea6f758668fc
+    m_Address: Assets/SkiView/Vegetation/veg_royal_palm_b.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 025e4fcf5a9d8c5369165c387a049387
+    m_Address: Assets/SkiView/Environment/Materials/ShoreRock.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 04febae1b634f310d8c9a06a13f63f8c
+    m_Address: Assets/SkiView/Kits/southeast-midwest/textures/kit_se_dock_lift_white_impostor.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 05bc84d7f27b50ffd91c869432ec1fc3
+    m_Address: Assets/SkiView/Meshes/tree_WesternRedCedar_B_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 05c0e351c821369f0a83cad448938e79
+    m_Address: Assets/SkiView/Environment/Textures/palm_frond.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 060859fe4243c55219dcd8000c385df2
+    m_Address: Assets/SkiView/Environment/Materials/CedarImpostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 060f1b852f1e70c0eb92b71e4abba464
+    m_Address: Assets/SkiView/Vegetation/veg_loblolly_pine_a.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 064640ad7a68f02a7bc3e0c36d45d422
+    m_Address: Assets/SkiView/Environment/Sky/sky_bg_cube.hdr
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 08773ac7d7be8312cb03ca995378f8c2
+    m_Address: Assets/SkiView/Meshes/shrub_Understory_B_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 08843698cd66cb272b270a0803f0973d
+    m_Address: Assets/SkiView/Kits/southeast-midwest/textures/kit_se_dock_lift_white_normal.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 08e0947c3270b797f88a8fbd0643d24d
+    m_Address: Assets/SkiView/Meshes/tree_WesternRedCedar_B_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 090835e946d90450abfded651a669232
+    m_Address: Assets/SkiView/Generated/ramp_apron_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0951f94f486f27f298cf50c0b7d8d7d4
+    m_Address: Assets/SkiView/Materials/Boat/M_PylonAnodized.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0969b5ad7d30571ae858c58cc9fe2f42
+    m_Address: Assets/SkiView/Skier/INTERNAL_ONLY_T_Felderpuss_V3_WadeCox_Normal_4k.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 096e5d37ea8d492f7b1b499c9127e42b
+    m_Address: Assets/SkiView/Skier/SkiV3/Materials/SkiV3_mat_ski_v3_plate.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0a4a77f05cb01e7d6855c5d511b449ca
+    m_Address: Assets/SkiView/Meshes/tree_BlackCottonwood_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0a756a5b0022d88f29e48e00420795aa
+    m_Address: Assets/SkiView/Vegetation/veg_western_red_cedar_a.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0ad19a2c600610649bba9268a96a4bd4
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_royal_palm_b.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0ba63bb933e3c5e18b7f17e72b0346d6
+    m_Address: Assets/SkiView/Meshes/fp_rig19_11.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0d437f43bced636f8a6ab2640b43d6f1
+    m_Address: Assets/SkiView/Boat/textures/T_Dash_Normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0db43f60860462ee883d137f98a5f31d
+    m_Address: Assets/SkiView/Meshes/skier_merge_6.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0f79347918a8b28bf88f266d93eb72f1
+    m_Address: Assets/SkiView/Environment/Textures/forest_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0f8994adb0c640d068d897bf7f0319ba
+    m_Address: Assets/SkiView/Skier/SkiV3/Materials/SkiV3_mat_ski_v3_sidewall.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 101310347cc4f0007b9079877d6d05e2
+    m_Address: Assets/SkiView/Meshes/tree_BigleafMaple_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1022b7416b6568bc78277f62b313677f
+    m_Address: Assets/SkiView/Vegetation/veg_sabal_palm_b.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 10d964c8cfe929ea3ae035b2cbc9f158
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_maple_a.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 123a9284ca442cd50a8beea172d8703d
+    m_Address: Assets/SkiView/Environment/Textures/shore_strip_rock.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 128ddfadb2eeb3ce9a32c2218ab6a63a
+    m_Address: Assets/SkiView/Boat/textures/T_Gelcoat_Normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1361de2efd2ec387ab1579c77e088253
+    m_Address: Assets/SkiView/Skier/INTERNAL_ONLY_T_Felderpuss_V3_WadeCox_AO_4k.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 139408c95975721eca3ad8ec7bae9bca
+    m_Address: Assets/SkiView/Meshes/tree_CanopyFill_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1416499373aef8ea0ac6c34be4c857e8
+    m_Address: Assets/SkiView/Boat/textures/T_Trim_Normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1528951ed18f51abebb24bd1caf33337
+    m_Address: Assets/SkiView/Materials/SkiBase.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 15b23d6ee3f75c3868e2a9b13b1f0dab
+    m_Address: Assets/SkiView/ThirdParty/Mixamo/Remy@Stand Up.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 16e7241002a1c6d6baa33c4ab580e3eb
+    m_Address: Assets/SkiView/Materials/BuoyTurn.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1718a7f30139bf8f2b0123e764360676
+    m_Address: Assets/SkiView/Environment/Prefabs/SeaOats.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 195bf869143e8ae29ac9f3cc5e8d2221
+    m_Address: Assets/SkiView/Materials/Boat/M_Dash.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 19ac57db6628d1bee9f4dd38707b252f
+    m_Address: Assets/SkiView/Skier/Materials/Eyelashmat.001.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1a2307401f87527da9a40c22a9e7696b
+    m_Address: Assets/SkiView/Boat/textures/T_Teak_Normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1bb974630bf22c476a0e11176f1a8257
+    m_Address: Assets/SkiView/Skier/JumpSki/Materials/JumpSki_M_JumpSki_V1_Body.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1c90d491f00a72b60861292a7abbb633
+    m_Address: Assets/SkiView/Kits/mediterranean/textures/kit_med_villa_tower_normal.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1d3e635b0861d0d9fbb60e3cc56d257b
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_loblolly_pine_a.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1d564c8d557edb92d9cf2bd7300bfbec
+    m_Address: Assets/SkiView/Meshes/hiwrap_boot.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1e51facce6ccf1a969d154b6f6c62bab
+    m_Address: Assets/SkiView/Meshes/fp_rig19_1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1e6447590d1dbb83eb06c1a5c0344593
+    m_Address: Assets/SkiView/Environment/Prefabs/CanopyFill.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1e958f4b5b15a168c9679777279b5a68
+    m_Address: Assets/SkiView/Skier/JumpSki/Materials/JumpSki_M_JumpFin_V1.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1eb1253c20686b90faf21b021920b7f4
+    m_Address: Assets/SkiView/Meshes/tree_DouglasFir_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1f6be358ab64b22019a42dac0caf9013
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_royal_palm_b.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 200cca4f91f767843a5593f7b90452b1
+    m_Address: Assets/SkiView/Environment/Materials/TallGrass.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 205cbdebaf4a6885bb42f6ea73d742e5
+    m_Address: Assets/SkiView/Vegetation/veg_loblolly_pine_a_mobile.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 206abf4a1c715a41c9b24fa648ef5c41
+    m_Address: Assets/SkiView/Materials/RampAnchorLine.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 20b53312eecba1f6b9aa6b7c3dbd20ec
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_slash_pine_b.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 21322c8b137c66e49b86085d3c8161f6
+    m_Address: Packages/com.unity.render-pipelines.universal/Shaders/Terrain/TerrainLitBase.shader
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 219d70439536e8b22b8832eaa8f93b6c
+    m_Address: Assets/SkiView/Environment/Textures/drygrass_color.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 22da7c3d986ce326ab255747d9425958
+    m_Address: Assets/SkiView/Materials/RampFloatHDPE.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2391d3d0c15c0a7ee9454b50c764d910
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_loblolly_pine_a_xf.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 23f8eb87e1865929998048bb7f97f246
+    m_Address: Assets/SkiView/Skier/SkiV3/Textures/green_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 242c7cee6d25dfaa5989a7ffeee3a638
+    m_Address: Assets/SkiView/Skier/JumpSki/Textures/T_JumpFin_V1_Normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 26abc1b0ab2734db593b5faa2f0cf58e
+    m_Address: Assets/SkiView/Materials/FP_HandleAlu19.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 26b4f90d6d62b91389b5af9c765164e1
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_longleaf_pine_a.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 270b033938ae110b3a19b4db5c69fb89
+    m_Address: Assets/SkiView/Materials/RampMarkBlack.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 278d8ae7966e4fb58a15ef1cf9f04347
+    m_Address: Assets/SkiView/Environment/Materials/FirImpostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2839e498a8ff1abdba64b2f0b21324f4
+    m_Address: Assets/SkiView/Meshes/skier_merge_4.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2871e8d3350f88bc9b341ccd257a5c67
+    m_Address: Assets/SkiView/Meshes/ski_fin.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 28cfe1413b304498bb073daa6362d215
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_saw_palmetto_b.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2930f92d1e221861c962c1466caceae1
+    m_Address: Assets/SkiView/Environment/Textures/dock_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2960fc87f067e9900bb143d47f426c3c
+    m_Address: Assets/SkiView/Environment/Prefabs/SabalPalm.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 29b70088566591157b4eaa75b7eda904
+    m_Address: Assets/SkiView/Materials/TerrainLit.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2a0284df0fa06ce8b935f377de6d57e2
+    m_Address: Assets/SkiView/Meshes/tree_SabalPalm_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2cdb20234d034ecf9a99a43d3187ffed
+    m_Address: Assets/SkiView/Meshes/plant_SwordFern.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2e0f2bb7a4f9828e9a60b2eec0779dc9
+    m_Address: Assets/SkiView/Ramp/Materials/RampV1_M_Ramp_V1_Apron.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2e61bb8f47059ce4680cedb6307a8105
+    m_Address: Assets/SkiView/Environment/Materials/SabalFan.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2e8e158b34261a90b98294fb3a162151
+    m_Address: Assets/SkiView/Kits/Materials/kit_se_shed_white_glass.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2f26ffd25c4eb79d38a48b78c674a5fa
+    m_Address: Assets/SkiView/Meshes/fp_rig19_14.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2f58292df7f65d98191822dda6b74a47
+    m_Address: Assets/SkiView/Ramp/Ramp_V1.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2fe8490bfd29a9464b247713835e2160
+    m_Address: Assets/SkiView/Environment/Textures/gravel_color.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2ff256afcf00182a8a909d2994cca43d
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_royal_palm_a.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 30127edcf9820cb99a7bb5ac5bdc44d4
+    m_Address: Assets/SkiView/Meshes/fp_rig19_9.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3031c157b9bbeea3cbccb60da703987b
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_loblolly_pine_b_xf.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 309472e2dbecd98caaea00f825db8701
+    m_Address: Assets/SkiView/Materials/RampWaterlineBand.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 30f7431a31cb924c69c3865e525012f2
+    m_Address: Assets/SkiView/Ramp/Materials/RampV1_M_Ramp_V1_Surface.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 31934fcfa5a80d8d9a00cea4ece490bf
+    m_Address: Assets/SkiView/Meshes/rock_RipRapRock_A.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 31d432361cec916b282ffc9a2b22fe32
+    m_Address: Assets/SkiView/Kits/mediterranean/textures/kit_med_villa_tower_glass.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 31fc08731211874a592c322a52c29971
+    m_Address: Assets/SkiView/Environment/Materials/CanopyFillLeaves.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 322fbe71a803b6fa49d3f46c1800ce47
+    m_Address: Assets/SkiView/Materials/BootStrapTeal.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 323f8e4ea87e42270b7a6bac61b44ebd
+    m_Address: Assets/SkiView/Materials/FP_Sleeve19.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 32814933ee20cd67ea11f0fb11a317e1
+    m_Address: Assets/SkiView/Environment/Textures/stucco_color.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 330e40cd300644bda9509d78128605ab
+    m_Address: Assets/SkiView/Vegetation/veg_royal_palm_a.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 33122a78f84c5660e850b671e984d87a
+    m_Address: Assets/SkiView/Meshes/plant_TallGrass.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 33e6d3f6ca24485ef88684d9ee431957
+    m_Address: Assets/SkiView/Meshes/skier_merge_1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3491ab7abfe195dcf8134067722bd344
+    m_Address: Assets/SkiView/Meshes/shrub_Understory_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 34c32553feacc35ccb9b30548ef4faea
+    m_Address: Assets/SkiView/Environment/Materials/DockPile.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 35f5a74c5cecc60978e7eeb14061477a
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_sabal_palm_a.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 36817089ebb3dc3a19da9f536d6b1712
+    m_Address: Assets/SkiView/Skier/INTERNAL_ONLY_T_Felderpuss_V2_WadeCox_Eye.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 36d426ccfc1ef27788041c5b1ff0205c
+    m_Address: Assets/SkiView/Environment/Textures/grime_streaks.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 37c375adeca74679d8be84ab51ee3db1
+    m_Address: Assets/SkiView/ThirdParty/Mixamo/Remy@Treading Water.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 39a50b03c4376be26a473e2c2fdfa639
+    m_Address: Assets/SkiView/Meshes/fp_rig19_8.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3a7b9943ac7f508aaa1a07cfc7e932be
+    m_Address: Assets/SkiView/Materials/FP_GripRubber19.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3b2ad6899a9c4ec46a8e660c210e7ead
+    m_Address: Assets/SkiView/Materials/Boat/M_Trim.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3b2c760d38cf88b20bf535e4da25d8b7
+    m_Address: Assets/SkiView/Materials/BindingPlate.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3c14382c54cd60758b9ebec13817085d
+    m_Address: Assets/SkiView/Skier/SkiV3/SkiV3_ToePlate.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3c49e95608806cee4b106ef5cce8c26c
+    m_Address: Assets/SkiView/Environment/Materials/AlderImpostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3c7fc3909ed4188c5824d24eee0fd08e
+    m_Address: Assets/SkiView/Ramp/Textures/T_Ramp_V1_Surface_Normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3d32a57de101b1f33bf601c02c2328be
+    m_Address: Assets/SkiView/Skier/SkiV3/Materials/SkiV3_mat_ski_v3_boot_strap.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3d490816b67745189a5a9cac35f8e4a2
+    m_Address: Assets/SkiView/Kits/gulf/textures/kit_gulf_estate_1s_normal.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3d7b6f33ca3a8efc190b85fee016f3ae
+    m_Address: Assets/SkiView/Boat/textures/T_Trim_BaseColor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3e0b7701d30bbfc428cbae8549be189e
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_willow_a.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3e22fe7ac55311c2d867f82924aa76f6
+    m_Address: Assets/SkiView/Environment/Sky/clear_bg_cube.hdr
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3e4c147ceed3c2cabaa297db93fb46e9
+    m_Address: Assets/SkiView/Meshes/fp_rig19_12.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3ed9ddbca1317267bb115b025b0dd119
+    m_Address: Assets/SkiView/Materials/BootShell.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3eecfad943ec169249c0ba914c34d639
+    m_Address: Assets/SkiView/Environment/Textures/bark_color.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3f83009362b602744ab431681a741361
+    m_Address: Assets/SkiView/Materials/RampWaterFilm.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 40394c0b18f62f721bef4f87b958e161
+    m_Address: Assets/SkiView/Skier/SkiV3/Materials/SkiV3_mat_ski_v3_base.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 40577dc017e96361cba36f321e6435aa
+    m_Address: Assets/SkiView/Generated/ski_topsheet.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 406e01cf61035f06cb1097706475a6a5
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_live_oak_a.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 40bf2524812567984a0a46b187432345
+    m_Address: Assets/SkiView/Materials/BuoyPreGate.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4106c632abfa457a191a8551df05e2be
+    m_Address: Assets/SkiView/Meshes/tree_DouglasFir_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 411ecc045508d52d385b159f924b9260
+    m_Address: Assets/SkiView/Kits/tournament/textures/kit_tour_judges_tower_glass.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 42a60746a6fb8f70eabb27528d54133d
+    m_Address: Assets/SkiView/Boat/textures/T_Dash_MetallicSmoothness.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4339267954d7b14a4833957dc653e972
+    m_Address: Assets/SkiView/Boat/textures/T_Glass_BaseColor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 43b67028f0140dbeda149855ca6626a2
+    m_Address: Assets/SkiView/Environment/Textures/metalrib_color.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 43eefe28ee93f24b183ac6bcb9e77901
+    m_Address: Assets/SkiView/Skier/SkiV3/Materials/SkiV3_mat_ski_v3_hardware.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 44497760fa003fe3784e74125d7af43e
+    m_Address: Assets/SkiView/Kits/Materials/kit_se_dock_lift_white_impostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 46a3989674682a92ea688b556de477cc
+    m_Address: Assets/SkiView/Environment/Prefabs/RipRapRock_C.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4780cc011a080bb48995cb47ef382457
+    m_Address: Assets/SkiView/Environment/Textures/maple_impostor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 47c16def83912989bbc514c4a0ba6ed2
+    m_Address: Assets/SkiView/Kits/Materials/kit_se_dock_lift_white_body.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 49f158e109305c082bf59f5660d3bdd3
+    m_Address: Assets/SkiView/Environment/Prefabs/WesternRedCedar.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 49ff8032ebb2dccc4bdc4b125314ca9f
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_willow_a.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4aa558e4f5694e7d8b5d9453bfb866e9
+    m_Address: Assets/SkiView/Boat/textures/T_Vinyl_Normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4ad2ba35438f41ebaa7af5839e74178d
+    m_Address: Assets/SkiView/Skier/JumpSki/Textures/T_JumpBindings_V1_Normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4bf3ff63708ec6f4f837863409cd788c
+    m_Address: Assets/SkiView/Skier/Materials/INTERNAL_ONLY_mat_Felderpuss_V3_WadeCox_atlas.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4c632253ad3f1daed8a0e9f6bf2d3bab
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_royal_palm_b.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4c846e637428ee310b3b20acf3e194c6
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_royal_palm_a.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4cfc094a1d0c141298a0376fa608f85b
+    m_Address: Assets/SkiView/Environment/Textures/forest_color.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4d8ac5e1398098c83920308df27d9e58
+    m_Address: Assets/SkiView/Shaders/SkiViewWater.shader
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4db41849da66eec3aa7cdd294d0180b7
+    m_Address: Assets/SkiView/Environment/Textures/pine_impostor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4e32906aa37a5dae59ebc16c8ad7fc88
+    m_Address: Assets/SkiView/Materials/Boat/M_Driver_Skin.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4e4a117d0f4bcf6bc85556f3b51c200f
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_sabal_palm_b.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 501025e63799ed26486af770d398bf14
+    m_Address: Assets/SkiView/Environment/Prefabs/DouglasFir.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5199a2aaa22573a2996adcf100145acc
+    m_Address: Assets/SkiView/Environment/Materials/CottonwoodImpostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 51cca45eb4af74104a51e6cd4fa0a9a5
+    m_Address: Assets/SkiView/Environment/Textures/woodsiding_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 526c2f974b3c7a17bb562033b8bffe2d
+    m_Address: Assets/SkiView/Materials/RampSteelDark.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 52ff4de3b9c93f0ad881e3c81b8c7354
+    m_Address: Assets/SkiView/Meshes/slalom_ski_67in.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 534e8159462bbd1bf8d834c9c4d0f985
+    m_Address: Assets/SkiView/Vegetation/veg_maple_a.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 53d3b3dfe5e88123f904f138c10e5e5b
+    m_Address: Assets/SkiView/Kits/gulf/textures/kit_gulf_estate_1s_albedo.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 541ab8ab8543fe7ce9e957f896f3048d
+    m_Address: Assets/SkiView/Materials/SkiFinAlu.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 547ec05885ebcda0f8fabf8353eec043
+    m_Address: Assets/SkiView/Vegetation/veg_slash_pine_a.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 54d65dbac69fe8967a500f4f5a9ecec8
+    m_Address: Assets/SkiView/Kits/Materials/kit_gulf_estate_1s_glass.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 54f57a2e0578b1b8db08672e2924c4b9
+    m_Address: Assets/SkiView/Skier/Materials/INTERNAL_ONLY_mat_eye_v2.001.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 55739d068772bc1a0bbb3f5ae11575d3
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_loblolly_pine_b.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 562c7fbe919be3e40b289946ff2ecf8a
+    m_Address: Assets/SkiView/Environment/Textures/sand_white_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 57b36e493fcfe386c87f14d945444ce6
+    m_Address: Assets/SkiView/Meshes/tree_SabalPalm_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 57d86032ce430081c9fcfdc28311a2e0
+    m_Address: Assets/SkiView/Meshes/rock_RipRapRock_B.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 58613606237356152b3f8a16d9a6a0a8
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_slash_pine_b.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 58cc80efc643186d0a1a79055ffbfaca
+    m_Address: Assets/SkiView/Vegetation/veg_sabal_palm_a.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 58f0dd5a2efcf70769bbfd8533ddc6af
+    m_Address: Assets/SkiView/Vegetation/veg_saw_palmetto_a.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5924e29850be9e6de96dca1e1ac28d55
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_western_red_cedar_a.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 593086ec07718e115b8d3261ea20472f
+    m_Address: Assets/SkiView/Meshes/rock_RipRapRock_D.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5a0212b9041e08b6b91a1eb3dd8c926c
+    m_Address: Assets/SkiView/Vegetation/veg_willow_a.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5a419fd0592621f5caba48e6762e2092
+    m_Address: Assets/SkiView/Shaders/SkiViewBackdropHaze.shader
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5a70e776b0bc4265eb84f3f4356d180a
+    m_Address: Assets/SkiView/Kits/tournament/tour_judges_tower.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5abf1527110774391a3320fbc9910f96
+    m_Address: Assets/SkiView/Environment/Textures/palm_impostor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5adb887be5167a994938862d8cb96874
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_western_red_cedar_a.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5b2a95b8b4c4c2eb99db68ef33da19d3
+    m_Address: Assets/SkiView/Skier/SkiV3/Textures/green_albedo.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5bb11fc64402e86ecbada7ccce5ec5dd
+    m_Address: Assets/SkiView/Boat/textures/T_Trim_MetallicSmoothness.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5bcff94578d99783aac00ae030247468
+    m_Address: Assets/SkiView/Vegetation/veg_willow_b.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5c0541d11df5141f48f380b5989a89ec
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_oak_a.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5d08cd248208c8149844c6c09afbf125
+    m_Address: Assets/SkiView/Environment/Materials/ShoreMud.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5d250d366aa54916fb2f84c0e0758d25
+    m_Address: Assets/SkiView/Vegetation/veg_longleaf_pine_a.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5ee6589756953131bad3d48c791491d9
+    m_Address: Assets/SkiView/Environment/Materials/SlashPineImpostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5f249a8a5349bce739e875f9b3a7adac
+    m_Address: Assets/SkiView/Environment/Prefabs/Blackberry.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5f94bba391740e7fc96d93ce7f1acf3a
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_willow_a.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6060862fd663f3105b8fc7f1685edeed
+    m_Address: Assets/SkiView/Meshes/tree_SlashPine_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 607dd3798233db928af3127016e830c2
+    m_Address: Assets/SkiView/ThirdParty/Mixamo/Remy@Breathing Idle.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 61815e21ffc7952a2aae2b92981f818b
+    m_Address: Assets/SkiView/Environment/Textures/gravel_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6181c3ba557461d63a63b7c58ad659e7
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_royal_palm_a.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 623d9f95ad5516227871ea911f85ed5c
+    m_Address: Assets/SkiView/Meshes/fp_rig19_2.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 655844fd9b2f48cbbb8389fb05c5a09e
+    m_Address: Assets/SkiView/Materials/Boat/M_Liner.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6582eff261d809d1d8e7db9067c67e09
+    m_Address: Assets/SkiView/Boat/textures/T_Vinyl_MetallicSmoothness.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 67e41f7fd9a7f1d4197d94a862af16b7
+    m_Address: Assets/SkiView/Meshes/skier_merge_0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 689deb15f55ec65cf903098cec3aa765
+    m_Address: Assets/SkiView/Materials/Boat/M_Glass.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 68b7cd3571fa89543b1960bce1c4a061
+    m_Address: Assets/SkiView/Environment/Prefabs/RipRapRock_B.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 68c9b100ee4d5bfa4bfb964ab1a85f61
+    m_Address: Assets/SkiView/Skier/INTERNAL_ONLY_Felderpuss_V3_WadeCox@SlalomStance.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 68cf597f1339c10a6b8402b3e67eaa17
+    m_Address: Assets/SkiView/Environment/Materials/CanopyImpostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 69404a0e40c1b8855b9aca8ba254df3a
+    m_Address: Assets/SkiView/Meshes/fp_rig19_0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 69988a43344bdecdd9012d7cd28c119e
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_longleaf_pine_b.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 69c1f799e772cb6438f56c23efccb782
+    m_Address: Packages/com.unity.render-pipelines.universal/Shaders/Terrain/TerrainLit.shader
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6a7bdc2075a72b4e7bf0e71a397a9b70
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_loblolly_pine_b.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6aa3e28c36b5d21d1ab877e7b62b0257
+    m_Address: Assets/SkiView/Environment/Textures/fern_frond.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6b17026576c40bfc9a4ab5dbd5cb2c8e
+    m_Address: Assets/SkiView/Ramp/Textures/T_Ramp_V1_Surface_BaseColor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6b54618eb801e2390aadeb727755cb86
+    m_Address: Assets/SkiView/Materials/FP_HandlePlug19.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6bbb5f941b227404ba8ea7c07b43112f
+    m_Address: Assets/SkiView/Environment/Textures/canopy_impostor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6c1fa5638b72f35e4b1f90208db603c9
+    m_Address: Assets/SkiView/Materials/SkiTopSheet.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6cafade1f9bcad0529b4a92de34f4196
+    m_Address: Assets/SkiView/Environment/Materials/SwordFern.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6d84e736306b4067e969bfae2b618d74
+    m_Address: Assets/SkiView/Meshes/plant_SeaOats.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6df11f18c3ed8f0288973eab149e7efe
+    m_Address: Assets/SkiView/Meshes/tree_SlashPine_B_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6eeb9bf3844ba4abd856a2a478f171b3
+    m_Address: Assets/SkiView/Materials/RampDeckBoards.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6f2c30883534e229cb4f374d7bce207f
+    m_Address: Assets/SkiView/Kits/gulf/textures/kit_gulf_estate_1s_impostor.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6f4af3a2a670f882fab3cfdc31e0d7b8
+    m_Address: Assets/SkiView/Meshes/fp_rig19_5.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 701067ccb772ab4968d48662e09cd7c7
+    m_Address: Assets/SkiView/Environment/Textures/drygrass_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 70e161f6a415b12138c76a6f911f4534
+    m_Address: Assets/SkiView/Environment/Textures/shore_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 711141f7b8daff3ad9bdf4b352c679de
+    m_Address: Assets/SkiView/Skier/Materials/INTERNAL_ONLY_mat_eye_v2.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7206dbe3647efdf30a3d67c9463d609f
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_willow_b.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7221280029a118af0a3429313f887754
+    m_Address: Assets/SkiView/Materials/Spray_drop.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 722ad1978dfc0194f82033d034709a4c
+    m_Address: Assets/SkiView/Environment/Prefabs/TallGrass.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 726a3b30f8e8c85348cf8f7c8e53b150
+    m_Address: Assets/SkiView/Kits/Materials/kit_tour_judges_tower_impostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 730347616ae611dbe8ab90a5431f5a68
+    m_Address: Assets/SkiView/Environment/Materials/RoyalCrownshaft.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 73426b6c5c7cf5b418b25ed26475d9e0
+    m_Address: Assets/SkiView/Kits/tournament/tour_start_dock.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 73e88993afd942630a2fcf0bab163a66
+    m_Address: Assets/SkiView/Materials/BuoyGuide.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 76397964bddd161659c2bc78bdcfd41d
+    m_Address: Assets/SkiView/Generated/spray_sheet.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 765c65756e242fbfbafd72b2d6cb7601
+    m_Address: Assets/SkiView/Vegetation/textures/veg_leaf_atlas.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 76749a54f46c0ec9fba9de2c6b57da72
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_sabal_palm_b.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 768135d933a704e8d99f9ab6e1224975
+    m_Address: Assets/SkiView/Environment/Textures/cedar_impostor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7693f2cc6ddb8cc098de4291b60cf10a
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_slash_pine_a.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 76b45db1b40fcf31cb5348caa1adc297
+    m_Address: Assets/SkiView/Environment/Textures/reed_blades.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 770fbec65d3b924e48ebbff6e2205d16
+    m_Address: Assets/SkiView/Generated/ramp_apron_albedo.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7756141b6dd1f541e8e398df70eaeefa
+    m_Address: Assets/SkiView/Environment/Textures/fan_leaf.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7786140ab6359b917b4d0adff38b0503
+    m_Address: Assets/SkiView/Meshes/tree_RoyalPalm_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 780e4f92222baabe2abf92af5237af21
+    m_Address: Assets/SkiView/Environment/Materials/MapleImpostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7814678688703312cbbc295119e32e49
+    m_Address: Assets/SkiView/Kits/tournament/textures/kit_tour_start_dock_normal.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 78e7a3261545ebbd2b01f5459a2f31c2
+    m_Address: Assets/SkiView/Environment/Prefabs/RipRapRock_D.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7a2c986d03db3c66792b3c9a39890ac1
+    m_Address: Assets/SkiView/Environment/Sky/sunset_bg_cube.hdr
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7a9799860844108fb8ac253b7c7307eb
+    m_Address: Assets/SkiView/Environment/Materials/DockPlanks.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7ba43d9fb6899d581baa6a318465b9a5
+    m_Address: Assets/SkiView/Kits/southeast-midwest/textures/kit_se_dock_lift_white_albedo.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7c13ff436f52c64658fa07cfdaef15df
+    m_Address: Assets/SkiView/Meshes/boat_SkiBoat_LOD0_pylonsplit.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7c21688bfd1290306a8228398a6049af
+    m_Address: Assets/SkiView/Materials/HandleGrip.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7c488430424f0d0fb9c490767813b170
+    m_Address: Assets/SkiView/Environment/Prefabs/Understory.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7c9cfdff146cb8c0eb59e054e15796c0
+    m_Address: Assets/SkiView/Generated/T_Livery_SWLM.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7cdf779b37ce0495ba64d691531f1d10
+    m_Address: Assets/SkiView/Vegetation/veg_oak_a.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7fb2c75e6997cf40291c672d1512b497
+    m_Address: Assets/SkiView/Boat/textures/T_Chrome_BaseColor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7fdbd90deee13d3f9abc3052cb73d344
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_longleaf_pine_a.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8029954883fe0dce9a1447f16079c71a
+    m_Address: Assets/SkiView/Meshes/shrub_Understory_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 817a38f1890da73c8acdc812c06709a4
+    m_Address: Assets/SkiView/Environment/Textures/shore_strip_grass.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 822eef483db550cf99e1c5260140fb0f
+    m_Address: Assets/SkiView/Generated/spray_drop.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 833bd5ac535e352be9181c765b3514c1
+    m_Address: Assets/SkiView/Kits/southeast-midwest/se_shed_white.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 84734a55d02545455b7fa2824d2b5ef4
+    m_Address: Assets/SkiView/Vegetation/veg_live_oak_a.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 84760ed1c5728343e8e679224cfa8291
+    m_Address: Assets/SkiView/Materials/RampSurfaceWet.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 84a9f371ee5f7a394b72e312f75e05cb
+    m_Address: Assets/SkiView/Vegetation/textures/veg_bark_atlas_b.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8558f76950eb7599a896d065413ea480
+    m_Address: Assets/SkiView/Environment/Materials/SeaOats.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 85685af8d1b4b7c5793f7c27991ca8fc
+    m_Address: Assets/SkiView/Ramp/Textures/T_Ramp_V1_Frame_BaseColor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 85d2c36774b74b385ae13a857918e0b2
+    m_Address: Assets/SkiView/Kits/mediterranean/med_villa_tower.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 85e92a5458dd0e7bfa0579ef7c23009f
+    m_Address: Assets/SkiView/Kits/Materials/kit_med_villa_tower_impostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 865ea4bec985013d8bad6947ca609b9c
+    m_Address: Assets/SkiView/Skier/Materials/Eyelashmat.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8677f7667d881e582b7f9ee5c3dc7b19
+    m_Address: Assets/SkiView/Materials/Boat/M_Gelcoat_Band.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 87f15fb3caaaf9386af161820af9f4c0
+    m_Address: Assets/SkiView/Boat/textures/T_Teak_BaseColor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8872a6f447e1907af8959dd3d1ede3be
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_saw_palmetto_b.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 88dfa61d6eae503e89fecf10ae59e211
+    m_Address: Assets/SkiView/Environment/Materials/BlackberryLeaves.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 899f6e4a419486bdea087b5c1e8f4531
+    m_Address: Assets/SkiView/Boat/textures/T_Glass_MetallicSmoothness.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 89d2e765a869c7cdb8328fc70e8c3aad
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_sabal_palm_a.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8a3c1f3805b808b4e849a7ae9525b0e9
+    m_Address: Assets/SkiView/Meshes/fp_rig19_10.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8aa61741344ee75c0a9c0729cd03540b
+    m_Address: Assets/SkiView/Boat/textures/T_Vinyl_BaseColor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8b6c263cdf933f1bd956074b2465ba67
+    m_Address: Assets/SkiView/Kits/southeast-midwest/textures/kit_se_shed_white_glass.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8b8808cc6e3d55bfa8bfd6190ea9fe56
+    m_Address: Assets/SkiView/Meshes/fp_rig19_7.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8bbd9ce2cc8281701a8848762e79c946
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_oak_a.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8c1c6a1bef526bcf78e3ef4444e844dd
+    m_Address: Assets/SkiView/Materials/Spray_foam.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8c459a58fe36288a5a8d67d4d4e524f2
+    m_Address: Assets/SkiView/Environment/Textures/lawn_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8d5b1ec4b4662f2699aa6e633f5e30c3
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_longleaf_pine_a.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8e1f1a62b7aa9b926bbbfeb8b5843ec9
+    m_Address: Assets/SkiView/Meshes/fp_rig19_15.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8f190085367279b75bd9439b8dce464e
+    m_Address: Assets/SkiView/Kits/Materials/kit_se_shed_white_body.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 902c7921877a31ccc9b3e02038c72e38
+    m_Address: Assets/SkiView/Meshes/tree_SlashPine_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 904adcbf2b15683e29ed20d1d6d5c780
+    m_Address: Assets/SkiView/Kits/Materials/kit_med_villa_tower_glass.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 908bdda555a1ac22ca7a744f4e1f7eea
+    m_Address: Assets/SkiView/Kits/mediterranean/textures/kit_med_villa_tower_impostor.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 90c39d8d404faa479b5163fb7f05c74a
+    m_Address: Assets/SkiView/Kits/southeast-midwest/se_dock_lift_white.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 91dc2b906f73b0995b91bb2eddf8630c
+    m_Address: Assets/SkiView/Meshes/fp_rig19_13.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 91f85c88938984afbad1c48b0ed81a4b
+    m_Address: Assets/SkiView/Meshes/tree_RoyalPalm_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9290923a060fd3b8790365cb99873609
+    m_Address: Assets/SkiView/Kits/southeast-midwest/textures/kit_se_shed_white_impostor.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 932d1b292268132daa06039c8850e8fb
+    m_Address: Assets/SkiView/Boat/textures/T_Flat_Normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 933532a4fcc9baf4fa0491de14d08ed7
+    m_Address: Packages/com.unity.render-pipelines.universal/Shaders/Lit.shader
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 95351995d2c6281629c52671d645ab01
+    m_Address: Assets/SkiView/Kits/southeast-midwest/textures/kit_se_shed_white_albedo.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9586b80c466c156069869c19eb8cf2ba
+    m_Address: Assets/SkiView/Environment/Materials/SabalTrunk.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 96139c6001eece352b34d4cebc22f303
+    m_Address: Assets/SkiView/Materials/LiftAluminium.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 96c75eaf84d6f6cd3ad839c99a13a4c3
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_saw_palmetto_a.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9704280ed9ad4ab5cb698e0aa54056d9
+    m_Address: Assets/SkiView/Environment/Textures/shore_color.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 98c4c75100e873c6497705a8fdc1172a
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_loblolly_pine_a.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 99daea38761abf56babb6eb64a977d6b
+    m_Address: Assets/SkiView/Skier/SkiV3/Materials/SkiV3_mat_ski_v3_top_green.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 99ffa8d950811481d8644d7215a6ec18
+    m_Address: Assets/SkiView/Kits/Materials/kit_tour_judges_tower_body.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9b13ac12df24baf16a7142b675e67e02
+    m_Address: Assets/SkiView/Kits/tournament/textures/kit_tour_judges_tower_impostor.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9bd32fb83da7edfa9a588ad8ae02124c
+    m_Address: Assets/SkiView/Environment/Prefabs/RipRapRock_A.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9c10ef707ef54fe0388c98c41018a396
+    m_Address: Assets/SkiView/Materials/Boat/M_Vinyl.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9c7f9fecc1cd4178bac6592d6b02172f
+    m_Address: Assets/SkiView/Meshes/plant_ReedClump.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9c8a2f586fc76f62aa76296e28fb04c8
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_longleaf_pine_b.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9d431810ac72f50bba40a6120c8fa5a4
+    m_Address: Assets/SkiView/Materials/RampAluminium.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9ed6bffbe4a5152f7952fe7e5ef4e00e
+    m_Address: Assets/SkiView/Generated/ramp_waterfilm.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9fc3bf7fb6643fb45a75e556cdc8b4ee
+    m_Address: Assets/SkiView/Environment/Materials/PalmFrond.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a0028d874022898b3adb7cebd8fa2d4a
+    m_Address: Assets/SkiView/Skier/JumpSki/Textures/T_JumpBindings_V1_BaseColor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a2aaba1e8476fdab9b9e5805db03556c
+    m_Address: Assets/SkiView/Kits/Materials/kit_tour_start_dock_impostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a2e98eb680a4c3741973333b91d01c4c
+    m_Address: Assets/SkiView/Environment/Textures/sand_white_color.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a32731cfe3fb82e69af3617b809b988d
+    m_Address: Assets/SkiView/Skier/SkiV3/Materials/SkiV3_mat_ski_v3_boot_shell.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a35113bda52e234f798b6c9b6530d818
+    m_Address: Assets/SkiView/Environment/Prefabs/ReedClump.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a36505493b9bbc075a79aa1bf112e539
+    m_Address: Assets/SkiView/Environment/Textures/lawn_color.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a4512f0d7a7e0fc1e91b4542e9559b5b
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_loblolly_pine_a_mobile.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a4d9b0be21912ee4d9921ff81aafa153
+    m_Address: Assets/SkiView/Meshes/jump_ramp_waterline_v14.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a5822b3a89aacedffb0b397b0814ef87
+    m_Address: Assets/SkiView/Boat/textures/T_Gelcoat_BaseColor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a58ae9a117184fcdc8f82c7e48962454
+    m_Address: Assets/SkiView/Materials/RampApronGelcoat.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a5df4a483caf5fff0acb21b41d1de635
+    m_Address: Assets/SkiView/Environment/Sky/sunset_reflection_cube.hdr
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a604ba9fb122b5e14b3be3c6db6adef1
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_maple_a.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a639cabe84312caeca6edfe1dd3271e3
+    m_Address: Assets/SkiView/Kits/Materials/kit_med_villa_tower_body.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a643f9a472e46ef88a07818e181aec35
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_willow_b.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a71ef73b9dcddf073b30d6b37f34d9ba
+    m_Address: Assets/SkiView/Vegetation/veg_longleaf_pine_b.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a81cea39a06910816ad482d4515fa82e
+    m_Address: Assets/SkiView/Ramp/Textures/T_Ramp_V1_Apron_BaseColor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a8aadb5041797cacd83652c54c6491d3
+    m_Address: Assets/SkiView/Environment/Textures/maple_leaves.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a8b2945e082eddaa6a28346da06a6fde
+    m_Address: Assets/SkiView/Environment/Textures/pine_tuft.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ac299560ac792c5daa6c1b2aca2e933c
+    m_Address: Assets/SkiView/Ramp/Textures/T_Ramp_V1_Surface_MetallicSmoothness.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ac327f26945f6c12f8dd8cbb49b5b619
+    m_Address: Assets/SkiView/Skier/JumpSki/Textures/T_JumpFin_V1_BaseColor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ac65fd5a1b3967ab0a31c5f478d152af
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_loblolly_pine_a.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ad2ba2107188950fc8e9879c4f1caaa6
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_leaf.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ae8a6d4e30a545407a17831c3b6c6914
+    m_Address: Assets/SkiView/Skier/INTERNAL_ONLY_Felderpuss_V3_WadeCox@SlalomStance_LeanRight.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: af6470fc23af2d50590a52609d15905b
+    m_Address: Assets/SkiView/Kits/tournament/textures/kit_tour_judges_tower_albedo.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: af82183144f3aa5aea4f4760c42b0b4e
+    m_Address: Assets/SkiView/Environment/Materials/FirSpray.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: afadf9a1f94d330aaba00aeb782a559d
+    m_Address: Assets/SkiView/Environment/Prefabs/BigleafMaple.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: afda094265a640da9bc64373a901e19a
+    m_Address: Assets/SkiView/Environment/Materials/MapleLeaves.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b04d0d05648c92512a679fe5c7e37754
+    m_Address: Assets/SkiView/Kits/tournament/textures/kit_tour_judges_tower_normal.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b070fc8cc38e82d388c0f3ebd7b6a24f
+    m_Address: Assets/SkiView/Environment/Textures/alder_impostor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b1312a02461f4462ab9a9f694bb48e1d
+    m_Address: Assets/SkiView/Environment/Materials/UnderstoryConifer.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b1bb350867afd87b68c64a48415c69c8
+    m_Address: Assets/SkiView/Environment/Prefabs/SwordFern.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b282318cac7e99c30be1f31b74efcdea
+    m_Address: Assets/SkiView/Environment/Textures/tallgrass.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b2c4727cbc7dd8a2ba210e4824e84e4d
+    m_Address: Assets/SkiView/Meshes/tree_CanopyFill_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b2e2e8254b8809bfc920929452db4208
+    m_Address: Assets/SkiView/Generated/ramp_apron_mask.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b36c26b936216d7f39cfd0e39d90a1d1
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_live_oak_a.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b41f60422458cd35fa6df42f74387b49
+    m_Address: Assets/SkiView/Materials/BootLiner.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b48ccb649a795eee4bcced27d94393d9
+    m_Address: Assets/SkiView/Meshes/tree_WesternRedCedar_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b4aabc1b9eb759d09a5c8708d6e617d7
+    m_Address: Assets/SkiView/Materials/Boat/M_Chrome.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b4ea734344bf2b96db2213f113993043
+    m_Address: Assets/SkiView/Environment/Materials/UnderstoryLeaves.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b68fbbf706ebad27da6dc8b69a37d132
+    m_Address: Assets/SkiView/Meshes/tree_DouglasFir_B_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b808f4074487f7179900d0f975f0d568
+    m_Address: Assets/SkiView/Environment/Prefabs/SlashPine_B.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b8801d35232b62858bab950b597c65d5
+    m_Address: Assets/SkiView/Environment/Materials/SawPalmettoFan.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b8a2e2011e5d4da9184f2b21ad64ed45
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_saw_palmetto_a.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b92a73a87c6cf50fa89cbb4bd813dfd9
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_loblolly_pine_a_mobile.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b95c5c0c41320969bace40ea6d94fe89
+    m_Address: Assets/SkiView/Ramp/Textures/T_Ramp_V1_Apron_MetallicSmoothness.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b9675118ccdbfcb418204a3b565dfcf1
+    m_Address: Assets/SkiView/Skier/INTERNAL_ONLY_T_Felderpuss_V2_WadeCox_Hair_Diffuse.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ba63b5e8a4829b946a8e656da8dc2980
+    m_Address: Assets/SkiView/Environment/Prefabs/BlackCottonwood.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ba891025a31ed1fd59a885bf273ca2d0
+    m_Address: Assets/SkiView/Environment/Textures/cedar_spray.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: baaf26b74d1f2ebd78a8936e76013070
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_longleaf_pine_b.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bc2f547fbcd71195e95dcc1843880816
+    m_Address: Assets/SkiView/Meshes/fp_rig19_6.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bc5fc3d990da908319e175fb7e549642
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_willow_b.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bc97915f165ac0e3ca38a2b6a5bf52e2
+    m_Address: Assets/SkiView/Environment/Textures/hills_forest.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bc9b987d2aa01a656a003e48146b8b79
+    m_Address: Assets/SkiView/Kits/Materials/kit_se_shed_white_impostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bca0d95fcf9eefdb6b378beda3c99482
+    m_Address: Assets/SkiView/Materials/Boat/M_Gelcoat_Accent.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bcec8d60fdb47257292174824edf62f1
+    m_Address: Assets/SkiView/Environment/Prefabs/DouglasFir_B.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bdec03dc53e018b89ae33bda20ee5fe3
+    m_Address: Assets/SkiView/Environment/Materials/ShoreSandWet.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bfcdc19b8687baaccbf101479df6121f
+    m_Address: Assets/SkiView/Meshes/rock_RipRapRock_C.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bfdd1de4f4663764dbb1056afd0af943
+    m_Address: Assets/SkiView/Materials/RampPVC.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bfe3bf1f057b77892bffebd8cbeb710a
+    m_Address: Assets/SkiView/Vegetation/textures/veg_leaf_atlas_b.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c038875b53a34304f9a1f408cbcde81a
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_loblolly_pine_b.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c0e718e5031f59b2583c33c291dfb124
+    m_Address: Assets/SkiView/Vegetation/textures/veg_bark_atlas.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c0ebe7cea35cd14208d778b198198a1f
+    m_Address: Assets/SkiView/Materials/RampJackRod.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c0f8e090997bf995ab27ff0a6080f9c8
+    m_Address: Assets/SkiView/Environment/Sky/sky_reflection_cube.hdr
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c122323643360f76c9bfe2aab2e230f9
+    m_Address: Assets/SkiView/Environment/Textures/woodsiding_color.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c15b76924af6bcb4d8d779adbc04bb31
+    m_Address: Assets/SkiView/Environment/Prefabs/RoyalPalm.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c167cff1aafaa08dfbe64e425fec32f5
+    m_Address: Assets/SkiView/Materials/JumpHelmet.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c1e9c6d7ee86bba9ab055aef657a4ced
+    m_Address: Assets/SkiView/Boat/textures/T_Chrome_MetallicSmoothness.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c2384f8aa9185705aa28038e089caee8
+    m_Address: Assets/SkiView/ThirdParty/Mixamo/Remy@Pull Heavy Object Start.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c2ad31dc497ed7e7a8743e3ddeb53225
+    m_Address: Assets/SkiView/Materials/Boat/M_Driver_Clothes.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c35073c12b58aef7994f30ffe6cb63fc
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_slash_pine_a.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c36b6667dc6d4876b8634ad2f7df4f67
+    m_Address: Assets/SkiView/Materials/Rope.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c37eeac3bee091aa5829a3d870930010
+    m_Address: Assets/SkiView/Skier/Materials/INTERNAL_ONLY_mat_hair_v2.001.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c39559e2c1014c445a5329c5f61d4e8f
+    m_Address: Assets/SkiView/Environment/Prefabs/SlashPine.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c4d7790cee987b6f5a843e76a7571fa5
+    m_Address: Assets/SkiView/Skier/JumpSki/Textures/T_JumpSki_V1_BaseColor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c5250b11bdeb5bf0689f869e92c209cf
+    m_Address: Assets/SkiView/Meshes/boat_SkiBoat_LOD1_pylonsplit.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c538c8e5a2ce05d1daa89add4aa0db39
+    m_Address: Assets/SkiView/Skier/JumpSki/Textures/T_JumpSki_V1_MetallicSmoothness.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c5c08d2c391a36e718dc320429fde5b9
+    m_Address: Assets/SkiView/Environment/Prefabs/WesternRedCedar_B.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c6b3612b988dafabb94170ced6e58c76
+    m_Address: Assets/SkiView/Kits/gulf/gulf_estate_1s.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c73ea0436d0d96b93abf218866f51500
+    m_Address: Assets/SkiView/Kits/mediterranean/textures/kit_med_villa_tower_albedo.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c7428f3af9dc25cdbaf086dd6bc40087
+    m_Address: Assets/SkiView/Generated/ramp_surface_albedo.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c8119e52a7121623ea6b56de3151517d
+    m_Address: Assets/SkiView/Materials/Boat/M_Gelcoat_Deck.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c843b4887ad54dbf5b9cb58104f713d9
+    m_Address: Assets/SkiView/Meshes/jump_ramp_v14.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c8ba2fb7a6e56a87a9f0546eeddab7ba
+    m_Address: Assets/SkiView/Materials/RampHose.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c8bf84fb4663d71b995c57b68d3fcc84
+    m_Address: Assets/SkiView/Kits/Materials/kit_tour_judges_tower_glass.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c9f56507ccf216758964fe61264556fe
+    m_Address: Assets/SkiView/Environment/Textures/bark_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: caddd644514be7e3e92a5687c2f53bfd
+    m_Address: Assets/SkiView/Environment/Textures/alder_leaves.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cb12dd3586dc933299d47acb1e121c9e
+    m_Address: Assets/SkiView/Skier/JumpSki/Textures/T_JumpBindings_V1_MetallicSmoothness.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cb6c0b351c9e4936489c5ac51f0afc70
+    m_Address: Assets/SkiView/Environment/Textures/dock_color.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cb7a98e46c3abf98b90b5d5c8fa148d5
+    m_Address: Assets/SkiView/Materials/FP_Glove19.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cb95b72a0d804749790dcff53c6c5d1f
+    m_Address: Assets/SkiView/Ramp/Textures/T_Ramp_V1_Frame_MetallicSmoothness.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cbecbbc7101d943c787cb46def468042
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_saw_palmetto_a.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ccafbbc6447f29e7db15ef5a73c6682a
+    m_Address: Assets/SkiView/Materials/FP_Skin19.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ccc51f344cb2d1a418364859f8a04140
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_bark_b.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cd44087b11d8e093da68cac9ec555b00
+    m_Address: Assets/SkiView/Vegetation/veg_saw_palmetto_b.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ce7d169d97f8f0069a7b7f5f52c649bb
+    m_Address: Assets/SkiView/Meshes/skier_merge_5.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cede119a8557ab330ad67d2a4bbb449d
+    m_Address: Assets/SkiView/Skier/JumpSki/Textures/T_JumpSki_V1_Normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cee5147c2f2acf687941e0257d7fb09a
+    m_Address: Assets/SkiView/Boat/textures/T_Dash_BaseColor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cf57800d89e0d9c3c99c8ce154620f5b
+    m_Address: Assets/SkiView/Skier/INTERNAL_ONLY_Felderpuss_V3_WadeCox.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cf7db19878c7d1dbb9f78d40dd2446b5
+    m_Address: Assets/SkiView/Ramp/Textures/T_Ramp_V1_Frame_Normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cfc67bd86d4caeb14a62dacd21e2b9b4
+    m_Address: Assets/SkiView/Environment/Textures/stucco_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: cfca8ccdf8ca4f40fa100d4706158f7d
+    m_Address: Assets/SkiView/Meshes/tree_RedAlder_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d19f24c08807e9cf09e981f5d3f5b8e4
+    m_Address: Assets/SkiView/Meshes/fp_rig19_4.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d364c3a488d9c12dcb9d028f9f578527
+    m_Address: Assets/SkiView/Boat/textures/T_Gelcoat_MetallicSmoothness.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d3cbaf3d0f8aa0cc381c7f2da2865a84
+    m_Address: Assets/SkiView/Environment/Materials/Bark.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d3e04d4347e3be95da41bff53784a78d
+    m_Address: Assets/SkiView/Meshes/boat_SkiBoat_Phone_pylonsplit.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d3ff3d768f5538d52b753c8b221cd1bd
+    m_Address: Assets/SkiView/Generated/ramp_surface_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d4598cad294805468bfee8ba01f632be
+    m_Address: Assets/SkiView/Environment/Materials/RipRap.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d4ea8e6770ba77166b27f98ea073cda0
+    m_Address: Assets/SkiView/Ramp/Textures/T_Ramp_V1_Apron_Normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d5b12ff48cf0a25db93ff78260b176b7
+    m_Address: Assets/SkiView/Environment/Textures/fir_spray.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d7220c4cba9d9967b9a3b16f7180fa35
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_sabal_palm_b.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d740d9deba13f3a4a9351ca4254eb672
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_saw_palmetto_b.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d75064b0936d20d7583b3cbfc8a84a9b
+    m_Address: Assets/SkiView/Materials/Spray_sheet.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d7e172e3ffc0ee681927b3c8d7342957
+    m_Address: Assets/SkiView/Environment/Materials/CedarSpray.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d87532389ff5e2553992607d728219fd
+    m_Address: Assets/SkiView/Generated/spray_mist.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d8a919bff232444548d494ff5e166f38
+    m_Address: Assets/SkiView/Meshes/fp_rig19_3.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d965a314f5df8cfcb8a1082473eebc67
+    m_Address: Assets/SkiView/Skier/Materials/INTERNAL_ONLY_mat_hair_v2.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: d975f6dc21fd6b843b4c884db5a6a378
+    m_Address: Assets/SkiView/Environment/Prefabs/RedAlder.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: da5b160a34ff6800287b0a11ab790986
+    m_Address: Assets/SkiView/Environment/Prefabs/SawPalmetto.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: dac69c28d838f321aab62e54f5ee3a3f
+    m_Address: Assets/SkiView/Environment/Materials/SlashPineBark.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: db0caf69afbb3ae8d9ed0fc68d4108be
+    m_Address: Assets/SkiView/Environment/Materials/CottonwoodLeaves.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: db98465f1a06ac108a8eea3279b9458f
+    m_Address: Assets/SkiView/Materials/Spray_mist.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: dc5aa3d3724ab708fb932bfff41421bf
+    m_Address: Assets/SkiView/Meshes/skier_merge_3.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: dcad162f607bbfbc5b877d11e0212c3c
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_oak_a.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: de44effb7d36b4025aaf196e8a17fc79
+    m_Address: Assets/SkiView/Skier/INTERNAL_ONLY_T_Felderpuss_V3_WadeCox_BaseColor_4k.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: df17fa19b4a1492aeb5ee9a929afa198
+    m_Address: Assets/SkiView/Vegetation/veg_loblolly_pine_b.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: df3d13f85d85379ae914a8642767a5b5
+    m_Address: Assets/SkiView/Materials/RampPumpBody.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: dfb48eb701a023f19a759e21d1245c99
+    m_Address: Assets/SkiView/Kits/southeast-midwest/textures/kit_se_shed_white_normal.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e013e451c78112c5498f1526da0731c3
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_slash_pine_b.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e08cdff26a9c7bab292bfcdd51c36d34
+    m_Address: Assets/SkiView/Kits/Materials/kit_gulf_estate_1s_body.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e091648118c9e47849f167b3cffb60d1
+    m_Address: Assets/SkiView/Shaders/SkiViewVegWind.shader
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e0c59ba13f45dc0569c154dc4fc9a57b
+    m_Address: Assets/SkiView/Generated/ramp_surface_mask.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e176c73b723a5c093abd72782bf36d8f
+    m_Address: Assets/SkiView/Meshes/plant_Blackberry.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e22b0d226bd61d19593aec1dac48ff9a
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_western_red_cedar_a.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e2ea6598ba25314c28145047f9b2c543
+    m_Address: Assets/SkiView/Meshes/tree_DouglasFir_B_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e3118d6d3cb591938be097cd40e275f8
+    m_Address: Assets/SkiView/Vegetation/veg_slash_pine_b.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e314bbb279ecb544d89ee2a97357b342
+    m_Address: Assets/SkiView/Shaders/SkiViewRampWaterFilm.shader
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e31567acb5ad9ecf98b9c26241c1287a
+    m_Address: Assets/SkiView/Meshes/boat_SkiBoat_LOD2_pylonsplit.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e3ceb9b7219b907af92b8ac6c8270ecd
+    m_Address: Assets/SkiView/Skier/SkiV3/Textures/green_metallic_smoothness.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e3e8adaf87b34a18cb41bbefa2cc1020
+    m_Address: Assets/SkiView/Meshes/hiwrap_collar.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e4adc3dcfc609c3fa92eab759b03e9e8
+    m_Address: Assets/SkiView/Skier/JumpSki/Materials/JumpSki_M_JumpBindings_V1.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e5a38f65eefa39279908507ebe9cbc38
+    m_Address: Assets/SkiView/Meshes/plant_SawPalmetto.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e786ae1ce714b31b2b8b8872b1436008
+    m_Address: Assets/SkiView/Environment/Materials/PalmImpostor.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e7ac466c337f91c7c85c9176858d5903
+    m_Address: Assets/SkiView/Meshes/tree_SlashPine_B_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e87fc8c4febba68b39d8758f13e1a14f
+    m_Address: Assets/SkiView/Meshes/skier_merge_2.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e8f42df921c5661e7b081197a22a3d90
+    m_Address: Assets/SkiView/Boat/textures/T_Teak_MetallicSmoothness.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e96907c1e8effe49ebb80ab26c539d74
+    m_Address: Assets/SkiView/Kits/tournament/textures/kit_tour_start_dock_albedo.jpg
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ea5fbe6fbd4b43886be1cb6cfc0072d6
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_maple_a.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ea7e3e4906bcd5ef28763ae6e3f3da81
+    m_Address: Assets/SkiView/Meshes/tree_BlackCottonwood_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ecaa48273b2050c6381fa6087271a44e
+    m_Address: Assets/SkiView/Meshes/tree_WesternRedCedar_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: edcc62aa8d86867029a95ed7b28b6a94
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_bark.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ee93bd156ce5f828a84a9d5768ad8602
+    m_Address: Assets/SkiView/ThirdParty/Mixamo/Remy@Falling Forward Death.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ef2f69b8dce727f94aaa352e7cc81bab
+    m_Address: Assets/SkiView/Meshes/shrub_Understory_B_lod1.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ef3cc54ff25bb2138b650e10026fe650
+    m_Address: Assets/SkiView/Environment/Materials/SlashPineNeedles.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ef7eb14e743a8239ab8d4efdace11184
+    m_Address: Assets/SkiView/Materials/Boat/M_Teak.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f16f5839955043afb93bba5e40ef5ccd
+    m_Address: Assets/SkiView/Environment/Textures/metalrib_normal.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f1e639e52da793be698224fa3e32936e
+    m_Address: Assets/SkiView/Vegetation/Prefabs/veg_slash_pine_a.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f311b4a1fc4e53802884ed189e09cd51
+    m_Address: Assets/SkiView/Meshes/tree_RedAlder_lod0.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f327875d1713dcf448bd242a6309f2d5
+    m_Address: Assets/SkiView/Shaders/SkiViewSprayParticle.shader
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f69fd4dfea160064c97e42eedfb0081a
+    m_Address: Assets/SkiView/Environment/Textures/seaoats.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f77430e9648392bfc8f8c7462bdac704
+    m_Address: Assets/SkiView/Vegetation/textures/imp_veg_sabal_palm_a.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f7fd882e5f34e872492880cf4850a6c8
+    m_Address: Assets/SkiView/Environment/Materials/AlderLeaves.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f8f256710e846e673b5a99f71b0a4f73
+    m_Address: Assets/SkiView/Ramp/Materials/RampV1_M_Ramp_V1_Frame.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f9509b40d0bd6a4a3b5d469343666dd4
+    m_Address: Assets/SkiView/Materials/BuoyGate.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f9d54aa705a14baf388e845b234a2a3f
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_live_oak_a.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fa1d763a0ebc6fdb5a0472d5eaee4978
+    m_Address: Assets/SkiView/Materials/FP_GloveAccent19.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fb07ce8af1030c32482a1654a20cb4f9
+    m_Address: Assets/SkiView/Vegetation/Materials/veg_imp_veg_loblolly_pine_a_mobile.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fb18f70043ffbb548be8bd124f60c73b
+    m_Address: Assets/SkiView/Environment/Textures/fir_impostor.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fb628d2ddea18599f99cbb6adaf5e15e
+    m_Address: Assets/SkiView/Skier/Materials/INTERNAL_ONLY_mat_Felderpuss_V3_WadeCox_atlas.001.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fba43bbd924af63b695da733c094c259
+    m_Address: Assets/SkiView/Kits/Materials/kit_tour_start_dock_body.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fcc87ec7be7158f1f95a1f34f0f4175b
+    m_Address: Assets/SkiView/Environment/Water/foam.png
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fdf4b053fac80d0db81f0ad9aa451f27
+    m_Address: Assets/SkiView/Environment/Materials/PalmTrunkGrey.mat
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: febd6dacff475cbcca2ecb222b113a89
+    m_Address: Assets/SkiView/Skier/INTERNAL_ONLY_Felderpuss_V3_WadeCox@SlalomStance_LeanLeft.fbx
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: fec790b1175cce852bc22bfc16b78985
+    m_Address: Assets/SkiView/Environment/Prefabs/Understory_B.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: c260327af06c01289a8d92b5936f0f8f, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 68911dd3737c17f1a8b5e873491d72a0, type: 2}
+    - {fileID: 11400000, guid: 3ca92f77d46a539d98b6b54e1b8c1bb0, type: 2}
+    - {fileID: 11400000, guid: a444541d3ccbc69fba4e916ed4a7ffa8, type: 2}

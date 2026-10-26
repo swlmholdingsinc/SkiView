@@ -1,0 +1,19 @@
+/* SKI VIEW UI tokens. Mirrors style-spec.md and src/styles.css one-to-one. */
+:root {
+    --sv-ink-900: #070D15; --sv-ink-800: #0B1622; --sv-ink-700: #132235; --sv-ink-600: #1D3049;
+    --sv-plate: rgba(11, 22, 34, 0.86); --sv-plate-soft: rgba(11, 22, 34, 0.62);
+    --sv-line: rgba(255, 255, 255, 0.14); --sv-line-strong: rgba(255, 255, 255, 0.28);
+    --sv-text: #F4F6F8; --sv-text-2: #B4BFCB; --sv-text-3: #7F8C9A;
+    --sv-accent: #2F7BFF; --sv-accent-press: #1F5FD6; --sv-focus: #FFFFFF; --sv-halo: rgba(47, 123, 255, 0.55);
+    --sv-gold: #FFC93C; --sv-buoy: #FF7A1A; --sv-go: #3DD68C; --sv-miss: #FF5A5F;
+    --sv-r-chip: 2px; --sv-r-btn: 4px; --sv-r-card: 8px;
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s6: 48px; --s8: 64px; --s12: 96px;
+    --sv-font-cond-600: url("project://database/Assets/SkiView/UI/Fonts/BarlowCondensed-SemiBold SDF.asset");
+    --sv-font-cond-700: url("project://database/Assets/SkiView/UI/Fonts/BarlowCondensed-Bold SDF.asset");
+    --sv-font-cond-800: url("project://database/Assets/SkiView/UI/Fonts/BarlowCondensed-ExtraBold SDF.asset");
+    --sv-font-body:     url("project://database/Assets/SkiView/UI/Fonts/Barlow-Medium SDF.asset");
+    --sv-font-num:      url("project://database/Assets/SkiView/UI/Fonts/SVTabCondensed-Bold SDF.asset");
+    -unity-font-definition: var(--sv-font-body);
+    color: var(--sv-text);
+    font-size: 26px;
+}

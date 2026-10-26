@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Water
+  m_Shader: {fileID: 4800000, guid: 4d8ac5e1398098c83920308df27d9e58, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _FoamTex:
+        m_Texture: {fileID: 2800000, guid: fcc87ec7be7158f1f95a1f34f0f4175b, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BreezeScale: 0.01
+    - _DepthFade: 1.6
+    - _GlassyRipple: 0.12
+    - _ReflDistort: 0.22
+    - _RippleStrength: 0.08
+    - _SunSharpness: 1400
+    - _SunSpec: 0.08
+    - _TreeLineHeight: 0.16
+    - _WakeHeight: 0.8
+    m_Colors:
+    - _DeepColor: {r: 0.045, g: 0.07, b: 0.085, a: 1}
+    - _FoamColor: {r: 0.95, g: 0.96999997, b: 1, a: 1}
+    - _ReflTint: {r: 0.97, g: 0.98, b: 1, a: 1}
+    - _ShallowColor: {r: 0.24, g: 0.33, b: 0.38, a: 1}
+    - _SkyHorizon: {r: 0.78, g: 0.86, b: 0.92, a: 1}
+    - _SkyZenith: {r: 0.29999998, g: 0.5, b: 0.8, a: 1}
+    - _TreeLine: {r: 0.03, g: 0.06999998, b: 0.049999982, a: 1}
+    - _WaveA: {r: 1, g: 0.3, b: 0.01, a: 9}
+    - _WaveB: {r: -0.35, g: 1, b: 0.008, a: 5.3}
+    - _WaveC: {r: 0.8, g: -0.55, b: 0.006, a: 3.1}
+    - _WaveD: {r: -0.95, g: -0.25, b: 0.005, a: 1.9}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

@@ -1,0 +1,268 @@
+{
+  "status": "PENDING_WADE_APPROVAL",
+  "note": "Placeholders only. Replace with owner-supplied licensed files; never ship.",
+  "slots": [
+    {
+      "id": "primary_logo",
+      "label": "LOGO",
+      "path": "wade/placeholders/primary_logo.png",
+      "size": [
+        1024,
+        512
+      ],
+      "safe_area_xywh": [
+        40,
+        40,
+        944,
+        432
+      ],
+      "transparent_center": false,
+      "status": "INTERNAL_ONLY",
+      "ship": true,
+      "source": "skiwithwade.com official (logo-placeholder.png), INTERNAL ONLY - license not yet signed"
+    },
+    {
+      "id": "icon",
+      "label": "ICON",
+      "path": "wade/placeholders/icon.png",
+      "size": [
+        512,
+        512
+      ],
+      "safe_area_xywh": [
+        40,
+        40,
+        432,
+        432
+      ],
+      "transparent_center": false,
+      "status": "INTERNAL_ONLY",
+      "ship": true,
+      "source": "skiwithwade.com official (cropped-wade-icon-red.png), INTERNAL ONLY - license not yet signed"
+    },
+    {
+      "id": "wordmark",
+      "label": "WORDMARK",
+      "path": "wade/placeholders/wordmark.png",
+      "size": [
+        2048,
+        256
+      ],
+      "safe_area_xywh": [
+        20,
+        20,
+        2008,
+        216
+      ],
+      "transparent_center": false,
+      "status": "PENDING_WADE_APPROVAL",
+      "ship": true
+    },
+    {
+      "id": "title_hero_4k",
+      "label": "TITLE HERO",
+      "path": "wade/placeholders/title_hero_4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "safe_area_xywh": [
+        172,
+        172,
+        3496,
+        1816
+      ],
+      "transparent_center": false,
+      "status": "PENDING_WADE_APPROVAL",
+      "ship": true
+    },
+    {
+      "id": "title_hero_phone",
+      "label": "TITLE HERO",
+      "path": "wade/placeholders/title_hero_phone.png",
+      "size": [
+        1080,
+        2400
+      ],
+      "safe_area_xywh": [
+        86,
+        86,
+        908,
+        2228
+      ],
+      "transparent_center": false,
+      "status": "PENDING_WADE_APPROVAL",
+      "ship": true
+    },
+    {
+      "id": "app_icon_1024",
+      "label": "APP ICON",
+      "path": "wade/placeholders/app_icon_1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "safe_area_xywh": [
+        81,
+        81,
+        862,
+        862
+      ],
+      "transparent_center": false,
+      "status": "PENDING_WADE_APPROVAL",
+      "ship": true
+    },
+    {
+      "id": "app_icon_512",
+      "label": "APP ICON",
+      "path": "wade/placeholders/app_icon_512.png",
+      "size": [
+        512,
+        512
+      ],
+      "safe_area_xywh": [
+        40,
+        40,
+        432,
+        432
+      ],
+      "transparent_center": false,
+      "status": "PENDING_WADE_APPROVAL",
+      "ship": true
+    },
+    {
+      "id": "store_frame_1080p",
+      "label": "STORE SCREENSHOT FRAME",
+      "path": "wade/placeholders/store_frame_1080p.png",
+      "size": [
+        1920,
+        1080
+      ],
+      "safe_area_xywh": [
+        64,
+        64,
+        1792,
+        952
+      ],
+      "transparent_center": true,
+      "status": "PENDING_WADE_APPROVAL",
+      "ship": true
+    },
+    {
+      "id": "store_frame_4k",
+      "label": "STORE SCREENSHOT FRAME",
+      "path": "wade/placeholders/store_frame_4k.png",
+      "size": [
+        3840,
+        2160
+      ],
+      "safe_area_xywh": [
+        129,
+        129,
+        3582,
+        1902
+      ],
+      "transparent_center": true,
+      "status": "PENDING_WADE_APPROVAL",
+      "ship": true
+    },
+    {
+      "id": "sponsor_logo",
+      "label": "SPONSOR LOGO",
+      "path": "wade/placeholders/sponsor_logo.png",
+      "size": [
+        512,
+        256
+      ],
+      "safe_area_xywh": [
+        20,
+        20,
+        472,
+        216
+      ],
+      "transparent_center": false,
+      "status": "PENDING_WADE_APPROVAL",
+      "ship": true
+    },
+    {
+      "id": "sponsor_boat_decal",
+      "label": "SPONSOR LOGO - BOAT DECAL",
+      "path": "wade/placeholders/sponsor_boat_decal.png",
+      "size": [
+        1024,
+        256
+      ],
+      "safe_area_xywh": [
+        20,
+        20,
+        984,
+        216
+      ],
+      "transparent_center": false,
+      "status": "PENDING_WADE_APPROVAL",
+      "ship": true
+    },
+    {
+      "id": "sponsor_lake_sign",
+      "label": "SPONSOR LOGO - LAKE SIGN",
+      "path": "wade/placeholders/sponsor_lake_sign.png",
+      "size": [
+        1024,
+        512
+      ],
+      "safe_area_xywh": [
+        40,
+        40,
+        944,
+        432
+      ],
+      "transparent_center": false,
+      "status": "PENDING_WADE_APPROVAL",
+      "ship": true
+    },
+    {
+      "id": "sponsor_results_strip",
+      "label": "SPONSOR LOGO - RESULTS STRIP",
+      "path": "wade/placeholders/sponsor_results_strip.png",
+      "size": [
+        1920,
+        96
+      ],
+      "safe_area_xywh": [
+        7,
+        7,
+        1906,
+        82
+      ],
+      "transparent_center": false,
+      "status": "PENDING_WADE_APPROVAL",
+      "ship": true
+    },
+    {
+      "id": "sponsor_pause_strip",
+      "label": "SPONSOR LOGO - PAUSE STRIP",
+      "path": "wade/placeholders/sponsor_pause_strip.png",
+      "size": [
+        1920,
+        96
+      ],
+      "safe_area_xywh": [
+        7,
+        7,
+        1906,
+        82
+      ],
+      "transparent_center": false,
+      "status": "PENDING_WADE_APPROVAL",
+      "ship": true
+    },
+    {
+      "id": "title.hero",
+      "label": "TITLE HERO (T22)",
+      "path": "Branding/slots/title_hero_t22_*.png",
+      "status": "INTERNAL_ONLY",
+      "ship": true,
+      "source": "Photo supplied by Scott, processed by Julia (22_final). Rights TBC: test builds only, credit photographer before outside use"
+    }
+  ]
+}

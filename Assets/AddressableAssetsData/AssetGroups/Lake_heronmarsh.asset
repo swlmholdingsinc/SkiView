@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Lake_heronmarsh
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Lake_heronmarsh
+  m_GUID: dec259f76c4b959bd83b3491aab14174
+  m_SerializeEntries:
+  - m_GUID: 270a8fa65a7829373a657174232d8711
+    m_Address: SkiViewLake_heronmarsh
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: c260327af06c01289a8d92b5936f0f8f, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 2fb16ac519ae4308dbe56a91f5ff9794, type: 2}
+    - {fileID: 11400000, guid: 3695e2c5c404d145fba8ac07bd205104, type: 2}
+    - {fileID: 11400000, guid: 7b4ee18f7ca525ea1a2c9a9c45c6b488, type: 2}

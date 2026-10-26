@@ -1,0 +1,109 @@
+{
+  "status": "PENDING_WADE_APPROVAL",
+  "lessons": [
+    {
+      "id": "stance",
+      "status": "PENDING_WADE_APPROVAL",
+      "plan_tip": {
+        "text": "Stack the body: hips forward, handle low, eyes up.",
+        "status": "PENDING_WADE_APPROVAL"
+      }
+    },
+    {
+      "id": "deep_water_start",
+      "status": "PENDING_WADE_APPROVAL",
+      "plan_tip": {
+        "text": "Stay tucked, arms long \u2014 let the boat pull you onto plane, then stand slowly.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "success_note": {
+        "text": "Up and riding. Settle into a quiet stance before the next lesson.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "fail_note": {
+        "text": "Didn't get up this time. Stay tucked longer and let the boat do the work.",
+        "status": "PENDING_WADE_APPROVAL"
+      }
+    },
+    {
+      "id": "wide_pull",
+      "status": "PENDING_WADE_APPROVAL",
+      "plan_tip": {
+        "text": "Get wide early, then carry a steady pull across both wakes \u2014 not a jerk.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "success_note": {
+        "text": "Good width on most turns. Keep the same early move-out next pass.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "fail_note": {
+        "text": "Width came up short or the pass ended early. Start the move out sooner and rebuild one buoy at a time.",
+        "status": "PENDING_WADE_APPROVAL"
+      }
+    },
+    {
+      "id": "gate_first_ball",
+      "status": "PENDING_WADE_APPROVAL",
+      "plan_tip": {
+        "text": "Smooth pull-out, patient glide, turn-in on time \u2014 arrive wide and early for buoy 1.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "success_note": {
+        "text": "Gates and buoy 1 made. Good start to the pass \u2014 keep that same turn-in timing.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "fail_note": {
+        "text": "Missed the gates or buoy 1. Focus on the line through the gates first, then the first ball.",
+        "status": "PENDING_WADE_APPROVAL"
+      }
+    },
+    {
+      "id": "preturn",
+      "status": "PENDING_WADE_APPROVAL",
+      "plan_tip": {
+        "text": "Start the turn before the buoy, peak the lean at the buoy, and finish before you pull.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "success_note": {
+        "text": "Full pass with solid timing. Keep starting the turn ahead of the buoy.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "fail_note": {
+        "text": "Turns tended late, early, or unfinished. Begin earlier and finish the arc before loading the rope.",
+        "status": "PENDING_WADE_APPROVAL"
+      }
+    },
+    {
+      "id": "wake_crossing",
+      "status": "PENDING_WADE_APPROVAL",
+      "plan_tip": {
+        "text": "One steady edge through both wakes \u2014 stay stacked and keep the line tight after the second wake.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "success_note": {
+        "text": "Line stayed tight through the crossings. Keep that same edge commitment next pass.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "fail_note": {
+        "text": "Edge wavered, slack showed, or the pass ended in a fall. Commit to one edge and ease the pull more gradually.",
+        "status": "PENDING_WADE_APPROVAL"
+      }
+    },
+    {
+      "id": "rope_progression",
+      "status": "PENDING_WADE_APPROVAL",
+      "plan_tip": {
+        "text": "Same basics as a long line. Width comes earlier on a shorter rope \u2014 stay patient on the turn.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "success_note": {
+        "text": "Full pass. Next rope step unlocked \u2014 keep the same basics at the shorter length.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "fail_note": {
+        "text": "Stay at this length until the full pass is consistent. Start the move out sooner if width dropped.",
+        "status": "PENDING_WADE_APPROVAL"
+      }
+    }
+  ]
+}

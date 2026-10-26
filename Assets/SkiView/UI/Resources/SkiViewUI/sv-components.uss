@@ -1,0 +1,119 @@
+/* SKI VIEW component classes (USS). Strings are authored UPPERCASE in code/loc tables; USS has no text-transform. */
+.sv-screen { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.sv-bg { position: absolute; left: 0; top: 0; right: 0; bottom: 0; -unity-background-scale-mode: scale-and-crop; }
+.sv-scrim-full { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(7, 13, 21, 0.58); }
+.sv-scrim-side { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-image: url("project://database/Assets/SkiView/UI/Textures/scrim_side.svg"); }
+.sv-safe { position: absolute; padding: var(--s4); }      /* left/top/right/bottom set by SafeAreaRoot.cs */
+
+/* type */
+.t-display { -unity-font-definition: var(--sv-font-cond-800); font-size: 168px; letter-spacing: 2.5px; }
+.t-h1 { -unity-font-definition: var(--sv-font-cond-700); font-size: 72px; letter-spacing: 1.4px; }
+.t-h2 { -unity-font-definition: var(--sv-font-cond-700); font-size: 48px; letter-spacing: 1.4px; }
+.t-h3 { -unity-font-definition: var(--sv-font-cond-600); font-size: 36px; letter-spacing: 1.4px; }
+.t-label { -unity-font-definition: var(--sv-font-cond-600); font-size: 28px; letter-spacing: 1.7px; }
+.t-body { font-size: 26px; }
+.t-caption { font-size: 22px; color: var(--sv-text-2); }
+.t-micro { -unity-font-definition: var(--sv-font-cond-600); font-size: 18px; letter-spacing: 1.8px; color: var(--sv-text-3); }
+.t-num-xl { -unity-font-definition: var(--sv-font-num); font-size: 220px; }
+.t-hud-val { -unity-font-definition: var(--sv-font-num); font-size: 52px; }
+.t-gold { color: var(--sv-gold); } .t-muted { color: var(--sv-text-2); }
+
+/* plates */
+.sv-plate { background-color: var(--sv-plate); border-radius: var(--sv-r-btn); }
+.sv-plate--card { border-radius: var(--sv-r-card); }
+.sv-strip { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background-color: var(--sv-accent); }
+.sv-strip--gold { background-color: var(--sv-gold); }
+.sv-rule { height: 2px; background-color: var(--sv-line); }
+
+/* buttons: use <ui:Button> so focus/navigation/click come for free */
+.sv-btn { flex-direction: row; align-items: center; height: 88px; padding: 0 var(--s4); margin: 0;
+          border-radius: var(--sv-r-btn); border-width: 4px; border-color: rgba(0,0,0,0);
+          background-color: var(--sv-plate); color: var(--sv-text);
+          -unity-font-definition: var(--sv-font-cond-600); font-size: 34px; letter-spacing: 2px;
+          transition-property: scale, background-color; transition-duration: 0.08s; }
+.sv-btn > .sv-icon { width: 32px; height: 32px; margin-right: var(--s2); -unity-background-image-tint-color: var(--sv-text); }
+.sv-btn--primary { background-color: var(--sv-accent); }
+.sv-btn--ghost { background-color: rgba(0,0,0,0); border-width: 2px; border-color: var(--sv-line-strong); }
+.sv-btn--sm { height: 64px; font-size: 28px; padding: 0 var(--s3); }
+.sv-btn--icon { width: 88px; padding: 0; justify-content: center; }
+.sv-btn--icon > .sv-icon { margin-right: 0; }
+.sv-btn:hover, .sv-btn:focus { border-color: var(--sv-focus); }
+.sv-btn:focus, .sv-btn:hover { background-color: var(--sv-ink-600); }
+.sv-btn--primary:focus, .sv-btn--primary:hover { background-color: var(--sv-accent); }   /* USS has no :not(); order matters */
+.sv-btn:active { scale: 0.98 0.98; background-color: var(--sv-accent-press); }
+.sv-btn:disabled { opacity: 0.4; }
+.sv-halo { position: absolute; left: -8px; top: -8px; right: -8px; bottom: -8px; border-width: 4px; border-color: var(--sv-halo);
+           border-radius: 8px; display: none; }
+.sv-btn:focus > .sv-halo { display: flex; }
+.input-touch .sv-btn:focus { border-color: rgba(0,0,0,0); }          /* hide focus ring after touch input */
+.input-touch .sv-btn:focus > .sv-halo { display: none; }
+.input-touch .sv-hints { display: none; }
+
+/* option tiles (rope/speed), list rows, tabs */
+.sv-opt { flex-grow: 1; margin-right: 12px; padding: 16px 14px 14px; align-items: center; background-color: var(--sv-ink-800);
+          border-radius: var(--sv-r-btn); border-width: 4px; border-color: rgba(0,0,0,0); }
+.sv-opt--selected { background-color: var(--sv-accent); border-color: var(--sv-focus); }
+.sv-row { flex-direction: row; align-items: center; height: 72px; margin-bottom: 6px; padding: 0 24px 0 20px;
+          background-color: var(--sv-plate); border-radius: var(--sv-r-btn); border-width: 3px; border-color: rgba(0,0,0,0); }
+.sv-row--selected { background-color: var(--sv-ink-600); }
+.sv-row:focus { border-color: var(--sv-focus); }
+.sv-tab { height: 88px; flex-direction: row; align-items: center; padding: 0 28px; margin-bottom: 12px; background-color: var(--sv-plate);
+          border-radius: var(--sv-r-btn); color: var(--sv-text-2); -unity-font-definition: var(--sv-font-cond-600); font-size: 34px; }
+.sv-tab--on { color: var(--sv-text); background-color: var(--sv-ink-600); }
+.sv-livery { width: 56px; height: 34px; border-radius: 3px; overflow: hidden; border-width: 1px; border-color: rgba(255,255,255,0.2); }
+.sv-livery > .deck { flex-grow: 1; } .sv-livery > .accent { height: 6px; } .sv-livery > .band { flex-grow: 1.1; }
+
+/* segmented, toggle, slider */
+.sv-seg { flex-direction: row; background-color: var(--sv-ink-800); border-radius: var(--sv-r-btn); padding: 4px; }
+.sv-seg > .sv-seg__item { height: 56px; min-width: 96px; padding: 0 20px; margin-right: 4px; -unity-text-align: middle-center;
+          color: var(--sv-text-2); border-radius: 3px; -unity-font-definition: var(--sv-font-cond-600); font-size: 26px; }
+.sv-seg > .sv-seg__item--on { background-color: var(--sv-accent); color: #FFFFFF; }
+.sv-slider #unity-tracker { height: 6px; background-color: var(--sv-ink-600); border-width: 0; border-radius: 3px; }
+.sv-slider #unity-dragger { width: 28px; height: 28px; border-radius: 14px; background-color: #FFFFFF; border-width: 0; }
+.sv-slider:focus #unity-dragger { border-width: 4px; border-color: var(--sv-halo); }
+.sv-toggle #unity-checkmark { width: 84px; height: 44px; border-radius: 22px; background-color: var(--sv-ink-600); }
+
+/* HUD */
+.sv-bug { position: absolute; left: 0; top: 0; flex-direction: row; height: 104px; background-color: var(--sv-plate); border-radius: var(--sv-r-btn); overflow: hidden; }
+.sv-bug__cell { padding: 14px 24px; justify-content: center; border-right-width: 2px; border-color: var(--sv-line); }
+.sv-bug__id { background-color: var(--sv-accent); padding: 0 18px; justify-content: center; }
+.sv-bug__lab { -unity-font-definition: var(--sv-font-cond-600); font-size: 17px; letter-spacing: 2.4px; color: var(--sv-text-2); }
+.sv-pip { width: 22px; height: 22px; border-radius: 11px; border-width: 2px; border-color: rgba(255,255,255,0.45); margin-right: 8px; }
+.sv-pip--done { background-color: var(--sv-buoy); border-color: var(--sv-buoy); }
+.sv-pip--half { border-color: var(--sv-buoy); background-image: url("project://database/Assets/SkiView/UI/Textures/pip_half.svg"); }
+.sv-pip--next { border-color: #FFFFFF; }
+.sv-pip--gate { width: auto; border-radius: 3px; padding: 0 6px; background-color: var(--sv-go); border-color: var(--sv-go); }
+.sv-call { position: absolute; bottom: 110px; align-self: center; padding: 10px 32px; background-color: var(--sv-plate);
+           border-radius: var(--sv-r-btn); border-bottom-width: 4px; border-color: var(--sv-buoy);
+           -unity-font-definition: var(--sv-font-cond-700); font-size: 40px; letter-spacing: 4.8px; }
+.sv-hints { position: absolute; right: var(--s4); bottom: var(--s4); flex-direction: row; }
+
+/* camera switching (v2) */
+.sv-cam-btn { position: absolute; right: 0; bottom: 0; width: 120px; height: 120px; margin: 0; padding: 0;     /* inside .sv-safe padding */
+              flex-direction: column; align-items: center; justify-content: center;
+              background-color: var(--sv-plate-soft); border-radius: var(--sv-r-card); border-width: 2px; border-color: var(--sv-line-strong);
+              -unity-font-definition: var(--sv-font-cond-700); font-size: 22px; letter-spacing: 3.5px;
+              transition-property: scale, background-color; transition-duration: 0.06s; }
+.sv-cam-btn > .sv-icon { width: 48px; height: 48px; margin: 0 0 4px 0; background-image: url("project://database/Assets/SkiView/UI/Resources/SkiViewUI/Icons/camera.svg"); }
+.sv-cam-btn:active { scale: 0.96 0.96; background-color: var(--sv-accent-press); border-color: var(--sv-accent-press); }
+.sv-hud--fp .sv-cam-btn { background-color: var(--sv-plate); }
+.sv-cam-hint { position: absolute; right: 0; bottom: 8px; flex-direction: row; align-items: center; padding: 12px 24px 12px 18px;
+               background-color: var(--sv-plate); border-radius: var(--sv-r-btn); }
+.sv-cam-hint__view { -unity-font-definition: var(--sv-font-cond-700); font-size: 30px; letter-spacing: 1.8px; }
+.sv-toast { position: absolute; right: 0; bottom: 136px; min-width: 340px; padding: 12px 32px 14px; align-items: center;
+            background-color: var(--sv-plate); border-radius: var(--sv-r-btn); border-top-width: 4px; border-color: var(--sv-accent);
+            opacity: 0; translate: 0 8px;
+            transition-property: opacity, translate; transition-duration: 0.3s, 0.3s; transition-timing-function: ease-in, ease-in; }
+.sv-toast--show { opacity: 1; translate: 0 0; transition-duration: 0.15s, 0.15s; transition-timing-function: ease-out-cubic, ease-out-cubic; }
+.sv-toast__label { -unity-font-definition: var(--sv-font-cond-600); font-size: 17px; letter-spacing: 3.4px; color: var(--sv-text-2); }
+.sv-toast__view { -unity-font-definition: var(--sv-font-cond-700); font-size: 44px; letter-spacing: 4.4px; }
+.sv-toast__dots { flex-direction: row; margin-top: 8px; }
+.sv-toast__dot { width: 28px; height: 4px; margin: 0 4px; border-radius: 2px; background-color: rgba(255,255,255,0.3); }
+.sv-toast__dot--on { background-color: #FFFFFF; }
+.sv-steer-hint { position: absolute; bottom: 8px; -unity-font-definition: var(--sv-font-cond-600); font-size: 22px; letter-spacing: 3px;
+                 color: rgba(255,255,255,0.78); text-shadow: 0 1px 6px rgba(7,13,21,0.9); }
+.sv-steer-hint--right { right: 152px; }   /* clears the 120 px CAM button + 32 px gap */
+.sv-fp-scrim { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-image: url("project://database/Assets/SkiView/UI/Textures/scrim_fp.svg"); display: none; }
+.sv-hud--fp .sv-fp-scrim { display: flex; }
+.sv-hud--fp .sv-steer-hint { color: rgba(255, 255, 255, 0.92); background-color: rgba(11, 22, 34, 0.55); padding: 6px 16px; border-radius: 4px; bottom: 2px; }   /* v3: real FP frames (cam19_first_*) */
+.sv-hud--fp .sv-call { bottom: auto; top: 156px; }   /* v3: FP ball call moves above the horizon so it never covers the hands/handle */

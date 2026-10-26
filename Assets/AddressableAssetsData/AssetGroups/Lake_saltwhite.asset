@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Lake_saltwhite
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Lake_saltwhite
+  m_GUID: 3bc522030ee1605e1b1c0ca0f91393a0
+  m_SerializeEntries:
+  - m_GUID: f2696ab9cd481f9dba9c4918994c4483
+    m_Address: SkiViewLake_saltwhite
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: c260327af06c01289a8d92b5936f0f8f, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 18d427eb73f38fb9a94070801a350902, type: 2}
+    - {fileID: 11400000, guid: 913561e5cb286774c9aa0552cd9d8a5f, type: 2}
+    - {fileID: 11400000, guid: 5a2e92058b714280fa3c2f877bc381d5, type: 2}

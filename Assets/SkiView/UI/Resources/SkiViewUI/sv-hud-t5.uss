@@ -1,0 +1,90 @@
+/* SKI VIEW · T5 HUD polish. Load AFTER sv-tokens.uss, sv-components.uss and sv-game.uss (same specificity: last wins).
+   Reference 1920x1080, PanelSettings Scale With Screen Size, Expand. Values in reference px. In the build since T5 (loaded after sv-game). */
+
+/* 1. Camera view pill: shown on change, hidden 2.0 s later (the hide timer is C#; see T5-hud-spec.md §1). */
+.sv-toast {
+    opacity: 0;
+    translate: 0 8px;
+    transition-property: opacity, translate;
+    transition-duration: 0.3s, 0.3s;               /* hide: fade 300 ms */
+    transition-timing-function: ease-in, ease-in;
+    transition-delay: 0s, 0s;
+}
+.sv-toast--show {
+    opacity: 1;
+    translate: 0 0;
+    transition-duration: 0.15s, 0.15s;             /* show: 150 ms */
+    transition-timing-function: ease-out-cubic, ease-out-cubic;
+}
+.sv-motion-reduced .sv-toast,
+.sv-motion-reduced .sv-toast--show { translate: 0 0; }   /* Reduced camera motion: opacity only */
+/* The CAM button and desktop hint are never touched by the pill timer. */
+.sv-cam-btn, .sv-cam-hint { opacity: 1; }
+
+/* 2. Tap targets: 144 px hit area (= 48 dp down to a 360 dp short side). Visuals unchanged; the hit element is a
+   transparent parent, the visual a child with picking-mode Ignore. Hit boxes are clamped to the safe area (.sv-safe padding).
+   b10.27 T24 Finish Page: ship .sv-hit--cam / .sv-hit--pause (CAM visual 120, Pause visual 88; hits 144). */
+.sv-hit {
+    position: absolute;
+    width: 144px; height: 144px;
+    align-items: center; justify-content: center;
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0; margin: 0; padding: 0;
+}
+.sv-hit--cam   { right: 0; bottom: 0; align-items: flex-end; justify-content: flex-end; }   /* 120 visual sits in the corner */
+.sv-hit--pause { right: 0; top: 0;    align-items: flex-end; justify-content: flex-start; } /* 88 visual sits in the corner */
+.sv-hit--skip  { bottom: 44px; align-self: center; width: 440px; }                           /* skip pill: 144 tall hit */
+.sv-hit--tutskip { right: 156px; top: 0; width: 300px; justify-content: flex-start; }        /* SKIP TUTORIAL: clears pause hit */
+.sv-hit > .sv-cam-btn, .sv-hit > .sv-pause-btn19, .sv-hit > .sv-skip19, .sv-hit > .sv-tutskip19 { position: relative; right: auto; left: auto; top: auto; bottom: auto; }
+
+/* Visual size bumps (cheap wins, same look) */
+.sv-skip19 { height: 72px; border-radius: 36px; padding: 0 36px; }   /* was 56 */
+.sv-tutskip19 { height: 72px; }                                       /* was 64 (.sv-btn--sm) */
+
+/* 3. Buoy tracker legend colours (matches sv-components.uss; listed so the legend screen uses the same tokens) */
+.sv-pip            { width: 22px; height: 22px; border-radius: 11px; border-width: 2px; border-color: rgba(255,255,255,0.45); } /* grey: to come */
+.sv-pip--next      { border-color: #FFFFFF; }                                       /* white ring: next buoy */
+.sv-pip--done      { background-color: var(--sv-buoy); border-color: var(--sv-buoy); } /* orange: rounded */
+.sv-pip--half      { border-color: var(--sv-buoy); }                                 /* half orange (pip_half.svg) */
+.sv-pip--gate      { background-color: var(--sv-go); border-color: var(--sv-go); }    /* green G: gates not yet counted */
+.sv-legend19__row  { flex-direction: row; align-items: flex-start; padding: 14px 0; border-top-width: 2px; border-color: var(--sv-line); }
+.sv-legend19__sw   { width: 64px; height: 40px; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 24px; }
+.sv-legend19__sw > .sv-pip { width: 30px; height: 30px; border-radius: 15px; }
+
+/* 4. Desktop key prompts strip (bottom-left inside the 48 px desktop safe area; hidden on touch) */
+.sv-keys19 {
+    position: absolute; left: 0; bottom: 8px;
+    flex-direction: row; align-items: center;
+    padding: 12px 22px; border-radius: var(--sv-r-btn);
+    background-color: var(--sv-plate-soft);
+}
+.sv-keys19__g   { flex-direction: row; align-items: center; margin-right: 22px; }
+.sv-keys19__sep { width: 2px; height: 28px; background-color: var(--sv-line-strong); margin-right: 22px; }
+.sv-keys19 .sv-key { height: 34px; min-width: 38px; font-size: 18px; margin-right: 8px; }
+.sv-keys19__t   { -unity-font-definition: var(--sv-font-cond-600); font-size: 21px; letter-spacing: 2.5px; color: var(--sv-text); }
+.input-touch .sv-keys19 { display: none; }
+.sv-keys19--fade { opacity: 0.0; transition-property: opacity; transition-duration: 0.6s; transition-delay: 8s; }   /* optional: fade after 8 s of play */
+
+/* build glue (T5): help / tutorial legend heading */
+.sv-legend19__h { margin-top: 28px; margin-bottom: 6px; }
+/* Phase 1 review #5 (Julia 20f): "✓ GATE" pill replaces the G badge. #04231A on #3DD68C = 8.9:1 */
+.sv-gate-pill { flex-direction: row; align-items: center; height: 30px; padding: 0 12px 0 8px; border-radius: 15px; border-width: 2px; margin-right: 8px; }
+.sv-gate-pill.is-cleared { background-color: #3DD68C; border-color: #3DD68C; }
+.sv-gate-pill.is-pending { background-color: rgba(0,0,0,0); border-color: rgba(255,255,255,0.85); }
+.sv-gate-pill__icon { width: 16px; height: 16px; margin-right: 4px; -unity-background-image-tint-color: #04231A; }
+.sv-gate-pill.is-pending .sv-gate-pill__icon { display: none; }
+.sv-gate-pill__t { -unity-font-definition: var(--sv-font-cond-700); font-size: 17px; letter-spacing: 1.5px; margin: 0; padding: 0; color: #04231A; -unity-text-align: middle-center; }
+.sv-gate-pill.is-pending .sv-gate-pill__t { color: #FFFFFF; }
+.sv-legend19__sw--pill { width: 120px; }
+
+/* T26: camera name sits low (bottom centre) for 1.5 s */
+.sv-toast { right: auto; left: 50%; bottom: 40px; translate: -50% 8px; }
+.sv-toast--show { translate: -50% 0; }
+.sv-motion-reduced .sv-toast, .sv-motion-reduced .sv-toast--show { translate: -50% 0; }
+/* T26: jump timing bar */
+.sv-jbar { position: absolute; left: 50%; translate: -50% 0; bottom: 150px; width: 720px; align-items: center; padding: 12px 20px; background-color: var(--sv-plate); border-radius: var(--sv-r-btn); }
+.sv-jbar__lab { -unity-font-definition: var(--sv-font-cond-700); font-size: 28px; letter-spacing: 3px; color: var(--sv-text); margin-bottom: 8px; }
+.sv-jbar__track { width: 100%; height: 18px; background-color: rgba(255,255,255,0.18); border-radius: 9px; }
+.sv-jbar__zone { position: absolute; top: 0; bottom: 0; background-color: var(--sv-go); border-radius: 9px; opacity: 0.75; }
+.sv-jbar__mark { position: absolute; top: -8px; width: 6px; height: 34px; margin-left: -3px; background-color: var(--sv-text); }
+.sv-jbar--go .sv-jbar__lab { color: var(--sv-go); }

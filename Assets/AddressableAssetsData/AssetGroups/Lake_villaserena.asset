@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Lake_villaserena
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Lake_villaserena
+  m_GUID: e13aabc0590f6191396b7641579c8d13
+  m_SerializeEntries:
+  - m_GUID: 0ff6245c13fb64f24b63bac558bd7862
+    m_Address: SkiViewLake_villaserena
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: c260327af06c01289a8d92b5936f0f8f, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 0cad501c91621f874af87bd586453804, type: 2}
+    - {fileID: 11400000, guid: 61189d984f33bba51b1983488dad9f75, type: 2}
+    - {fileID: 11400000, guid: 58e6073eca67a01539779205419ed64f, type: 2}

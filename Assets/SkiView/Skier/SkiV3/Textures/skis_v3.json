@@ -1,0 +1,86 @@
+{
+  "layout": {
+    "size": [
+      2048,
+      512
+    ],
+    "topDeck": "top half v 0.5-1",
+    "base": "bottom half v 0-0.5",
+    "tip": "left (u=0)",
+    "bevelMarginPx": 10,
+    "finHardwareU": [
+      0.7,
+      0.82
+    ],
+    "wordmark": null,
+    "notes": "V3 unbranded; no logos"
+  },
+  "skis": [
+    {
+      "id": "green",
+      "displayName": "Green (V3 unbranded)",
+      "textures": {
+        "albedo": "green_albedo.png",
+        "normal": "green_normal.png",
+        "roughness": "green_roughness.png",
+        "metallic_smoothness": "green_metallic_smoothness.png",
+        "thumb": "green_thumb.png"
+      }
+    },
+    {
+      "id": "red",
+      "displayName": "Red (V3 unbranded)",
+      "textures": {
+        "albedo": "red_albedo.png",
+        "normal": "red_normal.png",
+        "roughness": "red_roughness.png",
+        "metallic_smoothness": "red_metallic_smoothness.png",
+        "thumb": "red_thumb.png"
+      }
+    },
+    {
+      "id": "blue",
+      "displayName": "Blue (V3 unbranded)",
+      "textures": {
+        "albedo": "blue_albedo.png",
+        "normal": "blue_normal.png",
+        "roughness": "blue_roughness.png",
+        "metallic_smoothness": "blue_metallic_smoothness.png",
+        "thumb": "blue_thumb.png"
+      }
+    },
+    {
+      "id": "black",
+      "displayName": "Black (V3 unbranded)",
+      "textures": {
+        "albedo": "black_albedo.png",
+        "normal": "black_normal.png",
+        "roughness": "black_roughness.png",
+        "metallic_smoothness": "black_metallic_smoothness.png",
+        "thumb": "black_thumb.png"
+      }
+    },
+    {
+      "id": "carbon",
+      "displayName": "Carbon (V3 unbranded)",
+      "textures": {
+        "albedo": "carbon_albedo.png",
+        "normal": "carbon_normal.png",
+        "roughness": "carbon_roughness.png",
+        "metallic_smoothness": "carbon_metallic_smoothness.png",
+        "thumb": "carbon_thumb.png"
+      }
+    },
+    {
+      "id": "white",
+      "displayName": "White (V3 unbranded)",
+      "textures": {
+        "albedo": "white_albedo.png",
+        "normal": "white_normal.png",
+        "roughness": "white_roughness.png",
+        "metallic_smoothness": "white_metallic_smoothness.png",
+        "thumb": "white_thumb.png"
+      }
+    }
+  ]
+}

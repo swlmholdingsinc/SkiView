@@ -1,0 +1,146 @@
+{
+  "order": [
+    "skiview",
+    "cedarbend",
+    "heronmarsh",
+    "villaserena",
+    "saltwhite",
+    "tallpine",
+    "harrowpond",
+    "gulfwind",
+    "saguaro",
+    "marrowind",
+    "studio_blue",
+    "tan_teak"
+  ],
+  "lakes": {
+    "skiview": {
+      "name": "Ski View Estates",
+      "region": "Pacific Northwest (home lake)",
+      "scheme": "Royal blue / silver / white (Scott's boat)",
+      "deck": "#F4F5F2",
+      "band": "#1C3F9E",
+      "accent": "#B9C0C9",
+      "livery": "#FFFFFF",
+      "accent_metallic": 0.35
+    },
+    "cedarbend": {
+      "name": "Cedar Bend Lake",
+      "region": "Orting, WA forest bowl",
+      "scheme": "Race red / black / white",
+      "deck": "#F3F2EE",
+      "band": "#B3202A",
+      "accent": "#1C1D21",
+      "livery": "#FFFFFF",
+      "accent_metallic": 0.0
+    },
+    "heronmarsh": {
+      "name": "Heron Marsh Lakes",
+      "region": "Johns Island, SC lowcountry",
+      "scheme": "Graphite / lime / white",
+      "deck": "#ECEEED",
+      "band": "#3B4047",
+      "accent": "#8CC63F",
+      "livery": "#FFFFFF",
+      "accent_metallic": 0.0
+    },
+    "villaserena": {
+      "name": "Villa Serena Ski Club",
+      "region": "Clermont, FL (tile-roof villas)",
+      "scheme": "Burgundy / champagne / cream",
+      "deck": "#F1E8D6",
+      "band": "#6B1E38",
+      "accent": "#C9A866",
+      "livery": "#FFF8EC",
+      "accent_metallic": 0.4
+    },
+    "saltwhite": {
+      "name": "Saltwhite Lake",
+      "region": "Polk City, FL tournament site",
+      "scheme": "Silver / black / pearl white",
+      "deck": "#FAFAF7",
+      "band": "#9EA5AD",
+      "accent": "#101114",
+      "livery": "#FFFFFF",
+      "accent_metallic": 0.0
+    },
+    "tallpine": {
+      "name": "Tallpine Ski Lake",
+      "region": "Lincoln, CA (redwoods, gold fields)",
+      "scheme": "Pine green / gold / white",
+      "deck": "#F2F3EF",
+      "band": "#1E5A3B",
+      "accent": "#C8A24A",
+      "livery": "#FFFFFF",
+      "accent_metallic": 0.4
+    },
+    "harrowpond": {
+      "name": "Harrow Pond",
+      "region": "Monroe, NY (hardwood hills)",
+      "scheme": "Autumn orange / charcoal / white",
+      "deck": "#F4F4F1",
+      "band": "#E8681C",
+      "accent": "#2A2C30",
+      "livery": "#FFFFFF",
+      "accent_metallic": 0.0
+    },
+    "gulfwind": {
+      "name": "Gulfwind Estates",
+      "region": "Beaumont, TX (Gulf coast)",
+      "scheme": "Aqua / coral / white",
+      "deck": "#F6F7F4",
+      "band": "#0097A7",
+      "accent": "#FF6F5E",
+      "livery": "#FFFFFF",
+      "accent_metallic": 0.0
+    },
+    "saguaro": {
+      "name": "Saguaro Flats Lake",
+      "region": "Buckeye, AZ desert",
+      "scheme": "Sunset purple / desert orange / sand",
+      "deck": "#EDE2CC",
+      "band": "#5A2D82",
+      "accent": "#F28C28",
+      "livery": "#FFFFFF",
+      "accent_metallic": 0.0
+    },
+    "marrowind": {
+      "name": "Lake Marrowind",
+      "region": "Winter Haven, FL (historic Cypress Gardens)",
+      "scheme": "Show-boat yellow / black / white",
+      "deck": "#F5F5F2",
+      "band": "#F2C200",
+      "accent": "#121316",
+      "livery": "#FFFFFF",
+      "accent_metallic": 0.0
+    },
+    "studio_blue": {
+      "name": "Studio Blue (r4 review)",
+      "scheme": "white hull, blue bottom + bow sweep, black rail pinstripe, tan/caramel vinyl, teak-look non-skid, bronze running gear",
+      "deck": "#F2EEE6",
+      "band": "#2F78C8",
+      "accent": "#B8894A",
+      "livery": "#2F78C8",
+      "accent_metallic": 0.9,
+      "vinyl": "#B98A60",
+      "liner": "#EEEAE2",
+      "teak": "#FFFFFF",
+      "carpet": "#B98A60",
+      "trim": "#FFFFFF"
+    },
+    "tan_teak": {
+      "name": "Tan Teak",
+      "scheme": "white hull, navy band, tan upholstery, teak-look non-skid",
+      "deck": "#F4F5F2",
+      "band": "#1C3F9E",
+      "accent": "#B9C0C9",
+      "livery": "#FFFFFF",
+      "accent_metallic": 0.35,
+      "vinyl": "#B98A60",
+      "liner": "#EEEAE2",
+      "teak": "#FFFFFF",
+      "carpet": "#B98A60",
+      "trim": "#FFFFFF"
+    }
+  }
+}

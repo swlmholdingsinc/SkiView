@@ -1,0 +1,42 @@
+{
+  "asset": "Ramp_V1",
+  "unreal_prep": true,
+  "baked_lighting_in_albedo": false,
+  "notes": "Strict PBR fibreglass/apron/frame. Albedo = pigment only. .blend is Nanite/raw archive. Colliders untextured.",
+  "uv_notes": "Surface/Apron/Lip/Posts get planar UVs in apply_pbr_ramp_v1.py (u=width, v=length for surface).",
+  "maps": {
+    "Surface": {
+      "resolution": [
+        4096,
+        4096
+      ],
+      "BaseColor": "T_Ramp_V1_Surface_BaseColor.png",
+      "Normal": "T_Ramp_V1_Surface_Normal.png",
+      "Metallic": "T_Ramp_V1_Surface_Metallic.png",
+      "Roughness": "T_Ramp_V1_Surface_Roughness.png",
+      "MetallicSmoothness_UnityOptional": "T_Ramp_V1_Surface_MetallicSmoothness.png"
+    },
+    "Apron": {
+      "resolution": [
+        2048,
+        2048
+      ],
+      "BaseColor": "T_Ramp_V1_Apron_BaseColor.png",
+      "Normal": "T_Ramp_V1_Apron_Normal.png",
+      "Metallic": "T_Ramp_V1_Apron_Metallic.png",
+      "Roughness": "T_Ramp_V1_Apron_Roughness.png",
+      "MetallicSmoothness_UnityOptional": "T_Ramp_V1_Apron_MetallicSmoothness.png"
+    },
+    "Frame": {
+      "resolution": [
+        1024,
+        1024
+      ],
+      "BaseColor": "T_Ramp_V1_Frame_BaseColor.png",
+      "Normal": "T_Ramp_V1_Frame_Normal.png",
+      "Metallic": "T_Ramp_V1_Frame_Metallic.png",
+      "Roughness": "T_Ramp_V1_Frame_Roughness.png",
+      "MetallicSmoothness_UnityOptional": "T_Ramp_V1_Frame_MetallicSmoothness.png"
+    }
+  }
+}

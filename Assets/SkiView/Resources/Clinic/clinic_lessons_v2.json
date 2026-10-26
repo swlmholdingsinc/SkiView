@@ -1,0 +1,680 @@
+{
+  "status": "PENDING_WADE_APPROVAL",
+  "mode_name": {
+    "configKey": "clinic.modeName",
+    "placeholder": "{CLINIC_MODE_NAME}",
+    "status": "PENDING_WADE_APPROVAL"
+  },
+  "attribution": "none — neutral, generic placeholder copy; replace only with owner-approved text",
+  "speeds_note": "Boat speeds 28/34/36 mph taken from the brief; verify against the game's speed options. Rope indices match SkierSim.ROPE_LABEL (0=15 OFF..8=43 OFF).",
+  "lake_ids_note": "Lake ids confirmed against roadmap/venue/lakes/.",
+  "plan_step": {
+    "title": {
+      "text": "Plan your pass",
+      "status": "PENDING_WADE_APPROVAL"
+    },
+    "prompt": {
+      "text": "Pick one focus for this run.",
+      "status": "PENDING_WADE_APPROVAL"
+    }
+  },
+  "lessons": [
+    {
+      "id": "deep_water_start",
+      "order": 0,
+      "optional": true,
+      "title": {
+        "text": "Deep-water start",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "goal": {
+        "text": "Get up from deep water and settle into a balanced stance.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "setup": {
+        "lake": "saltwhite",
+        "ropeIndex": 0,
+        "ropeLabel": "15 OFF",
+        "boatSpeedMph": 28
+      },
+      "pass_criteria": {
+        "deepWaterStartSuccess": true,
+        "stableStanceS": "TBD_BY_TUNING",
+        "description": {
+          "text": "Get up without a fall and hold a steady stance for a few seconds.",
+          "status": "PENDING_WADE_APPROVAL"
+        }
+      },
+      "focus_cues": [
+        {
+          "id": "tuck",
+          "text": {
+            "text": "Knees to chest, ski tip up.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "arms_straight",
+          "text": {
+            "text": "Arms straight; let the boat pull you up.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "stand_slow",
+          "text": {
+            "text": "Stand up slowly once on plane.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "feedback": [
+        {
+          "cue": "*",
+          "when": "deep_water_start_success==true",
+          "text": {
+            "text": "Up and riding. Good start.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "*",
+          "when": "deep_water_start_success==false",
+          "text": {
+            "text": "Didn't get up this time. Stay tucked longer and let the boat do the work.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "status": "PENDING_WADE_APPROVAL"
+    },
+    {
+      "id": "stance",
+      "title": {
+        "text": "Stance and handle position",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "goal": {
+        "text": "Hold a stacked stance through a full pass: hips forward, chest up, arms nearly straight, handle at hip height, knees bent.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "setup": {
+        "lake": "saltwhite",
+        "ropeIndex": 0,
+        "ropeLabel": "15 OFF",
+        "boatSpeedMph": 28
+      },
+      "pass_criteria": {
+        "noFall": true,
+        "minFractionHandleLow": 0.7,
+        "description": {
+          "text": "Finish the pass without a fall and keep handle height in the low band for most of the run.",
+          "status": "PENDING_WADE_APPROVAL"
+        }
+      },
+      "focus_cues": [
+        {
+          "id": "knees",
+          "text": {
+            "text": "Knees bent, hips forward.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "handle_low",
+          "text": {
+            "text": "Handle low, near the hips.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "eyes_up",
+          "text": {
+            "text": "Eyes up toward the horizon.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "chest_arms",
+          "text": {
+            "text": "Chest up, arms long.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "feedback": [
+        {
+          "cue": "handle_low",
+          "when": "handle_low_fraction>=0.7",
+          "text": {
+            "text": "Handle stayed low for most of the pass. Good base to build on.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "handle_low",
+          "when": "handle_low_fraction<0.7",
+          "text": {
+            "text": "Handle drifted up in parts of the pass. Try keeping it near the hips.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "*",
+          "when": "fell==true",
+          "text": {
+            "text": "Pass ended in a fall. Reset with a smaller goal: stay balanced to the end.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "knees",
+          "when": "fell==false",
+          "text": {
+            "text": "Clean pass. Next time, check that the stance stays relaxed through the wakes.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "status": "PENDING_WADE_APPROVAL"
+    },
+    {
+      "id": "wide_pull",
+      "title": {
+        "text": "Staying wide and pulling through the wake",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "goal": {
+        "text": "Get out wide before each buoy and carry a steady pull across the wake.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "setup": {
+        "lake": "saltwhite",
+        "ropeIndex": 0,
+        "ropeLabel": "15 OFF",
+        "boatSpeedMph": 28
+      },
+      "pass_criteria": {
+        "minBuoys": 4,
+        "minAvgMaxLateralM": "TBD_BY_TUNING",
+        "description": {
+          "text": "Clear at least 4 buoys with average max lateral offset above the lesson target.",
+          "status": "PENDING_WADE_APPROVAL"
+        }
+      },
+      "focus_cues": [
+        {
+          "id": "wide",
+          "text": {
+            "text": "Get wide early before each buoy.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "steady_pull",
+          "text": {
+            "text": "Steady pull, not a jerk, through both wakes.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "lean",
+          "text": {
+            "text": "Build the lean out of the turn and let it release as you cross the wake.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "feedback": [
+        {
+          "cue": "wide",
+          "when": "avg_max_lateral_m>=target",
+          "text": {
+            "text": "Good width on most turns.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "wide",
+          "when": "avg_max_lateral_m<target",
+          "text": {
+            "text": "Width came up short. Start the move out sooner.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "*",
+          "when": "buoys_cleared>=6",
+          "text": {
+            "text": "Full pass. Try the next lesson.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "lean",
+          "when": "lean_release_before_wake_count>0",
+          "text": {
+            "text": "The lean eased off before reaching the wake on some crossings. Carry it a little longer, then release across the wake.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "lean",
+          "when": "lean_held_past_wake_count>0",
+          "text": {
+            "text": "The lean carried on past the wake on some crossings. Let it release as you cross.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "status": "PENDING_WADE_APPROVAL"
+    },
+    {
+      "id": "gate_first_ball",
+      "title": {
+        "text": "Gate shot and first-ball line",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "goal": {
+        "text": "Time the pull-out and turn-in for the gates so the first buoy is reachable early.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "setup": {
+        "lake": "tallpine",
+        "ropeIndex": 0,
+        "ropeLabel": "15 OFF",
+        "boatSpeedMph": 34
+      },
+      "pass_criteria": {
+        "gatesMade": true,
+        "minBuoys": 1,
+        "description": {
+          "text": "Pass through the entry gates and clear buoy 1 on time.",
+          "status": "PENDING_WADE_APPROVAL"
+        }
+      },
+      "focus_cues": [
+        {
+          "id": "pull_out",
+          "text": {
+            "text": "Smooth pull-out, then a patient glide.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "turn_in",
+          "text": {
+            "text": "Turn in on time, not early.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "first_ball",
+          "text": {
+            "text": "Arrive wide and early for buoy 1.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "feedback": [
+        {
+          "cue": "turn_in",
+          "when": "gate_turnin_offset_s<-0.2",
+          "text": {
+            "text": "Turn-in was early. Glide a moment longer.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "turn_in",
+          "when": "gate_turnin_offset_s>0.2",
+          "text": {
+            "text": "Turn-in was late. Start it a beat sooner.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "first_ball",
+          "when": "gates_made==false",
+          "text": {
+            "text": "Missed the gates. Focus on the line through them first.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "first_ball",
+          "when": "buoy1_cleared==true",
+          "text": {
+            "text": "Gates and buoy 1 made. Good start to the pass.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "status": "PENDING_WADE_APPROVAL"
+    },
+    {
+      "id": "preturn",
+      "title": {
+        "text": "Pre-turn and turn timing",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "goal": {
+        "text": "Start each turn ahead of the buoy, let the lean peak at the buoy, and finish on the far side.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "setup": {
+        "lake": "heronmarsh",
+        "ropeIndex": 1,
+        "ropeLabel": "22 OFF",
+        "boatSpeedMph": 34
+      },
+      "pass_criteria": {
+        "minBuoys": 5,
+        "turnTimingWindowS": [
+          -0.3,
+          0.1
+        ],
+        "description": {
+          "text": "Average turn apex timing within the lesson window and at least 5 buoys.",
+          "status": "PENDING_WADE_APPROVAL"
+        }
+      },
+      "focus_cues": [
+        {
+          "id": "early",
+          "text": {
+            "text": "Start the turn before the buoy.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "reach",
+          "text": {
+            "text": "Reach with the free hand into the turn, shoulders level, body low and near-flat at the buoy.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "finish",
+          "text": {
+            "text": "Finish the turn before pulling.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "feedback": [
+        {
+          "cue": "early",
+          "when": "avg_turn_offset_s>0.1",
+          "text": {
+            "text": "Turns tended to finish late. Begin them earlier.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "early",
+          "when": "avg_turn_offset_s<-0.3",
+          "text": {
+            "text": "Turns came very early. Let the ski carry a moment more.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "finish",
+          "when": "slack_events>0",
+          "text": {
+            "text": "Slack rope after some turns. Finish the turn before loading the line.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "*",
+          "when": "buoys_cleared>=6",
+          "text": {
+            "text": "Full pass with good timing.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "early",
+          "when": "abs(avg_lean_peak_offset_s)>0.25",
+          "text": {
+            "text": "Lean peaked away from the buoy on some turns. Let it build to its peak right at the buoy.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "status": "PENDING_WADE_APPROVAL"
+    },
+    {
+      "id": "wake_crossing",
+      "title": {
+        "text": "Wake crossing",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "goal": {
+        "text": "Cross both wakes on a steady edge with no bounce or slack.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "setup": {
+        "lake": "heronmarsh",
+        "ropeIndex": 1,
+        "ropeLabel": "22 OFF",
+        "boatSpeedMph": 34
+      },
+      "pass_criteria": {
+        "noFall": true,
+        "maxSlackEvents": 0,
+        "description": {
+          "text": "No fall and no slack events across the pass.",
+          "status": "PENDING_WADE_APPROVAL"
+        }
+      },
+      "focus_cues": [
+        {
+          "id": "edge",
+          "text": {
+            "text": "One steady edge through both wakes.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "stacked",
+          "text": {
+            "text": "Stay stacked; let the legs absorb.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "no_slack",
+          "text": {
+            "text": "Keep the line tight after the second wake.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "feedback": [
+        {
+          "cue": "edge",
+          "when": "edge_changes_mid_wake>0",
+          "text": {
+            "text": "Edge wavered during a crossing. Commit to one edge until clear.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "no_slack",
+          "when": "slack_events==0",
+          "text": {
+            "text": "Line stayed tight through every crossing.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "no_slack",
+          "when": "slack_events>0",
+          "text": {
+            "text": "Some slack after crossing. Ease the pull more gradually.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "*",
+          "when": "fell==true",
+          "text": {
+            "text": "Fell during the pass. Back off the speed or rope and rebuild.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "status": "PENDING_WADE_APPROVAL"
+    },
+    {
+      "id": "rope_progression",
+      "title": {
+        "text": "Rope-length progression",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "goal": {
+        "text": "Run a full pass, then shorten the rope one step at a time.",
+        "status": "PENDING_WADE_APPROVAL"
+      },
+      "setup": {
+        "lake": "villaserena",
+        "ropeIndex": 1,
+        "ropeLabel": "22 OFF",
+        "boatSpeedMph": 36
+      },
+      "pass_criteria": {
+        "minBuoys": 6,
+        "progressRopeIndices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "description": {
+          "text": "Clear 6 buoys at the current rope, then unlock the next rope step from the existing menu.",
+          "status": "PENDING_WADE_APPROVAL"
+        }
+      },
+      "focus_cues": [
+        {
+          "id": "same_basics",
+          "text": {
+            "text": "Same basics as a long line; nothing new.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "width",
+          "text": {
+            "text": "Width comes earlier on a shorter line.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "id": "patience",
+          "text": {
+            "text": "Patience on the turn.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "feedback": [
+        {
+          "cue": "*",
+          "when": "buoys_cleared>=6",
+          "text": {
+            "text": "Full pass. Next rope step unlocked.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "*",
+          "when": "buoys_cleared<6",
+          "text": {
+            "text": "Stay at this length until the full pass is consistent.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        },
+        {
+          "cue": "width",
+          "when": "avg_max_lateral_m<target",
+          "text": {
+            "text": "Width dropped at this length. Start the move out sooner.",
+            "status": "PENDING_WADE_APPROVAL"
+          }
+        }
+      ],
+      "status": "PENDING_WADE_APPROVAL"
+    }
+  ],
+  "telemetry_required": {
+    "buoys_cleared": {
+      "desc": "int per pass",
+      "recorded": "UNVERIFIED"
+    },
+    "fell": {
+      "desc": "bool",
+      "recorded": "UNVERIFIED"
+    },
+    "gates_made": {
+      "desc": "bool",
+      "recorded": "UNVERIFIED"
+    },
+    "buoy1_cleared": {
+      "desc": "bool (derivable from buoy list)",
+      "recorded": "UNVERIFIED"
+    },
+    "handle_low_fraction": {
+      "desc": "fraction of pass time handle height below threshold — needs handle height sample",
+      "recorded": "UNVERIFIED"
+    },
+    "avg_max_lateral_m": {
+      "desc": "mean per-turn max lateral offset from boat path",
+      "recorded": "UNVERIFIED"
+    },
+    "gate_turnin_offset_s": {
+      "desc": "turn-in time relative to an ideal point — likely NOT recorded",
+      "recorded": "UNVERIFIED"
+    },
+    "avg_turn_offset_s": {
+      "desc": "turn apex time relative to buoy pass time",
+      "recorded": "UNVERIFIED"
+    },
+    "slack_events": {
+      "desc": "count of rope tension drops below threshold — check if recorded",
+      "recorded": "UNVERIFIED"
+    },
+    "edge_changes_mid_wake": {
+      "desc": "edge-change events during wake crossing (audio skier_edge_change event exists; logging unknown)",
+      "recorded": "UNVERIFIED"
+    },
+    "lean_peak_offset_s": {
+      "desc": "per turn: time of peak lean angle minus buoy pass time (s); 0 = peak at buoy",
+      "recorded": "UNVERIFIED"
+    },
+    "avg_lean_peak_offset_s": {
+      "desc": "mean of lean_peak_offset_s over the pass",
+      "recorded": "UNVERIFIED"
+    },
+    "lean_release_before_wake_count": {
+      "desc": "crossings where lean dropped below release threshold before the skier reached the first wake (released too early)",
+      "recorded": "UNVERIFIED"
+    },
+    "lean_held_past_wake_count": {
+      "desc": "crossings where lean was still above release threshold after the skier cleared the second wake (released too late)",
+      "recorded": "UNVERIFIED"
+    },
+    "deep_water_start_success": {
+      "desc": "bool: skier reached plane and a stable stance after the deep-water start without falling",
+      "recorded": "UNVERIFIED - likely NOT recorded"
+    }
+  },
+  "_v2_changes": "From clinic_lessons.json: stance/wide_pull/preturn copy fixes, lesson 0 deep_water_start, lean telemetry redefined (peak at buoy, release across the wake). See clinic_technique_check.md."
+}

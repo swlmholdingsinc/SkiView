@@ -1,0 +1,42 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <!-- T22 title skeleton. Hero/logo/watermark shown only when wadeBrandingEnabled && wadeLikenessEnabled (branding slot title.hero, ship:false). -->
+    <Style src="sv-title-t22.uss" />
+    <ui:VisualElement name="title-root" class="sv-title">
+        <ui:VisualElement name="hero" class="sv-title__hero" />
+        <ui:VisualElement name="scrim" class="sv-title__scrim" />
+        <ui:VisualElement name="logo" class="sv-logo-plate" />
+        <ui:VisualElement name="left" class="sv-title__left">
+            <ui:VisualElement name="event-list" class="sv-event-list">
+                <ui:Button name="ev-slalom" class="sv-event" focusable="true">
+                    <ui:VisualElement class="sv-event__icon" /><ui:VisualElement><ui:Label class="sv-event__name" text="SLALOM" /><ui:Label class="sv-event__sub" text="6 buoys · rope shortens each pass" /></ui:VisualElement>
+                    <ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" />
+                </ui:Button>
+                <ui:Button name="ev-jump" class="sv-event" focusable="true">
+                    <ui:VisualElement class="sv-event__icon" /><ui:VisualElement><ui:Label class="sv-event__name" text="JUMP" /><ui:Label class="sv-event__sub" text="3 passes · longest jump" /></ui:VisualElement>
+                    <ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" />
+                </ui:Button>
+                <ui:Button name="ev-tricks" class="sv-event sv-event--disabled" focusable="true">
+                    <ui:VisualElement class="sv-event__icon" /><ui:VisualElement><ui:VisualElement style="flex-direction: row;"><ui:Label class="sv-event__name" text="TRICKS" /><ui:Label class="sv-tag-soon" text="COMING SOON" /></ui:VisualElement><ui:Label class="sv-event__sub" text="Coming soon" /></ui:VisualElement>
+                    <ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" />
+                </ui:Button>
+            </ui:VisualElement>
+            <ui:VisualElement name="sec-row" class="sv-sec-row">
+                <ui:Button name="sec-clinic" class="sv-sec" text="CLINIC"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
+                <ui:Button name="sec-beat" class="sv-sec" text="CHALLENGE"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
+                <ui:Button name="sec-settings" class="sv-sec" text="SETTINGS"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
+                <ui:Button name="sec-credits" class="sv-sec" text="CREDITS"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="event-panel" class="sv-event-panel">
+            <ui:Label text="SLALOM" /><ui:Label text="READY TO SKI" /><ui:Label name="last-setup" text="Last setup: {LAKE} · {ROPE} off · {SPEED} mph" />
+            <ui:VisualElement style="flex-direction: row; margin-top: 22px;">
+                <ui:Button name="quick-start" class="sv-btn sv-btn--primary" text="QUICK START"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
+                <ui:Button name="setup" class="sv-btn" text="SETUP"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="soon-toast" class="sv-soon-toast" picking-mode="Ignore"><ui:Label text="TRICKS · COMING SOON" /></ui:VisualElement>
+        <ui:Label name="rights-tag" class="sv-rights-tag" text="WADE PHOTO · SUPPLIED BY SCOTT · RIGHTS TBC · SWAP FOR 3D RENDER" />
+        <ui:Label name="copyright" class="sv-copyright" text="© 2026 SWLM Holdings Inc" />
+        <ui:VisualElement name="watermark" class="sv-watermark" picking-mode="Ignore" />
+    </ui:VisualElement>
+</ui:UXML>

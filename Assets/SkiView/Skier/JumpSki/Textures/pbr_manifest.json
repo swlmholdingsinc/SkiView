@@ -1,0 +1,46 @@
+{
+  "asset": "JumpSki_V1_Pair",
+  "unreal_prep": true,
+  "baked_lighting_in_albedo": false,
+  "notes": "Strict PBR. Albedo is flat pigment/graphic only \u2014 no AO, shadows, or lit gradients. .blend remains Nanite/raw archive; LOD1 kept for current Unity, no further strip/LOD2.",
+  "ski_body": {
+    "uv_layout": "2048x512 tip@u=0 tail@u=1; deck v>0.5 base v<0.5 (matches JumpSki mesh UV)",
+    "resolution": [
+      2048,
+      512
+    ],
+    "maps": {
+      "BaseColor": "T_JumpSki_V1_BaseColor.png",
+      "Normal": "T_JumpSki_V1_Normal.png",
+      "Metallic": "T_JumpSki_V1_Metallic.png",
+      "Roughness": "T_JumpSki_V1_Roughness.png",
+      "MetallicSmoothness_UnityOptional": "T_JumpSki_V1_MetallicSmoothness.png"
+    }
+  },
+  "bindings": {
+    "uv_layout": "1024 atlas quadrants: shell|strap / plate|hardware \u2014 assigned in apply_pbr_jump_v1.py",
+    "resolution": [
+      1024,
+      1024
+    ],
+    "maps": {
+      "BaseColor": "T_JumpBindings_V1_BaseColor.png",
+      "Normal": "T_JumpBindings_V1_Normal.png",
+      "Metallic": "T_JumpBindings_V1_Metallic.png",
+      "Roughness": "T_JumpBindings_V1_Roughness.png",
+      "MetallicSmoothness_UnityOptional": "T_JumpBindings_V1_MetallicSmoothness.png"
+    }
+  },
+  "fin": {
+    "resolution": [
+      512,
+      512
+    ],
+    "maps": {
+      "BaseColor": "T_JumpFin_V1_BaseColor.png",
+      "Normal": "T_JumpFin_V1_Normal.png",
+      "Metallic": "T_JumpFin_V1_Metallic.png",
+      "Roughness": "T_JumpFin_V1_Roughness.png"
+    }
+  }
+}

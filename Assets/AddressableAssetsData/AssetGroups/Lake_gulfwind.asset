@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Lake_gulfwind
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Lake_gulfwind
+  m_GUID: 35e64a916c16c26948d46077d38b50b4
+  m_SerializeEntries:
+  - m_GUID: dca5a4ae71d29a4179407edbfe48772c
+    m_Address: SkiViewLake_gulfwind
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: c260327af06c01289a8d92b5936f0f8f, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 64c44e35a34d2b1c289282dc42b936d7, type: 2}
+    - {fileID: 11400000, guid: e888a5d29dd2a12b596b5c4674e6fde4, type: 2}
+    - {fileID: 11400000, guid: 6be2cbf16ca05173ca297b6b5b83e12b, type: 2}
