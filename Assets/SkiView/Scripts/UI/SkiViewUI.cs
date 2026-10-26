@@ -108,6 +108,7 @@ namespace SkiView.UI
         public void ShowCamToast(SkiViewGame.CamMode m)
         {
             if (toast == null) return;
+            toast.EnableInClassList("sv-toast--above-tut", TutorialShowing);   // lift clear of the tutorial coach card
             int idx = CycleIndex(m); toastView.text = ViewNames[idx];
             for (int i = 0; i < dots.Count; i++) dots[i].EnableInClassList("sv-toast__dot--on", i == idx);
             if (hintView != null) hintView.text = ViewNames[idx];
