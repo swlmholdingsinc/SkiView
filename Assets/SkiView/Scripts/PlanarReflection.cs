@@ -34,6 +34,11 @@ namespace SkiView
             if (reflCam != null) DestroyImmediate(reflCam.gameObject);
         }
 
+        // perf/webgl-load: WebGL and Low/Med presets use an LDR ARGB32 target with a 16-bit depth buffer; Low/Med also refresh every other frame
+        static bool LowMed => SkiViewQuality.Current != SkiViewQuality.Preset.High;
+        static bool CheapRT => Application.platform == RuntimePlatform.WebGLPlayer || LowMed;
+        bool rtCheap;
+
         bool IsMobileTier => Application.isMobilePlatform || QualitySettings.GetQualityLevel() == 0;
 
         void Ensure()
@@ -44,10 +49,12 @@ namespace SkiView
             float sc = Application.isMobilePlatform ? mobileResolutionScale : (Application.platform == RuntimePlatform.WebGLPlayer ? Mathf.Max(0.5f, resolutionScale) : (IsMobileTier ? mobileResolutionScale : resolutionScale));
             sc *= SkiViewQuality.ReflectionScale;   // T6: Low 0.5x, Med 0.75x, High 1x of the tier scale
             int w = Mathf.Max(64, (int)(source.pixelWidth * sc)), h = Mathf.Max(64, (int)(source.pixelHeight * sc));
-            if (rt == null || rt.width != w || rt.height != h)
+            bool cheap = CheapRT;
+            if (rt == null || rt.width != w || rt.height != h || rtCheap != cheap)
             {
                 if (rt != null) { rt.Release(); DestroyImmediate(rt); }
-                rt = new RenderTexture(w, h, 24, RenderTextureFormat.DefaultHDR) { name = "PlanarReflection", useMipMap = false, antiAliasing = 1, hideFlags = HideFlags.DontSave };
+                rtCheap = cheap;
+                rt = new RenderTexture(w, h, cheap ? 16 : 24, cheap ? RenderTextureFormat.ARGB32 : RenderTextureFormat.DefaultHDR) { name = "PlanarReflection", useMipMap = false, antiAliasing = 1, hideFlags = HideFlags.DontSave };
                 rt.Create();
             }
             if (reflCam == null)
@@ -67,7 +74,7 @@ namespace SkiView
             if (reflCam == null || source == null) return;
             reflCam.CopyFrom(source);
             reflCam.enabled = false; reflCam.targetTexture = rt; reflCam.cullingMask = reflectLayers & ~((1 << NO_REFLECT_LAYER) | (1 << FP_LAYER)); reflCam.farClipPlane = farClip;
-            reflCam.allowMSAA = false; reflCam.allowHDR = true; reflCam.depth = source.depth - 10;
+            reflCam.allowMSAA = false; reflCam.allowHDR = !rtCheap; reflCam.depth = source.depth - 10;
             Transform s = source.transform;
             Vector3 p = s.position; p.y = 2f * waterY - p.y;
             Vector3 f = s.forward; f.y = -f.y; Vector3 u = s.up; u.y = -u.y;
@@ -99,6 +106,7 @@ namespace SkiView
             // play mode: once per frame after the game camera has moved (execution order 1000), outside the render loop
             if (!Application.isPlaying) return;
             if (!SkiViewQuality.Reflections) { Shader.SetGlobalFloat(ID_On, 0f); return; }   // T6: water-reflections switch (persisted)
+            if (LowMed && rt != null && (Time.frameCount & 1) == 1) return;   // Low/Med: every other frame (last texture stays bound)
             RenderNow();
         }
     }
