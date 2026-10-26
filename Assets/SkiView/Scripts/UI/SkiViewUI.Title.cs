@@ -56,7 +56,7 @@ namespace SkiView.UI
             title.Q<Button>("ev-slalom").clicked += () => OpenEventPanel(false, false);
             title.Q<Button>("ev-jump").clicked += () => OpenEventPanel(true, false);
             title.Q<Button>("ev-tricks").clicked += () => OpenEventPanel(false, true);
-            // b10.17 Clinic Phase A: enable Clinic; Beat Wade stays Coming soon
+            // b10.17 Clinic Phase A: enable Clinic; Beat Scott stays Coming soon
             var clinicBtn = title.Q<Button>("sec-clinic");
             if (clinicBtn != null)
             {

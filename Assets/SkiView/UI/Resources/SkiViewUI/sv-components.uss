@@ -65,7 +65,7 @@
 
 /* segmented, toggle, slider */
 .sv-seg { flex-direction: row; background-color: var(--sv-ink-800); border-radius: var(--sv-r-btn); padding: 4px; }
-.sv-seg > .sv-seg__item { height: 56px; min-width: 96px; padding: 0 20px; margin-right: 4px; -unity-text-align: middle-center;
+.sv-seg > .sv-seg__item { height: 56px; min-width: 72px; padding: 0 14px; flex-shrink: 1; margin-right: 4px; -unity-text-align: middle-center;
           color: var(--sv-text-2); border-radius: 3px; -unity-font-definition: var(--sv-font-cond-600); font-size: 26px; }
 .sv-seg > .sv-seg__item--on { background-color: var(--sv-accent); color: #FFFFFF; }
 .sv-slider #unity-tracker { height: 6px; background-color: var(--sv-ink-600); border-width: 0; border-radius: 3px; }
@@ -104,6 +104,7 @@
             background-color: var(--sv-plate); border-radius: var(--sv-r-btn); border-top-width: 4px; border-color: var(--sv-accent);
             opacity: 0; translate: 0 8px;
             transition-property: opacity, translate; transition-duration: 0.3s, 0.3s; transition-timing-function: ease-in, ease-in; }
+.sv-toast--above-tut { bottom: 340px; }   /* clear of the tutorial coach card (bottom-left) */
 .sv-toast--show { opacity: 1; translate: 0 0; transition-duration: 0.15s, 0.15s; transition-timing-function: ease-out-cubic, ease-out-cubic; }
 .sv-toast__label { -unity-font-definition: var(--sv-font-cond-600); font-size: 17px; letter-spacing: 3.4px; color: var(--sv-text-2); }
 .sv-toast__view { -unity-font-definition: var(--sv-font-cond-700); font-size: 44px; letter-spacing: 4.4px; }

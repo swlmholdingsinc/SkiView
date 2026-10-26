@@ -67,3 +67,6 @@
     -unity-font-style: bold;
 }
 .sv-title--phone .sv-wordmark { font-size: 36px; left: 24px; top: 20px; }
+
+/* Title: "Last setup" summary wraps instead of running off the right edge */
+#last-setup { white-space: normal; flex-shrink: 1; max-width: 100%; }

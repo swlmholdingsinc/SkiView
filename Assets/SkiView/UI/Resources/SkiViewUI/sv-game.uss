@@ -12,6 +12,9 @@
 .sv-panel { flex-grow: 1; padding: var(--s3) var(--s4); }
 .srow { flex-direction: row; align-items: center; justify-content: space-between; padding: 18px 0; border-bottom-width: 2px; border-color: var(--sv-line); }
 .srow__txt { flex-shrink: 1; margin-right: var(--s3); }
+.srow__txt { flex-grow: 1; flex-basis: 0; min-width: 0; }
+.srow__txt > Label { white-space: normal; }
+.srow > .sv-seg { flex-shrink: 1; flex-wrap: wrap; justify-content: flex-end; max-width: 64%; }
 .sv-seg > .sv-seg__item { border-width: 0; background-color: rgba(0,0,0,0); margin-left: 0; margin-top: 0; margin-bottom: 0; }
 .sv-seg > .sv-seg__item--on { background-color: var(--sv-accent); }
 .sv-credits-text { white-space: normal; font-size: 24px; color: var(--sv-text); margin-bottom: 14px; }
@@ -87,7 +90,7 @@
 .sv-help19__kb { background-color: rgba(47, 123, 255, 0.12); padding-left: 10px; }
 .sv-help19__pad { color: var(--sv-text-3); }
 /* tutorial coach card */
-.sv-tut19 { position: absolute; left: 0; bottom: 0; width: 820px; padding: 22px 30px 22px 34px; }
+.sv-tut19 { position: absolute; left: 0; bottom: 0; width: 58%; max-width: 820px; min-width: 480px; padding: 22px 30px 22px 34px; }
 .sv-tut19__top { flex-direction: row; justify-content: space-between; align-items: center; }
 .sv-tut19__dots { flex-direction: row; }
 .sv-tut19__dot { width: 26px; height: 5px; margin-left: 6px; background-color: var(--sv-line-strong); }

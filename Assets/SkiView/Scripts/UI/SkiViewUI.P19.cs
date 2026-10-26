@@ -566,7 +566,8 @@ namespace SkiView.UI
         }
 
         // ---------------- tutorial (13-13d, tutorial-script.md) ----------------
-        int tutStep = -1; float tutT; int tutCross0, tutCam0; SkiViewGame.CamMode tutCamLast; const string TUT_PREF = "sv.tutorial.done";
+        int tutStep = -1; float tutT; int tutCross0, tutCam0; SkiViewGame.CamMode tutCamLast; const string TUT_PREF = "sv.tutorial.done"; const float TUT_MIN_DWELL = 5f;
+        public bool TutorialShowing => tutStep >= 0 && tutStep != 31 && tutCard != null && tutCard.style.display == DisplayStyle.Flex;
         struct TutCopy { public string title, touch, keys; }
         static readonly TutCopy[] TUT =
         {
@@ -605,13 +606,18 @@ namespace SkiView.UI
             if (tutStep > 10) { EndTutorial(); return; }
             ShowStep();
         }
+        // Steps shown on each kind of run (step 4 "CUT EARLIER" is not in the flow; 31 is the hidden wait inside step 3).
+        static readonly int[] TUT_SEQ_SLALOM = { 0, 1, 2, 3, 5, 6, 10 }, TUT_SEQ_JUMP = { 0, 1, 7, 8, 9, 10 };
+        int[] TutSeq() => game != null && game.jumpMode ? TUT_SEQ_JUMP : TUT_SEQ_SLALOM;
         void ShowStep()
         {
             var t = TUT[tutStep]; bool touch = Application.isMobilePlatform; tutT = 0f;
             tutCard.style.display = DisplayStyle.Flex;
-            tutCrumb.text = tutStep == 0 ? "TUTORIAL" : $"TUTORIAL · STEP {tutStep} OF 10";
-            int di = 0; foreach (var d in tutDots.Children()) { d.EnableInClassList("sv-tut19__dot--on", di == tutStep - 1); d.EnableInClassList("sv-tut19__dot--done", di < tutStep - 1); di++; }
-            tutTitle.text = t.title.Replace("{TITLE}", Title(SkiViewBranding.Title).Replace(" With ", " with "));   // T26: "Welcome to Ski with Wade" tutText.text = touch ? t.touch : t.keys; tutKeys.Clear(); tutProg.text = "";
+            var seq = TutSeq(); int pos = System.Array.IndexOf(seq, tutStep), total = seq.Length - 1;   // visible numbering follows the steps this run actually shows
+            tutCrumb.text = pos <= 0 ? "TUTORIAL" : $"TUTORIAL · STEP {pos} OF {total}";
+            int di = 0; foreach (var d in tutDots.Children()) { d.style.display = di < total ? DisplayStyle.Flex : DisplayStyle.None; d.EnableInClassList("sv-tut19__dot--on", di == pos - 1); d.EnableInClassList("sv-tut19__dot--done", di < pos - 1); di++; }
+            tutTitle.text = t.title.Replace("{TITLE}", Title(SkiViewBranding.Title).Replace(" With ", " with "));   // T26: "Welcome to Ski with Wade"
+            tutText.text = touch ? t.touch : t.keys; tutKeys.Clear(); tutProg.text = "";
             if (tutStep == 2)
             {
                 if (touch) { Lb("HOLD LEFT HALF", "t-label", tutKeys); Lb("·", "t-label", tutKeys); Lb("HOLD RIGHT HALF", "t-label", tutKeys); }
@@ -631,12 +637,12 @@ namespace SkiView.UI
             if (SkiViewArgs.Has("tutorial") && SkiViewArgs.I("tutorial", 0) > 1) return;   // a single forced step stays up for the capture
             switch (tutStep)
             {
-                case 0: if (tutT > 4f || Input.GetKeyDown(KeyCode.Return) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)) Next(m == SkiViewGame.Mode.DeepStart ? 1 : 2); break;
+                case 0: if (tutT > 4f || Input.GetKeyDown(KeyCode.Return) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)) Next(1); break;   // always show step 1 (step 1 advances on its own once up)
                 case 1: if (m != SkiViewGame.Mode.DeepStart && tutT > 1.5f) Next(game.jumpMode ? 7 : 2); break;
                 case 2:
                     int got = sim != null ? sim.wakeCrossings - tutCross0 : 0;
                     tutProg.text = $"WAKE CROSSINGS  {Mathf.Min(got, 2)} / 2";
-                    if (got >= 2 || m == SkiViewGame.Mode.Pass) Next(3); break;
+                    if (got >= 2 || (m == SkiViewGame.Mode.Pass && tutT > TUT_MIN_DWELL)) Next(3); break;   // min dwell: no instant skip if the pass already started
                 case 3: if (m == SkiViewGame.Mode.Pass && tutT > 3f) { tutCard.style.display = DisplayStyle.None; tutStep = 31; } break;
                 case 31: if (m == SkiViewGame.Mode.Sink || m == SkiViewGame.Mode.Fallen) Next(5); break;
                 case 5: if (m == SkiViewGame.Mode.Pass) Next(6); break;
