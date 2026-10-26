@@ -411,15 +411,15 @@ namespace SkiView
             if (trickSlide.volume > 0f && !trickSlide.isPlaying && trickSlide.clip != null) trickSlide.Play(); else if (trickSlide.volume <= 0f && trickSlide.isPlaying) trickSlide.Stop();
         }
 
-        // ---------- pass 4: Clinic / Beat Wade stingers (Music), tip chime (UI) ----------
-        // TODO caller: the Clinic and Beat Wade modes do not exist yet; call these from their state changes.
+        // ---------- pass 4: Clinic / Beat Scott stingers (Music), tip chime (UI) ----------
+        // TODO caller: the Clinic and Beat Scott modes do not exist yet; call these from their state changes.
         public void ClinicLessonStart() => Play("ui_clinic_lesson_start", null, -5f, GMusic, 1f, 0f, 0f, 1f);
         public void ClinicPass() => Play("ui_clinic_pass", null, -5f, GMusic, 1f, 0f, 0f, 1f);
         public void ClinicFail() => Play("ui_clinic_fail", null, -5f, GMusic, 1f, 0f, 0f, 1f);
         public void ClinicTip() => Play("ui_clinic_tip_chime", null, -4f, GUI, 1f, 0.02f, 0f, 0.5f);
-        public void BeatWadeRungUnlock() => Play("ui_beatwade_rung_unlock", null, -5f, GMusic, 1f, 0f, 0f, 1f);
-        public void BeatWadeNearMiss() => Play("ui_beatwade_near_miss", null, -5f, GMusic, 1f, 0f, 0f, 1f);
-        public void BeatWadeWin() => Play("ui_beatwade_win", null, -2f, GMusic, 1f, 0f, 0f, 2f);   // +3 dB vs the other stingers
+        public void BeatScottRungUnlock() => Play("ui_beatscott_rung_unlock", null, -5f, GMusic, 1f, 0f, 0f, 1f);
+        public void BeatScottNearMiss() => Play("ui_beatscott_near_miss", null, -5f, GMusic, 1f, 0f, 0f, 1f);
+        public void BeatScottWin() => Play("ui_beatscott_win", null, -2f, GMusic, 1f, 0f, 0f, 2f);   // +3 dB vs the other stingers
         // ---------- pass 5: unlock / personal best (Music) ----------
         // TODO caller: unlock and personal-best detection is not in the game yet.
         public void SkiUnlock() => Play("ui_ski_unlock", null, -5f, GMusic, 1f, 0f, 0f, 1f);

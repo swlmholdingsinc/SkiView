@@ -283,19 +283,19 @@ MonoBehaviour:
     loopStart: 0
     loopEnd: 0
     loop: 0
-  - id: ui_beatwade_rung_unlock
+  - id: ui_beatscott_rung_unlock
     clip: {fileID: 8300000, guid: ba4c3db446fa56c24a3977c2ec9c3029, type: 3}
     lufs: -12.1
     loopStart: 0
     loopEnd: 0
     loop: 0
-  - id: ui_beatwade_win
+  - id: ui_beatscott_win
     clip: {fileID: 8300000, guid: 9b1b02746b82f3646af7346d911928a5, type: 3}
     lufs: -14
     loopStart: 0
     loopEnd: 0
     loop: 0
-  - id: ui_beatwade_near_miss
+  - id: ui_beatscott_near_miss
     clip: {fileID: 8300000, guid: e208839060389cb27a31f8871bd17268, type: 3}
     lufs: -13
     loopStart: 0
