@@ -590,7 +590,7 @@ namespace SkiView.UI
         struct TutCopy { public string title, touch, keys; }
         static readonly TutCopy[] TUT =
         {
-            new TutCopy { title = "Welcome to {TITLE}", touch = "Thirty seconds of basics, then the lake is yours.", keys = "Thirty seconds of basics, then the lake is yours." },
+            new TutCopy { title = "Welcome to Ski View, Scott", touch = "Thirty seconds of basics, then the lake is yours.", keys = "Thirty seconds of basics, then the lake is yours." },
             new TutCopy { title = "HANG ON", touch = "Sit back, tips up. The boat does the work.", keys = "Sit back, tips up. The boat does the work." },
             new TutCopy { title = "LEAN TO CUT", touch = "Hold the left side of the screen to lean left. Hold the right side to lean right. Let go to ride flat.", keys = "Hold A / ← or D / → to lean. Let go to ride flat." },
             new TutCopy { title = "GATES, THEN SIX BUOYS", touch = "Go through the gate, then round the outside of each orange buoy. Half a buoy still counts.", keys = "Go through the gate, then round the outside of each orange buoy. Half a buoy still counts." },
@@ -631,7 +631,10 @@ namespace SkiView.UI
             tutCard.style.display = DisplayStyle.Flex;
             tutCrumb.text = tutStep == 0 ? "TUTORIAL" : $"TUTORIAL · STEP {tutStep} OF 10";
             int di = 0; foreach (var d in tutDots.Children()) { d.EnableInClassList("sv-tut19__dot--on", di == tutStep - 1); d.EnableInClassList("sv-tut19__dot--done", di < tutStep - 1); di++; }
-            tutTitle.text = t.title.Replace("{TITLE}", Title(SkiViewBranding.Title).Replace(" With ", " with "));   // T26: "Welcome to Ski with Wade" tutText.text = touch ? t.touch : t.keys; tutKeys.Clear(); tutProg.text = "";
+            tutTitle.text = t.title;
+            tutText.text = touch ? t.touch : t.keys;
+            tutKeys.Clear();
+            tutProg.text = "";
             if (tutStep == 2)
             {
                 if (touch) { Lb("HOLD LEFT HALF", "t-label", tutKeys); Lb("·", "t-label", tutKeys); Lb("HOLD RIGHT HALF", "t-label", tutKeys); }
