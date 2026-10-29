@@ -652,7 +652,24 @@ namespace SkiView
                     float pull = loadV * (1f - reachL);
                     float aRight = vel.magnitude * headRate;
                     float latF = aRight * turnGain - Mathf.Sign(side) * Mathf.Min(1f, Mathf.Abs(side) / ropeSideFull) * ropePullG * 9.81f * pull;
-                    float leanT = Mathf.Clamp(Mathf.Atan2(latF, 9.81f) * Mathf.Rad2Deg, -Mathf.Min(maxLeanDeg, rollLimit), Mathf.Min(maxLeanDeg, rollLimit));
+                    float leanCap = Mathf.Min(maxLeanDeg, rollLimit);
+                    if (rig != null && rig.poses != null)
+                    {
+                        if (mode == Mode.Pass) leanCap = Mathf.Min(leanCap, rig.poses.peakSkiRoll);
+                        else if (mode == Mode.Jump && jphase == JPhase.Approach) leanCap = Mathf.Min(leanCap, rig.poses.approachLean);
+                        else if (mode == Mode.Jump && (jphase == JPhase.Landing || jphase == JPhase.RideOut)) leanCap = Mathf.Min(leanCap, rig.poses.landMaxRoll);
+                    }
+                    float leanT = Mathf.Clamp(Mathf.Atan2(latF, 9.81f) * Mathf.Rad2Deg, -leanCap, leanCap);
+                    if (mode == Mode.Pass && rig != null && rig.poses != null)
+                    {
+                        float lat01 = Mathf.Clamp01(Mathf.Abs(sim.Lateral) / SkierSim.BUOY_OFFSET);
+                        float inbound = Mathf.Abs(sim.Lateral) < 1.2f ? 0.35f : (sim.Lateral * sim.LateralVel < 0f ? 1f : 0f);
+                        float edge01 = Mathf.Clamp01(Mathf.Abs(leanRightDeg) / Mathf.Max(1f, rig.poses.peakSkiRoll));
+                        int buoyN = SkierPoses.ActiveTurnBuoy(sim.nextBuoy, sim.pendingHalf);
+                        float want = rig.poses.EvaluateSlalom(lat01, inbound, Mathf.Clamp01(Mathf.Abs(sim.omega) / 2.45f), edge01, SkierPoses.ReachTowardBoat(buoyN)).lean;
+                        float sgn = Mathf.Abs(leanT) > 1f ? Mathf.Sign(leanT) : (Mathf.Abs(leanRightDeg) > 1f ? Mathf.Sign(leanRightDeg) : Mathf.Sign(sim.Lateral == 0f ? 1f : -sim.Lateral));
+                        leanT = sgn * Mathf.Min(want, leanCap);
+                    }
                     leanRightDeg = vlean <= 0f ? leanT : Mathf.MoveTowards(leanRightDeg, Mathf.Lerp(leanRightDeg, leanT, 1f - Mathf.Exp(-vlean / 0.12f)), 240f * vlean);   // b9.1: <= 4 deg/frame at 60 fps (Holly)
                     // keep every body part out of the water: the rig reports its lowest clearance, back the limit off
                     if (rig != null) rollLimit = rig.WaterClearance < 0.03f ? Mathf.Max(30f, Mathf.Abs(leanRightDeg) - 4f) : Mathf.MoveTowards(rollLimit, maxLeanDeg, 30f * Mathf.Max(vlean, 0.016f));
@@ -673,7 +690,11 @@ namespace SkiView
                 if (mode == Mode.DeepStart) load = Mathf.Lerp(load, 1f, DwsDepth);   // arms straight on the rope from the first tug
                 if (mode == Mode.Sink) load = Mathf.Lerp(0.3f, 0.6f, SinkDepth);     // slack line, handle held in at the waist
                 rig.rope01 = Mathf.InverseLerp(SkierSim.ROPE_M[0], SkierSim.ROPE_M[7], sim.ropeM);   // b9.1: reach / apex lean by rope length
-                rig.Drive(load, mode == Mode.Jump ? Mathf.Abs(headRate) / 1.5f : Mathf.Abs(sim.omega) / 2.45f, mode == Mode.Fallen, vdt, pyl, reachT, act, mode == Mode.Sink ? 0f : actionT, WaterDepth);
+                int poseBuoy = mode == Mode.Pass ? SkierPoses.ActiveTurnBuoy(sim.nextBuoy, sim.pendingHalf) : 0;
+                int poseReach = poseBuoy > 0 ? SkierPoses.ReachTowardBoat(poseBuoy) : 0;
+                float poseLat = mode == Mode.Pass ? Mathf.Clamp01(Mathf.Abs(sim.Lateral) / SkierSim.BUOY_OFFSET) : 0f;
+                float poseIn = mode == Mode.Pass ? (Mathf.Abs(sim.Lateral) < 1.2f ? 0.35f : (sim.Lateral * sim.LateralVel < 0f ? 1f : 0f)) : 0f;
+                rig.Drive(load, mode == Mode.Jump ? Mathf.Abs(headRate) / 1.5f : Mathf.Abs(sim.omega) / 2.45f, mode == Mode.Fallen, vdt, pyl, reachT, act, mode == Mode.Sink ? 0f : actionT, WaterDepth, poseBuoy, poseReach, poseLat, poseIn);
             }
             if (skier != null)
             {

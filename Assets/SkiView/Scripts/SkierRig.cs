@@ -6,11 +6,9 @@ namespace SkiView
 {
     /// <summary>Rigged slalom skier (Mixamo Remy, Humanoid). Layers, in order:
     /// 1. A manual PlayableGraph of upper-body clips (idle breathing, a bit of "Pulling A Rope"), or "Treading Water" after a fall.
-    /// 2. Stance (Docs/SLALOM-SKIER-LOOK.md): pelvis up and forward over the front foot, two-bone leg IK into the
-    ///    tandem high-wrap boots (front knee bent more), feet aimed down the ski, shoulders back, upper body yawed toward
-    ///    the boat (counter-rotation against the ski).
-    /// 3. Arms: two-bone IK, straight arms to the handle low in front of the hips. The outside hand releases and reaches
-    ///    toward the buoy in the turn.
+    /// 2. Stance from SkierPoses (footage targets): a straight sideways board on the pull, knees and handle per phase.
+    ///    Feet IK to the FrontBoot / RearBoot attaches, so the rear boot's 12° yaw is the rear foot's aim.
+    /// 3. Arms to a handle at the hip. On the reach, buoys 1/3/5 send the free arm toward the boat and 2/4/6 send it away.
     /// Manual time, so it also evaluates in the headless editor capture.</summary>
     [ExecuteAlways]
     public class SkierRig : MonoBehaviour
@@ -39,7 +37,7 @@ namespace SkiView
         public float Stretch01 { get; private set; }
         float reachS;
         public float LeanTotalDeg { get; private set; }
-        public float leanFwdShare = 0.08f, leanSideRate = 3.5f; float leanSide, leanSideT;   // b10.8: lean sideways not forward; b10.3: max forward component of the lean direction
+        public float leanFwdShare = 0.08f, leanSideRate = 3.5f; float leanSide, leanSideT, edgeSigned;   // b10.8: lean sideways not forward; b10.3: max forward component of the lean direction
         public float leanGlideDeg = 0f, leanPullDeg = 0f, chestExtraLeanDeg = 0f;   // stacked lean away from the pull (refs: 40-50 deg total with the ski edge)
         public float shoulderBackDeg = 8f, upperYawShare = 0.55f, hipYawShare = 0.25f;
         public float handleFwd = 0.36f, handleDrop = 0.12f, handHalf = 0.075f;
@@ -56,6 +54,11 @@ namespace SkiView
         // ankle-hip-shoulder line forward over the skis (the "bird" in the air), jumpHandleIn pulls the handle in to the hips
         public bool jumpOn; public Transform jumpBootL, jumpBootR;
         public float jumpCrouch = -1f, jumpPitchDeg = 0f, jumpHandleIn = 0f;
+        /// <summary>0 water or approach, 1 ramp, 2 flight, 3 landing. Flight and landing stay on a neutral clip so a slalom lean cannot fold the torso.</summary>
+        public int jumpPose;
+        public SkierPoses poses = new SkierPoses();
+        float shoulderYaw, kneeS = 148f, armS = 0.9f;
+        int reachTowardBoat; float latS, inbS;
         public float WaterClearance { get; private set; } = 1f;
         public string LowestBone { get; private set; } = ""; public string Debug_ { get; private set; } = ""; public float RootY { get; private set; }   // lowest body point above the water (m), read by SkiViewGame   // pass 3: ski buried tail-down, extra edge in carves
         public float headPitchDownDeg = 6f, gazeToBoat = 0.2f;
@@ -104,10 +107,15 @@ namespace SkiView
         /// <param name="actionT">seconds since the action began</param>
         /// <param name="depth">DeepStart only: 1 = sitting back in the water, 0 = up on the ski</param>
         public void Drive(float load, float carve, bool isFallen, float dt, Vector3 pylon, float turnReach,
-            RiderAction action = RiderAction.None, float actionT = 0f, float depth = 0f)
+            RiderAction action = RiderAction.None, float actionT = 0f, float depth = 0f,
+            int buoy = 0, int reachToward = 0, float lateral01 = 0f, float inbound = 0f)
         {
             Build();
             if (!built) return;
+            if (poses == null) poses = new SkierPoses();
+            reachTowardBoat = reachToward;
+            latS = lateral01;
+            inbS = dt <= 0f ? inbound : Mathf.Lerp(inbS, inbound, 1f - Mathf.Exp(-6f * dt));
             reachS = dt <= 0f ? turnReach : Mathf.Lerp(reachS, turnReach, 1f - Mathf.Exp(-8f * dt)); turnReach = reachS;   // reach v2: at 41 off the reach cue can step 0 -> 1 when the swing pins at full width
             var root0 = transform.parent != null ? transform.parent : transform;
             if (baseSet) transform.localPosition = baseLocal;   // PlantFeet used to leave its offset behind after a fall
@@ -119,16 +127,27 @@ namespace SkiView
                 if (inClip) target[5] = 1f; else target[3] = 1f;
                 if (inClip) dt = Mathf.Min(dt, 0.05f);   // quick blend into the fall
             }
-            else
+            TrackEdge(root0, dt);
+            // Ramp / flight / landing are posed by IK. A slalom lean clip under that IK folds the torso: the clip was
+            // chosen from which side of the boat he is still on, and a cut flips the edge before the centreline.
+            bool neutralPose = action != RiderAction.Fall && jumpOn;
+            bool dropLeans = neutralPose;
+            if (action != RiderAction.Fall && jumpPose == 2 && jumpOn)
+                target[0] = 1f;
+            else if (action != RiderAction.Fall)
             {
                 target[0] = 1f - 0.3f * load; target[1] = 0.3f * load;
                 if (pull != null && pull.name.Contains("SlalomStance")) { target[0] = 0.15f * (1f - load); target[1] = 1f - target[0]; }
-                if (leanL != null && leanR != null && root0 != null)
+                if (!dropLeans && leanL != null && leanR != null && root0 != null)
                 {
-                    // lean poses on the turn side: leaning away from the boat, more of it as the load builds
-                    Vector3 tb = pylon - root0.position; float side = -Vector3.Dot(tb, root0.right);   // >0 = leaning right
-                    float lw = Mathf.Clamp01(load) * Mathf.Clamp01(Mathf.Abs(side) / 3f) * 0.85f;
-                    target[side > 0 ? 8 : 7] = lw; target[1] *= 1f - lw; target[0] *= 1f - lw;
+                    // Lean clip follows the ski edge, and only once the eased lean has caught that edge.
+                    // The previous side's full-body pose under the new edge is what folded the cut.
+                    float edgeMag = Mathf.Clamp01(Mathf.Abs(edgeSigned) / 0.28f);
+                    float clipSide = edgeSigned >= 0f ? 1f : -1f;
+                    bool agree = leanSide * clipSide > 0.35f && edgeMag > 0.2f;
+                    float lw = agree ? Mathf.Clamp01(load) * edgeMag * 0.35f : 0f;
+                    target[clipSide > 0f ? 8 : 7] = lw; target[1] *= 1f - lw; target[0] *= 1f - lw;
+                    dropLeans = !agree && Mathf.Abs(edgeSigned) > 0.09f;
                 }
                 if (action == RiderAction.DeepStart && start != null)
                 {
@@ -139,9 +158,15 @@ namespace SkiView
             }
             if (forceClip >= 0) for (int i = 0; i < NCLIP; i++) target[i] = i == forceClip ? 1f : 0f;
             float k = dt <= 0f ? 1f : 1f - Mathf.Exp(-8f * dt);
+            float kLean = dropLeans && dt > 0f ? 1f - Mathf.Exp(-18f * dt) : k;
             if (start != null && mix.GetInput(4).IsValid()) mix.GetInput(4).SetTime(Mathf.Min(actionT * 0.8f, start.length - 0.02f));
             if (fall != null && mix.GetInput(5).IsValid()) mix.GetInput(5).SetTime(Mathf.Min(actionT, fall.length - 0.02f));
-            for (int i = 0; i < NCLIP; i++) { w[i] = Mathf.Lerp(w[i], target[i], k); if (mix.GetInput(i).IsValid()) mix.SetInputWeight(i, w[i]); }
+            for (int i = 0; i < NCLIP; i++)
+            {
+                float kk = (i == 7 || i == 8) ? kLean : k;
+                w[i] = Mathf.Lerp(w[i], target[i], kk);
+                if (mix.GetInput(i).IsValid()) mix.SetInputWeight(i, w[i]);
+            }
             graph.Evaluate(Mathf.Max(0f, dt));
             var root = transform.parent != null ? transform.parent : transform;   // skier root (on the water, +Z = ski direction)
             if (action == RiderAction.Fall || frontBoot == null || rearBoot == null) { HandsFromBones(); MeasureClearance(root); return; }
@@ -159,124 +184,128 @@ namespace SkiView
             if (!J) PoseSki(root, s, carve);
             float sw = J ? 0f : Mathf.Clamp01(Mathf.InverseLerp(stretchFrom01, stretchFull01, rope01)) * Mathf.SmoothStep(0f, 1f, releaseW) * s;
             Stretch01 = sw;
-            // --- pelvis: up and forward over the front foot
+            float edge01n = Mathf.Clamp01(Mathf.Abs(edgeSigned) / 0.35f);
+            var ph = (!J && buoy > 0) ? poses.EvaluateSlalom(latS, inbS, Mathf.Clamp01(carve), edge01n, reachTowardBoat) : poses.EvaluateSlalom(Mathf.Lerp(0.15f, 0.45f, s), s, Mathf.Clamp01(carve), edge01n, 1);
+            if (J) ph.free = 0f;
+            kneeS = Mathf.Lerp(kneeS, ph.knee, k);
+            armS = Mathf.Lerp(armS, ph.arm, k);
+            // Feet key off the boot attaches (rear boot is yawed 12°). Ankle targets are in that boot's local space.
             Vector3 aF = AnkleTarget(fb), aR = AnkleTarget(rb);
             float legLen = (Vector3.Distance(lUL.position, lLL.position) + Vector3.Distance(lLL.position, lF.position));
-            float edge01 = Mathf.Clamp01(Vector3.Angle(up, Vector3.up) / 65f);
-            float crouch = Mathf.Lerp(crouchGlide, crouchPull, s) - hipDropAtEdge * edge01;   // hips low and close to the water at the buoy
-            crouch = Mathf.Lerp(crouch, Mathf.Min(0.9f, crouch + stretchCrouchUp), sw) - stretchHipDrop * sw;   // reach v2: long legs, the lean puts the hips down
+            float crouch = SkierPoses.CrouchForKnee(kneeS);
             if (J && jumpCrouch >= 0f) crouch = jumpCrouch;
-            crouch = Mathf.Lerp(crouch, dwsCrouch, dwsDepth);   // deep-water start: knees to the chest behind the ski
+            crouch = Mathf.Lerp(crouch, dwsCrouch, dwsDepth);
             Vector3 mid = (aF + aR) * 0.5f;
-            Vector3 hipJointMid = (lUL.position + rUL.position) * 0.5f;
-            // stacked lean: ankle->hip->shoulder line tilts away from the boat, feet stay in the boots
-            // b10.3 (Scott): the lean goes to the SIDE, in the ski's lateral plane (ski on edge, body stretched sideways round the ball),
-            // not toward the tips or the boat; only a small natural forward share (leanFwdShare) is kept
+            // sideways stack on the ski. The root roll is the big lean; only a few degrees of extra hinge, so the pull stays one board.
             Vector3 rightH = new Vector3(right.x, 0f, right.z); rightH = rightH.sqrMagnitude > 1e-4f ? rightH.normalized : right;
             Vector3 fwdH = Vector3.Cross(rightH, Vector3.up);
-            float edgeD = Vector3.Dot(up, rightH); if (Mathf.Abs(edgeD) > 0.09f || leanSideT == 0f) leanSideT = edgeD >= 0f ? 1f : -1f; float sideT = leanSideT;   // full side once the ski is edged >5 deg; holds through a flat moment
-            leanSide = dt <= 0f ? sideT : Mathf.MoveTowards(leanSide, sideT, leanSideRate * dt); float sideS = leanSide;   // eased so the edge change can't snap the lean across   // the side the ski is edged toward (inside of the turn, toward the ball at the apex); continuous through the edge change
-            Vector3 Lat(Vector3 d) { float fd = Mathf.Clamp(Vector3.Dot(d, fwdH) / Mathf.Max(0.2f, Mathf.Abs(Vector3.Dot(d, rightH))), -1f, 1f); return rightH * sideS + fwdH * (fd * leanFwdShare * Mathf.Abs(sideS)); }   // not normalised: a flat ski fades the lean out instead of flipping it
+            float sideS = leanSide;
+            float fwdShare = (edge01n < 0.25f) ? 0f : leanFwdShare;
+            Vector3 Lat(Vector3 d) { float fd = Mathf.Clamp(Vector3.Dot(d, fwdH) / Mathf.Max(0.2f, Mathf.Abs(Vector3.Dot(d, rightH))), -1f, 1f); return rightH * sideS + fwdH * (fd * fwdShare * Mathf.Abs(sideS)); }
             Vector3 away = Lat(toBoat.sqrMagnitude > 1e-4f ? -toBoat.normalized : -right);
             away -= Vector3.Dot(away, up) * up;
-            float leanWant = sw * stretchLeanExtraDeg + Mathf.Lerp(leanTotalPullDeg, Mathf.Lerp(leanTotalApexShortDeg, leanTotalApexDeg, Mathf.Clamp01(rope01)), Mathf.Clamp01(turnReach)) * s;   // Holly: 40-50 deg on the pull, 50-65 at the apex (ski edge + body)
             float rootRoll = Vector3.Angle(up, Vector3.up);
-            float lean = (Mathf.Lerp(leanGlideDeg, leanPullDeg, s) + (J ? 0f : Mathf.Clamp(leanWant - rootRoll, 0f, Mathf.Lerp(leanBodyMaxDeg, stretchBodyMaxDeg, sw)))) * Mathf.Deg2Rad;
-            LeanTotalDeg = rootRoll + lean * Mathf.Rad2Deg;
+            bool airborne = J && (jumpPose == 1 || jumpPose == 2);
+            float extra = airborne ? 0f : Mathf.Clamp(ph.lean - rootRoll, 0f, poses.bodyExtraDeg);
+            float lean = extra * Mathf.Deg2Rad;
+            LeanTotalDeg = rootRoll + extra;
             Vector3 leanUp = (up * Mathf.Cos(lean) + away * Mathf.Sin(lean)).normalized;
-            if (sw > 0f)
-            {
-                // reach v2/b10.3: at the ball the stretch leans INTO the turn, sideways toward the ball (the long line ski -> hips -> shoulders -> inside
-                // arm -> rope), in world terms so the root roll can't cancel it, capped relative to the root
-                Vector3 tbH = Lat(toBoat.sqrMagnitude > 1e-4f ? toBoat : right);   // b10.3: sideways toward the ball, not toward the boat/tips
-                float a = stretchLeanDeg * Mathf.Deg2Rad;
-                Vector3 wantW = Vector3.up * Mathf.Cos(a) + tbH * Mathf.Sin(a);
-                wantW = Vector3.RotateTowards(up, wantW.normalized, stretchBodyMaxDeg * Mathf.Deg2Rad, 0f);
-                leanUp = Vector3.Slerp(leanUp, wantW, sw).normalized;
-                LeanTotalDeg = Mathf.Lerp(LeanTotalDeg, Vector3.Angle(leanUp, Vector3.up), sw);
-            }
             if (J && jumpPitchDeg != 0f) leanUp = Quaternion.AngleAxis(jumpPitchDeg, right) * leanUp;
-            hips.rotation = Quaternion.FromToRotation(up, leanUp) * Quaternion.AngleAxis(yawToBoat * hipYawShare, up) * hips.rotation;
-            hipJointMid = (lUL.position + rUL.position) * 0.5f;
-            Vector3 pelvisWant = mid + fwd * (pelvisFwd - stretchHipBack * sw) + leanUp * (legLen * crouch);
+            // shoulders open toward the boat on the pull; on the reach they follow the buoy (odd toward, even away) and finish last
+            float open = Mathf.Clamp(ph.shoulderToBoat, -1f, 1f);
+            float yawWant = (open >= 0f ? yawToBoat : -yawToBoat) * Mathf.Abs(open);
+            shoulderYaw = dt <= 0f ? yawWant : Mathf.MoveTowards(shoulderYaw, yawWant, poses.shoulderYawRate * dt);
+            hips.rotation = Quaternion.FromToRotation(up, leanUp) * Quaternion.AngleAxis(shoulderYaw * 0.2f, up) * hips.rotation;
+            Vector3 hipJointMid = (lUL.position + rUL.position) * 0.5f;
+            Vector3 pelvisWant = mid + fwd * pelvisFwd + leanUp * (legLen * crouch);
             hips.position += pelvisWant - hipJointMid;
-            if (chest != null) { float e = chestExtraLeanDeg * s * Mathf.Deg2Rad; chest.rotation = Quaternion.FromToRotation(leanUp, (leanUp * Mathf.Cos(e) + away * Mathf.Sin(e)).normalized) * chest.rotation; }
-            // upper body: counter-rotate toward the boat, shoulders back against the pull
-            float upShare = Mathf.Lerp(upperYawShare, 1f, sw);   // reach v2: shoulders open to the boat
-            Vector3 chestRight = Quaternion.AngleAxis(yawToBoat * upShare, up) * right;
-            float jBack = J ? Mathf.Clamp01(1f - jumpPitchDeg / 30f) : 1f;   // pass 14: no shoulders-back against the pull in the air
-            Vector3 twistAx = Vector3.Lerp(up, leanUp, sw).normalized;   // reach v2: open the shoulders about the leaned torso axis (about root-up it swung the lean away)
-            if (spine != null) spine.rotation = Quaternion.AngleAxis(yawToBoat * (upShare - hipYawShare) * 0.5f, twistAx) * Quaternion.AngleAxis(-shoulderBackDeg * 0.5f * jBack, right) * spine.rotation;
-            if (chest != null && chest != spine) chest.rotation = Quaternion.AngleAxis(yawToBoat * (upShare - hipYawShare) * 0.5f, twistAx) * Quaternion.AngleAxis(-shoulderBackDeg * 0.5f * jBack, right) * chest.rotation;
-            // pass 14: in the air the clip's leaning-back upper body folds forward over the skis (the bird), so the side view isn't upright
-            if (J && jumpPitchDeg > 0f) { float jf = jumpPitchDeg * 0.45f; if (spine != null) spine.rotation = Quaternion.AngleAxis(jf, right) * spine.rotation; if (chest != null && chest != spine) chest.rotation = Quaternion.AngleAxis(jf, right) * chest.rotation; }
-
-            // reach v2: body long - the hip-to-neck line straightened onto the leaned leg line (no break at the waist)
-            if (sw > 0f && neck != null && spine != null)
+            Vector3 twistAx = Vector3.Lerp(up, leanUp, 0.5f).normalized;
+            Vector3 chestRight = Quaternion.AngleAxis(shoulderYaw, up) * right;
+            if (spine != null) spine.rotation = Quaternion.AngleAxis(shoulderYaw * 0.4f, twistAx) * spine.rotation;
+            if (chest != null && chest != spine) chest.rotation = Quaternion.AngleAxis(shoulderYaw * 0.4f, twistAx) * chest.rotation;
+            if (!J && neck != null && spine != null && ph.straight > 0.05f)
             {
                 Vector3 cur = (neck.position - hips.position).normalized;
-                spine.rotation = Quaternion.Slerp(Quaternion.identity, Quaternion.FromToRotation(cur, leanUp), sw * stretchBodyLongW) * spine.rotation;
+                if (cur.sqrMagnitude > 1e-6f) spine.rotation = Quaternion.Slerp(Quaternion.identity, Quaternion.FromToRotation(cur, leanUp), ph.straight * 0.85f) * spine.rotation;
             }
-            // --- legs into the boots (left foot forward); knees point down the ski, slightly out
-            // knee poles from the hip-ankle midpoint (not the clip's knee, which dragged the rear knee down onto the ski):
-            // front knee forward over the toes, rear knee forward and a little up so it tucks behind the front calf
-            Vector3 highSide = (Vector3.up - up) * 0.5f;   // when the body is rolled, keep the knees on the high side, off the water
+
+            Vector3 BootFwd(Transform boot)
+            {
+                Vector3 bf = boot != null ? boot.forward : fwd;
+                bf -= Vector3.Dot(bf, up) * up;
+                return bf.sqrMagnitude > 1e-6f ? bf.normalized : fwd;
+            }
+            Vector3 highSide = (Vector3.up - up) * 0.5f;
             if (J)
             {
-                // two skis side by side: both knees forward over the toes, a little apart
-                TwoBone(lUL, lLL, lF, aF, (lUL.position + aF) * 0.5f + fwd * 0.6f - right * 0.05f + highSide);
-                TwoBone(rUL, rLL, rF, aR, (rUL.position + aR) * 0.5f + fwd * 0.6f + right * 0.05f + highSide);
+                Vector3 lift = jumpPose == 3 ? up * 0.12f : Vector3.zero;
+                TwoBone(lUL, lLL, lF, aF, (lUL.position + aF) * 0.5f + BootFwd(fb) * 0.45f - right * 0.05f + highSide + lift);
+                TwoBone(rUL, rLL, rF, aR, (rUL.position + aR) * 0.5f + BootFwd(rb) * 0.45f + right * 0.05f + highSide + lift);
             }
             else
             {
-                TwoBone(lUL, lLL, lF, aF, (lUL.position + aF) * 0.5f + fwd * 0.6f - right * 0.06f + highSide);
-                TwoBone(rUL, rLL, rF, aR, (rUL.position + aR) * 0.5f + fwd * 0.6f + up * 0.25f + right * 0.08f + highSide * 1.4f);
+                TwoBone(lUL, lLL, lF, aF, (lUL.position + aF) * 0.5f + BootFwd(fb) * 0.5f + highSide);
+                TwoBone(rUL, rLL, rF, aR, (rUL.position + aR) * 0.5f + BootFwd(rb) * 0.5f + highSide);
             }
             AimFoot(lF, lT, fb); AimFoot(rF, rT, rb);
 
-            // --- arms: straight to the handle, low in front of the hips, in the rope direction
             Vector3 sh = (lUA.position + rUA.position) * 0.5f;
-            Vector3 dirP = (pylon - sh); dirP -= Vector3.Dot(dirP, up) * up; dirP.Normalize();
-            float hin = J ? Mathf.Clamp01(jumpHandleIn) : 0f;
-            Vector3 handleC = (lUL.position + rUL.position) * 0.5f + dirP * Mathf.Lerp(handleFwd, 0.10f, hin) - up * Mathf.Lerp(handleDrop, 0.02f, hin);
-            float armLen = Vector3.Distance(lUA.position, lLA.position) + Vector3.Distance(lLA.position, lH.position);
-            Vector3 toH = handleC - sh; handleC = sh + toH.normalized * Mathf.Min(toH.magnitude * (hin > 0f ? 1f : 99f), armLen * Mathf.Lerp(Mathf.Lerp(0.9f, 0.97f, s), 0.995f, releaseW));   // arms long in the pull; handle in to the hips in the air
-            handleC += dirP * (reachArmM * Mathf.Lerp(1f, 0.6f, Mathf.Clamp01(rope01)) * releaseW);   // b9.1: reach on the inside arm toward the boat
-            Vector3 bar = Vector3.Cross(up, dirP).normalized;   // handle bar axis (skier's right when facing the boat)
-            Vector3 tL = handleC - bar * handHalf, tR = handleC + bar * handHalf;
-            // turn: release the outside hand (the one away from the boat) and reach forward/out toward the buoy
-            float outside = -Mathf.Sign(Vector3.Dot(toBoat, right));
-            float wantRel = Mathf.Clamp01((turnReach - 0.25f) / 0.5f);   // only around the buoy, never on the pull
-            releaseW = Mathf.Lerp(releaseW, wantRel, dt <= 0 ? 1f : 1f - Mathf.Exp(-6f * dt));
-            if (wantRel > 0.05f && releaseW < 0.1f) releaseSide = outside;   // b9.1: latch the side for the whole release (re-latching mid-turn swapped hands = buoy pop)
-            Vector3 fH = new Vector3(fwd.x, 0, fwd.z).normalized, rH2 = Vector3.Cross(Vector3.up, fH);
-            // Holly: both hands on the handle on the pulls; around the buoy only, the free hand tucks to the vest (chest, a little forward)
-            Vector3 vest = (chest != null ? chest.position : sh - up * 0.2f) + fH * 0.16f + rH2 * releaseSide * 0.08f - up * 0.06f;
-            Vector3 reach = vest;
-            ReleaseL = releaseSide < 0 ? releaseW : 0f; ReleaseR = releaseSide > 0 ? releaseW : 0f;
-            if (sw > 0f)
+            Vector3 dirP = pylon - sh; dirP -= Vector3.Dot(dirP, up) * up;
+            if (dirP.sqrMagnitude < 1e-6f) dirP = fwd; else dirP.Normalize();
+            float armFrac = armS;
+            if (J)
             {
-                // inside hand: the arm in line with the rope, fully extended from its shoulder (toward the pylon, rope height included)
-                Transform inUA = releaseSide < 0 ? rUA : lUA;
-                Vector3 ropeDir = (pylon - inUA.position).normalized;
-                Vector3 grip = inUA.position + ropeDir * (armLen * 0.985f);
-                if (releaseSide < 0) tR = Vector3.Lerp(tR, grip, sw); else tL = Vector3.Lerp(tL, grip, sw);
-                // free hand: off the handle and clear of it, low and out behind on the outside (balance), not tucked at the vest
-                Transform frUA = releaseSide < 0 ? lUA : rUA;
-                Vector3 awayH = new Vector3(away.x, 0f, away.z).normalized;
-                Vector3 free = frUA.position + (awayH * 0.55f + Vector3.down * 0.65f - fH * 0.25f).normalized * (armLen * 0.98f);   // near-straight arm (a hair of bend keeps the elbow plane stable)
-                reach = Vector3.Lerp(vest, free, sw);
+                if (jumpPose == 2) armFrac = poses.flightArm;
+                else if (jumpPose == 1) armFrac = poses.takeoffArm;
+                else if (jumpPose == 3) armFrac = poses.landArm;
+                else armFrac = poses.approachArm;
             }
-            tL = Vector3.Lerp(tL, reach, ReleaseL); tR = Vector3.Lerp(tR, reach, ReleaseR);
-            // b10.2: around the ball the elbow pole comes from the shoulder-target line, not the clip's elbow - near-straight arms took the
-            // clip elbow as the bend plane and flipped 20-60 deg/frame as the stretch let go
-            float pw = Mathf.Max(releaseW, sw);
-            Vector3 pL = Vector3.Lerp(lLA.position, (lUA.position + tL) * 0.5f, pw), pR = Vector3.Lerp(rLA.position, (rUA.position + tR) * 0.5f, pw);
-            TwoBone(lUA, lLA, lH, tL, pL - up * 0.3f - chestRight * 0.2f);
-            TwoBone(rUA, rLA, rH, tR, pR - up * 0.3f + chestRight * 0.2f);
-            LevelHead(up, fwd, toBoat);
+            float drop = J ? poses.jumpHandleDrop : ph.handleDrop;
+            float fwdD = J ? poses.jumpHandleFwd : poses.handleFwd;
+            Vector3 hipC = (lUL.position + rUL.position) * 0.5f;
+            Vector3 waist = hipC + dirP * fwdD - up * drop;
+            float armLen = Vector3.Distance(lUA.position, lLA.position) + Vector3.Distance(lLA.position, lH.position);
+            Vector3 aim = waist - sh; if (aim.sqrMagnitude < 1e-6f) aim = dirP;
+            float reachFrac = Mathf.Clamp(aim.magnitude / Mathf.Max(0.05f, armLen), 0.78f, armFrac);
+            Vector3 handleC = sh + aim.normalized * (armLen * reachFrac);
+            if (!J && reachTowardBoat > 0 && ph.free > 0.4f) handleC += dirP * (poses.reachArm * 0.08f);
+            Vector3 bar = Vector3.Cross(up, dirP); if (bar.sqrMagnitude < 1e-6f) bar = right; else bar.Normalize();
+            Vector3 tL = handleC - bar * handHalf, tR = handleC + bar * handHalf;
+            Vector3 boatH = toBoat; boatH.y = 0f; if (boatH.sqrMagnitude > 1e-6f) boatH.Normalize(); else boatH = fwd;
+            Vector3 reachDir = reachTowardBoat == 0 ? -boatH : boatH * reachTowardBoat;
+            float wantSide = Mathf.Sign(Vector3.Dot(reachDir, right));
+            if (Mathf.Abs(wantSide) < 0.05f) wantSide = releaseSide >= 0f ? 1f : -1f;
+            float wantRel = J ? 0f : (buoy > 0 ? ph.free : Mathf.Clamp01((turnReach - 0.25f) / 0.5f));
+            releaseW = Mathf.Lerp(releaseW, wantRel, dt <= 0f ? 1f : 1f - Mathf.Exp(-6f * dt));
+            if (wantRel > 0.05f && releaseW < 0.12f) releaseSide = wantSide;
+            Vector3 fH = new Vector3(fwd.x, 0f, fwd.z); if (fH.sqrMagnitude > 1e-6f) fH.Normalize(); else fH = fwd;
+            Transform frUA = releaseSide > 0f ? rUA : lUA;
+            Vector3 free = frUA.position + (reachDir * poses.freeArmOut + fH * poses.freeArmFwd - up * 0.06f).normalized * (armLen * 0.92f);
+            ReleaseL = releaseSide < 0f ? releaseW : 0f; ReleaseR = releaseSide > 0f ? releaseW : 0f;
+            tL = Vector3.Lerp(tL, free, ReleaseL); tR = Vector3.Lerp(tR, free, ReleaseR);
+            float pw = Mathf.Clamp01(Mathf.Max(releaseW, 1f - armFrac));
+            Vector3 pL = Vector3.Lerp(lLA.position, (lUA.position + tL) * 0.5f, pw);
+            Vector3 pR = Vector3.Lerp(rLA.position, (rUA.position + tR) * 0.5f, pw);
+            float returning = Mathf.Clamp01(releaseW) * (1f - wantRel);
+            Vector3 tuckHip = releaseSide > 0f ? rUL.position : lUL.position;
+            if (releaseSide < 0f) pL = Vector3.Lerp(pL, tuckHip + up * 0.08f, returning);
+            else pR = Vector3.Lerp(pR, tuckHip + up * 0.08f, returning);
+            TwoBone(lUA, lLA, lH, tL, pL - up * 0.25f - chestRight * 0.15f);
+            TwoBone(rUA, rLA, rH, tR, pR - up * 0.25f + chestRight * 0.15f);
+            headTiltWithBody = poses.headTiltWithBody; headPitchDownDeg = poses.headPitchDownDeg; gazeToBoat = poses.gazeToBoat;
+            LevelHead(up, fwd, reachTowardBoat < 0 ? fwd : toBoat);
             HandsFromBones();
             MeasureClearance(root);
+        }
+
+        void TrackEdge(Transform root0, float dt)
+        {
+            if (root0 == null) { edgeSigned = 0f; return; }
+            Vector3 rightH = new Vector3(root0.right.x, 0f, root0.right.z);
+            rightH = rightH.sqrMagnitude > 1e-4f ? rightH.normalized : root0.right;
+            edgeSigned = Vector3.Dot(root0.up, rightH);
+            if (Mathf.Abs(edgeSigned) > 0.09f || Mathf.Abs(leanSideT) < 0.01f) leanSideT = edgeSigned >= 0f ? 1f : -1f;
+            leanSide = dt <= 0f ? leanSideT : Mathf.MoveTowards(leanSide, leanSideT, leanSideRate * dt);
         }
 
         /// Ski sits in the water at speed: tail buried, tip up, rolled further onto its edge in a carve.
@@ -330,14 +359,17 @@ namespace SkiView
             WaterClearance = m;
         }
 
+        // Offsets are on the boot attach (heel at the origin, +Z to the toes), not on the plate mesh.
+        // The rear boot's 12° yaw is in that transform, so the ankle and the sole follow it.
         Vector3 AnkleTarget(Transform boot) => boot.TransformPoint(new Vector3(0, 0.012f + ankleAboveSole, 0.068f));
 
         void AimFoot(Transform foot, Transform toes, Transform boot)
         {
-            if (foot == null || toes == null) return;
-            Vector3 want = boot.TransformPoint(new Vector3(0, 0.012f + 0.03f, 0.21f));
-            Vector3 cur = toes.position - foot.position, des = want - foot.position;
-            if (cur.sqrMagnitude > 1e-6f && des.sqrMagnitude > 1e-6f) foot.rotation = Quaternion.FromToRotation(cur, des) * foot.rotation;
+            if (foot == null || boot == null) return;
+            Vector3 cur = toes != null ? toes.position - foot.position : foot.forward;
+            if (cur.sqrMagnitude < 1e-8f) return;
+            var align = Quaternion.LookRotation(boot.forward, boot.up) * Quaternion.Inverse(Quaternion.LookRotation(cur.normalized, foot.up));
+            foot.rotation = align * foot.rotation;
         }
 
         static void TwoBone(Transform a, Transform b, Transform c, Vector3 target, Vector3 pole)
