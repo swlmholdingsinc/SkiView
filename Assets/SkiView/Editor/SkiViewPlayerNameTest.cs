@@ -32,6 +32,11 @@ public static class SkiViewPlayerNameTest
         Check(!SkiViewPlayer.TryNormalize("A\uD83D", out _), "surrogate rejected");
         Check(!SkiViewPlayer.TryNormalize("Wade", out _), "Wade rejected");
         Check(!SkiViewPlayer.TryNormalize("wade cox", out _), "Wade Cox rejected");
+        Check(!SkiViewPlayer.TryNormalize("W4DE", out _), "leetspeak W4DE rejected");
+        Check(!SkiViewPlayer.TryNormalize("W4D3", out _), "leetspeak W4D3 rejected");
+        Check(!SkiViewPlayer.TryNormalize("wa de", out _), "spaced wade rejected");
+        Check(!SkiViewPlayer.TryNormalize("W\u00e1de", out _), "accented wade rejected");
+        Check(!SkiViewPlayer.TryNormalize("F3LD3RPU55", out _), "leetspeak Felderpuss rejected");
         Check(!SkiViewPlayer.TryNormalize("Felderpuss", out _), "Felderpuss rejected");
         Check(!SkiViewPlayer.TryNormalize("fel derpuss", out _), "split Felderpuss rejected");
         Check(SkiViewPlayer.TryNormalize("Scott", out n) && n == "Scott", "Scott allowed when typed");
