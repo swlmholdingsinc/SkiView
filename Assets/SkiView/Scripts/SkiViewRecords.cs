@@ -14,7 +14,7 @@ namespace SkiView
     /// A run qualifies when the board has fewer than 10 scores, or its score is strictly
     /// higher than 10th place. A tie with 10th place stays off the list.
     /// Scores at or below zero are not recorded. The same player can hold more than one row.
-    /// Slalom records one score per set (the best pass), not one row per pass.
+    /// Slalom records one score per set: the furthest pass that scored, not one row per pass.
     /// The holder is PlayerPrefs <c>sv.player.name</c>, or PLAYER when that is empty. Branding is not a name source.
     /// </summary>
     public static class SkiViewRecords
@@ -65,7 +65,7 @@ namespace SkiView
         /// <summary>Clinic and the tutorial never write a record. Same rule for slalom, jump, and tricks.</summary>
         public static bool AllowRecord(bool clinicActive, bool tutorialRunning) => !clinicActive && !tutorialRunning;
 
-        /// <summary>The running best pass of one slalom set. A set ends on the first pass that is not clean.</summary>
+        /// <summary>The furthest scored pass of one slalom set. A fall or miss ends the set; quit and title take it as it stands.</summary>
         public struct SlalomSet
         {
             public bool has;
@@ -76,9 +76,9 @@ namespace SkiView
         }
 
         /// <summary>
-        /// Fold one pass into the open set. A clean pass only updates the running best.
-        /// A pass that is not clean ends the set: <paramref name="submit"/> is that best score (if any) and the set is cleared.
-        /// Returns true when the set ended and the caller should record <paramref name="submit"/> once.
+        /// Fold one pass into the open set. A clean pass does not submit.
+        /// A fall or miss (not clean) ends the set: <paramref name="submit"/> is the furthest pass that scored, and the set is cleared.
+        /// A pass with no buoys is not that pass. Returns true when the set ended.
         /// </summary>
         public static bool NoteSlalomSetPass(ref SlalomSet set, int rope, float buoys, bool clean, string detail, out SlalomSet submit)
         {
@@ -90,7 +90,7 @@ namespace SkiView
             return true;
         }
 
-        /// <summary>The player left or restarted before a miss. Returns the best pass so far, once, and clears the set.</summary>
+        /// <summary>Quit or return to title. Returns the furthest scored pass once, and clears the set.</summary>
         public static bool TakeSlalomSet(ref SlalomSet set, out SlalomSet submit)
         {
             submit = set;
@@ -98,13 +98,13 @@ namespace SkiView
             return submit.has;
         }
 
+        /// <summary>Keep the pass that reached furthest: a shorter rope, or more buoys on that same rope. An easier rope never replaces it.</summary>
         static void ConsiderSlalomPass(ref SlalomSet set, int rope, float buoys, string detail)
         {
             if (buoys <= 0.01f) return;
-            float score = rope * 6f + buoys;
-            if (set.has && score <= set.score) return;
+            if (set.has && (rope < set.rope || (rope == set.rope && buoys <= set.buoys + 0.01f))) return;
             set.has = true;
-            set.score = score;
+            set.score = rope * 6f + buoys;
             set.rope = rope;
             set.buoys = buoys;
             set.detail = detail ?? "";

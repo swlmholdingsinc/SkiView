@@ -13,19 +13,21 @@ namespace SkiView
             string detail = lakeName + " · " + UI.SkiViewUI.SpeedMph(RunMph);
             if (!SkiViewRecords.NoteSlalomSetPass(ref slalomSet, res.rope, res.buoys, res.clean, detail, out var final))
             {
-                LastRecord = default; // intermediate full pass: the set is still open
+                LastRecord = default; // full pass: the set is still open, so this pass is not its own record
                 return;
             }
             CommitSlalomSet(final);
         }
 
-        /// <summary>Leave or restart ended the set before a miss. One score, the best pass so far.</summary>
+        /// <summary>Quit, retry, or return to title. One score: the furthest pass that scored.</summary>
         public void FlushSlalomSet()
         {
             if (!SkiViewRecords.TakeSlalomSet(ref slalomSet, out var final)) return;
-            if (jumpMode || trickMode || !RecordsAllowed()) return;
+            if (!RecordsAllowed()) return;
             CommitSlalomSet(final);
         }
+
+        void OnApplicationQuit() { FlushSlalomSet(); }
 
         void CommitSlalomSet(SkiViewRecords.SlalomSet final)
         {

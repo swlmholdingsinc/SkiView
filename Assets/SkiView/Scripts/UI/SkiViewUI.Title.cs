@@ -93,6 +93,7 @@ namespace SkiView.UI
 
         public void OpenTitle()
         {
+            game?.FlushSlalomSet();
             if (title == null) return;
             titleReturn = false; Open(title); titlePanel.RemoveFromClassList("sv-event-panel--open");
             var tr = title.Q("title-root"); tr.RemoveFromClassList("sv-title--in");

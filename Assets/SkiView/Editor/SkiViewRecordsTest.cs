@@ -98,23 +98,30 @@ public static class SkiViewRecordsTest
             }
             Pass(0, 6f, true);
             Pass(1, 6f, true);
-            Check(submits == 0 && open.has && open.rope == 1 && Mathf.Approximately(open.buoys, 6f), "full passes stay in the set and keep the best score");
+            Check(submits == 0 && open.has && open.rope == 1 && Mathf.Approximately(open.buoys, 6f), "full passes stay in the set until it ends");
             Pass(2, 2f, false);
-            Check(submits == 1 && done.has && done.rope == 2 && Mathf.Approximately(done.buoys, 2f) && !open.has, "the miss ends the set with its best pass, once");
+            Check(submits == 1 && done.has && done.rope == 2 && Mathf.Approximately(done.buoys, 2f) && !open.has, "a miss ends the set once, on the furthest pass that scored");
 
             open = default;
             Check(!SkiViewRecords.NoteSlalomSetPass(ref open, 0, 6f, true, "lake", out done), "a lone full pass does not submit yet");
-            Check(SkiViewRecords.NoteSlalomSetPass(ref open, 1, 0f, false, "lake", out done) && done.has && done.rope == 0 && Mathf.Approximately(done.buoys, 6f), "a zero-buoy miss keeps the last completed pass");
-            Check(!open.has, "the set is clear after it ends");
+            Check(SkiViewRecords.NoteSlalomSetPass(ref open, 1, 0f, false, "lake", out done) && done.has && done.rope == 0 && Mathf.Approximately(done.buoys, 6f), "a zero-buoy fall keeps the furthest pass that scored");
+            Check(!open.has, "the set is clear after a fall or miss");
+
+            open = default;
+            Check(!SkiViewRecords.NoteSlalomSetPass(ref open, 0, 6f, true, "easy", out done), "easier full pass is only a candidate");
+            Check(!SkiViewRecords.NoteSlalomSetPass(ref open, 4, 1f, true, "short", out done) && open.rope == 4 && Mathf.Approximately(open.buoys, 1f), "one buoy on a shorter rope is further than six on a long rope");
+            Check(!SkiViewRecords.NoteSlalomSetPass(ref open, 1, 6f, true, "back", out done) && open.rope == 4, "a later pass on an easier rope does not replace the furthest pass");
+            Check(!SkiViewRecords.NoteSlalomSetPass(ref open, 4, 2f, true, "same", out done) && Mathf.Approximately(open.buoys, 2f), "more buoys on that same rope reached further");
+            Check(SkiViewRecords.NoteSlalomSetPass(ref open, 4, 1f, false, "less", out done) && done.rope == 4 && Mathf.Approximately(done.buoys, 2f), "a fall with fewer buoys at the same rope keeps the furthest pass");
 
             open = default;
             Check(SkiViewRecords.NoteSlalomSetPass(ref open, 0, 0f, false, "lake", out done) && !done.has, "a set with no scored pass submits nothing");
             open = default;
             Check(!SkiViewRecords.NoteSlalomSetPass(ref open, 0, 6f, true, "a", out done), "clean pass opens the set");
-            Check(!SkiViewRecords.NoteSlalomSetPass(ref open, 3, 4f, true, "b", out done) && open.rope == 3, "a later better full pass replaces the running best without submitting");
+            Check(!SkiViewRecords.NoteSlalomSetPass(ref open, 3, 4f, true, "b", out done) && open.rope == 3, "a further full pass replaces the running pass without submitting");
             SkiViewRecords.SlalomSet flushed;
-            Check(SkiViewRecords.TakeSlalomSet(ref open, out flushed) && flushed.rope == 3 && Mathf.Approximately(flushed.buoys, 4f) && !open.has, "leaving the set records the best pass once");
-            Check(!SkiViewRecords.TakeSlalomSet(ref open, out flushed), "a second leave does not record the set again");
+            Check(SkiViewRecords.TakeSlalomSet(ref open, out flushed) && flushed.rope == 3 && Mathf.Approximately(flushed.buoys, 4f) && !open.has, "quit or title records the furthest scored pass once");
+            Check(!SkiViewRecords.TakeSlalomSet(ref open, out flushed), "a second quit or title does not record the set again");
 
             Check(!SkiViewRecords.AllowRecord(true, false), "clinic blocks records");
             Check(!SkiViewRecords.AllowRecord(false, true), "tutorial blocks records");
