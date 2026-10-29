@@ -32,7 +32,6 @@ namespace SkiView.UI
             var ht = hp != null ? Resources.Load<Texture2D>(hp) : null;
             if (ht != null) hero.style.backgroundImage = new StyleBackground(ht); else hero.style.display = DisplayStyle.None;
             // Scott Oct 24 ~11:54: title = jagged SWLM wordmark; no Wade hero. Hex Holdings is HUD-only.
-            title.Q("rights-tag").style.display = DisplayStyle.None;
             hero.style.display = DisplayStyle.None;
             title.Q("watermark").style.display = SkiViewBranding.Flag.wadeLicenseSigned ? DisplayStyle.None : DisplayStyle.Flex;
             var logoEl = title.Q("logo");
@@ -56,7 +55,7 @@ namespace SkiView.UI
             title.Q<Button>("ev-slalom").clicked += () => OpenEventPanel(false, false);
             title.Q<Button>("ev-jump").clicked += () => OpenEventPanel(true, false);
             title.Q<Button>("ev-tricks").clicked += () => OpenEventPanel(false, true);
-            // b10.17 Clinic Phase A: enable Clinic; Beat Wade stays Coming soon
+            // b10.17 Clinic Phase A: enable Clinic; Beat the Record stays Coming soon
             var clinicBtn = title.Q<Button>("sec-clinic");
             if (clinicBtn != null)
             {
@@ -64,7 +63,12 @@ namespace SkiView.UI
                 clinicBtn.clicked += () => OpenClinicList();
                 clinicBtn.SetEnabled(true);
             }
-            title.Q<Button>("sec-beat").clicked += () => SoonToast("CHALLENGE · COMING SOON", title.Q("sec-row"));
+            var beatBtn = title.Q<Button>("sec-beat");
+            if (beatBtn != null)
+            {
+                beatBtn.text = "BEAT THE RECORD";
+                beatBtn.clicked += () => SoonToast("BEAT THE RECORD · COMING SOON", title.Q("sec-row"));
+            }
             title.Q<Button>("sec-settings").clicked += () => { titleReturn = true; Open(settings); };
             title.Q<Button>("sec-credits").clicked += () => { titleReturn = true; Open(credits); };
             title.Q<Button>("quick-start").clicked += QuickStart;

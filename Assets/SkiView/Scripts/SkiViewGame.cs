@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 
 namespace SkiView
 {
-    /// <summary>N1 greybox game loop: boat on the baked lake loop at 34 mph, one skier (Wade Cox) on the rope,
+    /// <summary>N1 greybox game loop: boat on the baked lake loop at 34 mph, one skier (Scott) on the rope,
     /// scored slalom pass, island turnaround with rope shortening, reverse-direction pass, repeat.</summary>
     [ExecuteAlways]
     public partial class SkiViewGame : MonoBehaviour

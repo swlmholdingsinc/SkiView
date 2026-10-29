@@ -1,4 +1,4 @@
-/* T22 Ski with Wade title screen. UI Toolkit USS. Reference 1920x1080 (Panel Settings: Scale With Screen Size, match 0.5).
+/* T22 SKI VIEW title screen. UI Toolkit USS. Reference 1920x1080 (Panel Settings: Scale With Screen Size, match 0.5).
    INTERNAL: hero + logo are flag-gated (wadeBrandingEnabled + wadeLikenessEnabled); hero slot ship:false (see T22 spec). */
 :root {
     --sv-accent: #2F7BFF; --sv-selected: #1F5FD6; --sv-plate: rgba(11, 22, 34, 0.86); --sv-ink-600: #1D3049;
@@ -46,8 +46,6 @@
     -unity-slice-left: 44; -unity-slice-right: 44; -unity-slice-top: 44; -unity-slice-bottom: 44; font-size: 28px; color: var(--sv-text);
     opacity: 0; transition-property: opacity; transition-duration: 0.15s; }
 .sv-soon-toast--show { opacity: 1; }
-.sv-rights-tag { position: absolute; right: 32px; bottom: 120px; font-size: 16px; color: var(--sv-text-2); background-color: rgba(11, 22, 34, 0.8); padding: 4px 10px; }
-.sv-title--phone .sv-rights-tag { bottom: 40px; }
 .sv-copyright { position: absolute; left: 32px; bottom: 70px; font-size: 18px; color: var(--sv-text-2); }
 .sv-watermark { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-image: url("watermark_internal.png"); -unity-background-scale-mode: scale-and-crop; }
 /* Entry motion (default). Code toggles --in after first frame. */

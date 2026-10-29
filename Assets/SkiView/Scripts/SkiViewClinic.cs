@@ -51,7 +51,35 @@ namespace SkiView
         public static string ModeName() => SkiViewBranding.ClinicModeName;
         public static Lesson Get(string id) { Ensure(); foreach (var L in _data.lessons) if (L.id == id) return L; return null; }
         public static TipLesson GetTip(string id) { Ensure(); foreach (var t in _tips.lessons) if (t.id == id) return t; return null; }
-        public static string PlanTip(string id) { var t = GetTip(id); return t?.plan_tip?.text; }
+        const string UnshippedStatus = "PENDING_WADE_APPROVAL";
+
+        static bool StatusBlocksShipping(string status) =>
+            string.Equals(status?.Trim(), UnshippedStatus, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Clinic copy with a placeholder or approval-status token is never shown.</summary>
+        public static string ForPlayer(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "";
+            if (s.IndexOf(UnshippedStatus, StringComparison.OrdinalIgnoreCase) >= 0) return "";
+            if (s.IndexOf("PLACEHOLDER", StringComparison.OrdinalIgnoreCase) >= 0) return "";
+            return s;
+        }
+
+        /// <summary>Tip lines flagged PENDING_WADE_APPROVAL (file, lesson, or line) are not shippable.</summary>
+        static string ShippableTip(TipLesson lesson, PendText line)
+        {
+            if (_tips == null || lesson == null || line == null) return null;
+            if (StatusBlocksShipping(_tips.status) || StatusBlocksShipping(lesson.status) || StatusBlocksShipping(line.status)) return null;
+            string text = ForPlayer(line.text);
+            return string.IsNullOrEmpty(text) ? null : text;
+        }
+
+        public static string PlanTip(string id)
+        {
+            Ensure();
+            var t = GetTip(id);
+            return ShippableTip(t, t?.plan_tip);
+        }
 
         public static bool IsComplete(string id) => PlayerPrefs.GetInt(PrefPrefix + id + ".done", 0) == 1;
         public static float BestBuoys(string id) => PlayerPrefs.GetFloat(PrefPrefix + id + ".bestBuoys", 0f);
@@ -235,10 +263,8 @@ namespace SkiView
         {
             var lines = new List<string>();
             var tip = GetTip(ActiveLessonId);
-            if (LastComplete && tip?.success_note != null && !string.IsNullOrEmpty(tip.success_note.text))
-                lines.Add(tip.success_note.text);
-            if (!LastComplete && tip?.fail_note != null && !string.IsNullOrEmpty(tip.fail_note.text))
-                lines.Add(tip.fail_note.text);
+            string note = ShippableTip(tip, LastComplete ? tip?.success_note : tip?.fail_note);
+            if (!string.IsNullOrEmpty(note)) lines.Add(note);
 
             var L = Get(ActiveLessonId);
             if (L?.feedback != null)
@@ -275,7 +301,9 @@ namespace SkiView
 
                     if (f.cue != "*" && f.cue != ActiveCueId && !(w.Contains("fell") || w.Contains("buoys") || w.Contains("gates") || w.Contains("deep_water")))
                         continue;
-                    if (match && !lines.Contains(f.text.text)) lines.Add(f.text.text);
+                    if (!match || f.text == null) continue;
+                    string copy = ForPlayer(f.text.text);
+                    if (!string.IsNullOrEmpty(copy) && !lines.Contains(copy)) lines.Add(copy);
                 }
             }
             if (lines.Count == 0)
