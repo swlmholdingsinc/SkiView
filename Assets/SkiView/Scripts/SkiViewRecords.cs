@@ -15,7 +15,8 @@ namespace SkiView
     /// higher than 10th place. A tie with 10th place stays off the list.
     /// Scores at or below zero are not recorded. The same player can hold more than one row.
     /// Slalom records one score per set: the furthest pass that scored, not one row per pass.
-    /// The holder is PlayerPrefs <c>sv.player.name</c>, or PLAYER when that is empty. Branding is not a name source.
+    /// The holder is always <see cref="HolderName"/>: PlayerPrefs sv.player.name, or PLAYER when that is empty.
+    /// Branding is not a name source. Old rows with a blank holder, or the old branding name, display as <see cref="HolderName"/>.
     /// </summary>
     public static class SkiViewRecords
     {
@@ -59,6 +60,9 @@ namespace SkiView
 
         /// <summary>Test hook. When on, boards stay in memory and PlayerPrefs is left alone. Pass false to restore PlayerPrefs.</summary>
         public static void UseMemoryStore(bool on) { memory = on ? new Dictionary<string, string>() : null; }
+
+        /// <summary>Test hook. Replaces one saved board. Respects the memory store.</summary>
+        public static void SetRawForTests(Discipline d, string json) { Write(Key(d), json ?? ""); }
 
         public static Place Miss(Discipline d) => new Place { attempted = true, discipline = d };
 
@@ -110,7 +114,10 @@ namespace SkiView
             set.detail = detail ?? "";
         }
 
-        /// <summary>PlayerPrefs <see cref="PlayerNamePref"/>, trimmed. Empty or missing becomes <see cref="FallbackHolder"/>.</summary>
+        /// <summary>
+        /// Saved player name. This is the only lookup: a later change can return SkiViewPlayer.Name from here.
+        /// PlayerPrefs <see cref="PlayerNamePref"/>, trimmed. Empty or missing becomes <see cref="FallbackHolder"/>.
+        /// </summary>
         public static string HolderName()
         {
             string n = PlayerPrefs.GetString(PlayerNamePref, "");
@@ -118,14 +125,29 @@ namespace SkiView
             return n.Trim();
         }
 
-        public static Place Submit(Discipline d, float score, string detail, int rope = -1, float buoys = 0f, string holder = null, int seq = 0, long ticks = 0)
+        /// <summary>
+        /// Holder to write or display. Blank uses <see cref="HolderName"/>.
+        /// Older boards stored the branding skier name when no player name existed; that value is not a typed name
+        /// unless it is the saved player name now.
+        /// </summary>
+        public static string ResolveHolder(string stored)
+        {
+            string current = HolderName();
+            if (string.IsNullOrWhiteSpace(stored)) return current;
+            stored = stored.Trim();
+            if (stored.Equals("SCOTT", StringComparison.OrdinalIgnoreCase) && !current.Equals(stored, StringComparison.OrdinalIgnoreCase))
+                return current;
+            return stored;
+        }
+
+        public static Place Submit(Discipline d, float score, string detail, int rope = -1, float buoys = 0f, int seq = 0, long ticks = 0)
         {
             var board = Load(d);
             if (seq <= 0) seq = NextSeq(board);
             if (ticks <= 0) ticks = DateTime.UtcNow.Ticks;
             var entry = new Entry
             {
-                holder = string.IsNullOrWhiteSpace(holder) ? HolderName() : holder.Trim(),
+                holder = HolderName(),
                 score = score,
                 detail = detail ?? "",
                 seq = seq,
@@ -146,8 +168,7 @@ namespace SkiView
             if (entry == null || float.IsNaN(entry.score) || float.IsInfinity(entry.score) || entry.score <= 0f)
                 return new Place { attempted = true, qualified = false, count = board.Count, score = entry != null && !float.IsNaN(entry.score) && !float.IsInfinity(entry.score) ? entry.score : 0f };
 
-            if (string.IsNullOrWhiteSpace(entry.holder)) entry.holder = FallbackHolder;
-            else entry.holder = entry.holder.Trim();
+            entry.holder = ResolveHolder(entry.holder);
             if (entry.detail == null) entry.detail = "";
             if (entry.seq <= 0) entry.seq = NextSeq(board);
             if (string.IsNullOrEmpty(entry.achieved)) entry.achieved = DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture);
@@ -186,7 +207,7 @@ namespace SkiView
             {
                 var e = bag.entries[i];
                 if (e == null || float.IsNaN(e.score) || float.IsInfinity(e.score) || e.score <= 0f) continue;
-                if (string.IsNullOrWhiteSpace(e.holder)) e.holder = FallbackHolder;
+                e.holder = ResolveHolder(e.holder);
                 if (e.detail == null) e.detail = "";
                 board.Add(e);
             }

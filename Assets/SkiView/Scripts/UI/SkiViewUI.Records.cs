@@ -69,7 +69,7 @@ namespace SkiView.UI
                 if (fresh) row.AddToClassList("sv-row--selected");
                 Lb((i + 1).ToString(), "sv-rec-rank", row);
                 var mid = El("sv-rec-mid", row);
-                Lb(string.IsNullOrEmpty(e.holder) ? SkiViewRecords.FallbackHolder : e.holder, "t-label", mid);
+                Lb(SkiViewRecords.ResolveHolder(e.holder), "t-label", mid);
                 string sub = e.detail ?? "";
                 string when = SkiViewRecords.AchievedLabel(e);
                 if (!string.IsNullOrEmpty(when)) sub = string.IsNullOrEmpty(sub) ? when : sub + " · " + when;
@@ -122,7 +122,7 @@ namespace SkiView.UI
                         for (int i = 0; i < board.Count; i++)
                         {
                             var e = board[i];
-                            var line = Lb($"{i + 1}   {e.holder}   {SkiViewRecords.Format(d, e)}", "t-caption sv-results19__recline", rsRecordLines);
+                            var line = Lb($"{i + 1}   {SkiViewRecords.ResolveHolder(e.holder)}   {SkiViewRecords.Format(d, e)}", "t-caption sv-results19__recline", rsRecordLines);
                             if (p.qualified && p.seq == e.seq) line.AddToClassList("t-gold");
                         }
                     }
