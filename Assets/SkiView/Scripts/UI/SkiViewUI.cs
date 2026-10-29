@@ -81,7 +81,7 @@ namespace SkiView.UI
             }
             root.EnableInClassList("sv-motion-reduced", SkiViewGame.ReducedMotion);
             BuildHud19(safe);
-            BuildSettings(); BuildCredits(); BuildLicense(); BuildPause(); BuildLakes(); BuildHelp(); BuildClinic(); BuildTitle();
+            BuildSettings(); BuildCredits(); BuildLicense(); BuildPause(); BuildLakes(); BuildHelp(); BuildClinic(); BuildRecords(); BuildTitle();
             // capture / review: ?ui=graphics|audio|controls|credits|license opens that screen (WebGL)
             string url = Application.absoluteURL ?? ""; int q = url.IndexOf("ui=");
             if (q >= 0)
@@ -253,7 +253,7 @@ namespace SkiView.UI
         {
             if (!MenuOpen) { timeScale0 = Time.timeScale; Time.timeScale = 0f; }
             foreach (var x in menus) x?.EnableInClassList("sv-menu--open", x == m);
-            if (m == lakes) RefreshLakes(true); if (m == pause) RefreshPause();
+            if (m == lakes) RefreshLakes(true); if (m == pause) RefreshPause(); if (m == recordsMenu) FillRecords();
             if (m == settings) { FillPanel(); int i = 0; settings.Query<Button>(className: "sv-tab").ForEach(b => { if (i < 3) b.EnableInClassList("sv-tab--on", i == tab); i++; }); }
             SetHudVisible(false);
         }

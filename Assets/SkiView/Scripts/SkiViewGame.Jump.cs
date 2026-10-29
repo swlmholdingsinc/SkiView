@@ -165,6 +165,7 @@ namespace SkiView
             if (JumpPassCount >= JUMP_PASSES)
             {
                 JumpResultsOpen = true;
+                NoteJumpRecord();
                 banner = SkiView.UI.SkiViewUI.Kmh
                     ? $"ROUND · BEST {JumpBest:0.0} m"
                     : $"ROUND · BEST {Mathf.FloorToInt(JumpBest / 0.3048f + 0.5f)} ft";

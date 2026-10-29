@@ -114,8 +114,16 @@
 .sv-results19__pb { -unity-font-definition: var(--sv-font-cond-700); font-size: 26px; letter-spacing: 3px; color: var(--sv-ink-900); background-color: var(--sv-gold); padding: 6px 14px; align-self: flex-start; margin-bottom: 10px; }
 .sv-results19__row { flex-direction: row; align-items: flex-end; }
 .sv-results19__num { font-size: 140px; }
-.sv-results19__act { flex-direction: row; margin-top: 18px; }
-.sv-results19__act > .sv-btn { margin-right: 14px; }
+.sv-results19__act { flex-direction: row; flex-wrap: wrap; margin-top: 18px; }
+.sv-results19__act > .sv-btn { margin-right: 14px; margin-bottom: 10px; }
+.sv-results19__records { margin-top: 10px; }
+.sv-results19__recscroll { max-height: 200px; }
+.sv-results19__recline { margin: 0 0 2px 0; font-size: 20px; }
+.sv-rec-row { flex-direction: row; align-items: center; min-height: 84px; margin-bottom: 8px; padding: 8px 18px; background-color: rgba(255, 255, 255, 0.04); border-radius: 6px; }
+.sv-rec-rank { width: 72px; -unity-font-definition: var(--sv-font-num); font-size: 40px; color: var(--sv-text-2); }
+.sv-rec-row--top .sv-rec-rank, .sv-rec-row--top .sv-rec-score { color: var(--sv-gold); }
+.sv-rec-mid { flex-grow: 1; flex-shrink: 1; }
+.sv-rec-score { -unity-font-definition: var(--sv-font-num); font-size: 36px; color: var(--sv-text); margin-left: 12px; }
 /* ---- pass 19 batch 5: loading (16) + pack screens (16b-d) ---- */
 .sv-load19 { background-color: var(--sv-ink-900); }
 .sv-load19__art { position: absolute; left: 0; top: 0; right: 0; bottom: 0; -unity-background-scale-mode: scale-and-crop; }

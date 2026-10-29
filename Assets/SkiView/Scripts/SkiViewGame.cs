@@ -495,6 +495,7 @@ namespace SkiView
                 if (mode == Mode.Pass) mode = Mode.Turn;
                 return;   // no rope shorten in Clinic submode
             }
+            NoteSlalomRecord(res);
             if (res.clean)
             {
                 cleanPasses++;

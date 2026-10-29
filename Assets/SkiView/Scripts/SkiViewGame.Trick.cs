@@ -554,6 +554,7 @@ namespace SkiView
                 TrickRoundOver = true;
                 tphase = TPhase.Results; mode = Mode.Turn;
                 banner = "ROUND OVER · FALL IN PASS 1"; bannerT = 4f;
+                NoteTrickRecord();
                 SkiAudio.Instance?.TrickRunResult();
                 return;
             }
@@ -571,6 +572,7 @@ namespace SkiView
             {
                 tphase = TPhase.Results; mode = Mode.Turn;
                 banner = $"TRICKS TOTAL · {TrickScore}"; bannerT = 5f;
+                NoteTrickRecord();
                 SkiAudio.Instance?.TrickRunResult();
             }
         }

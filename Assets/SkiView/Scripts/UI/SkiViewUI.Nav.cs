@@ -17,7 +17,7 @@ namespace SkiView.UI
             if (IsOpen(lakes)) { if (lakesFromSetup) OpenRunSetup(); else Open(pause); return; }
             if (IsOpen(runSetup)) { ToTitle(); OpenEventPanel(panelJump, panelTricks); return; }
             if (IsOpen(credits)) { Open(settings); return; }
-            if ((IsOpen(settings) || IsOpen(help)) && pauseReturn && !titleReturn) { pauseReturn = false; Open(pause); return; }
+            if ((IsOpen(settings) || IsOpen(help) || IsOpen(recordsMenu)) && pauseReturn && !titleReturn) { pauseReturn = false; Open(pause); return; }
             pauseReturn = false; CloseMenus();
         }
     }
