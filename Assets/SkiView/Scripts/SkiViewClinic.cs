@@ -307,7 +307,9 @@ namespace SkiView
                 }
             }
             if (lines.Count == 0)
-                lines.Add("Pass complete. Keep the same focus next run.");
+                lines.Add(LastComplete
+                    ? "Pass complete. Keep the same focus next run."
+                    : "Missed it this time. Reset, keep the same focus, and try again.");
             return lines;
         }
 
