@@ -165,11 +165,21 @@ namespace SkiView
             if (jumpOnly && jumpRamp != null) { jumpMode = true; SetJumpGear(true); JumpGeometry(); }
             if (rampJumpModeOnly && jumpRamp != null && !jumpMode) jumpRamp.gameObject.SetActive(false);   // T26
             for (int i = 0; i < splash.Length; i++) splash[i] = Vector4.zero;   // the game opens with a deep-water start (captures skip it)
-            banner = lakeName.ToUpperInvariant() + " · " + SkiViewBranding.SkierName + " · " + SkierSim.ROPE_LABEL[sim.ropeIndex] + " · " + SkiView.UI.SkiViewUI.SpeedMph(RunMph).ToUpperInvariant(); bannerT = 4f;
+            RefreshNameBanner();
             if (Application.isPlaying) { SkiView.UI.SkiViewUI.Ensure(this)?.ShowCamToast(camMode); SkiAudio.Ensure(this); }   // pass 18: UI Toolkit overlay + run-start view toast
             inited = true;
             ApplyArgs();   // pass 19: URL / command-line capture params
             ApplyVisuals(true);
+        }
+
+        /// <summary>Startup banner. Omits the skier slot until a saved name exists.</summary>
+        public void RefreshNameBanner()
+        {
+            if (sim == null) return;
+            string skier = SkiViewBranding.SkierName;
+            string mid = string.IsNullOrEmpty(skier) ? "" : " · " + skier;
+            banner = lakeName.ToUpperInvariant() + mid + " · " + SkierSim.ROPE_LABEL[sim.ropeIndex] + " · " + SkiView.UI.SkiViewUI.SpeedMph(RunMph).ToUpperInvariant();
+            bannerT = 4f;
         }
 
         static float Heading(Vector3 f) => Mathf.Atan2(f.x, f.z);

@@ -41,8 +41,8 @@ namespace SkiView
         /// <summary>This Unity product always shows SKI VIEW. Branding flags and branding.json cannot rename it.</summary>
         public const string LockedProductName = "SKI VIEW";
         public static string Title => LockedProductName;
-        /// <summary>The skier is named only SCOTT on screen, whatever branding.json or the likeness flags say.</summary>
-        public static string SkierName => "SCOTT";
+        /// <summary>On-screen skier name is the saved player name. Empty until they enter one. Never a Wade or Felderpuss fallback.</summary>
+        public static string SkierName => SkiViewPlayer.Name ?? "";
         public static string Subtitle => Pick(b => b.subtitle);
         public static string Badge => Pick(b => b.badge);
         public static string ProductName => LockedProductName;
