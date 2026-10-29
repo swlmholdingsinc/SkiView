@@ -396,7 +396,7 @@ namespace SkiView.UI
             help = Menu(out var safe, "PAUSE", "CONTROLS", NavBack);
             var hd = safe.Q(className: "sv-header"); var right = El("sv-header__right", hd);
             Btn("REPLAY TUTORIAL", "sv-btn sv-btn--sm", right, () => { CloseMenus(); StartTutorial(0); }, "retry");
-            safe.style.left = 0; safe.style.top = 0; safe.style.width = Length.Percent(100); safe.style.height = Length.Percent(100);   // the card grid has no fixed-width column to size the menu (SafeAreaRoot only insets the first .sv-safe)
+            // Width follows the safe container. SafeAreaRoot insets every .sv-safe; a forced full-screen width overflows the right inset.
             var body = El("sv-body", safe);
             // Phase 1 review #5 (Julia 20e, T20 spec): card grid; binding chips wrap instead of truncating. 1 column at 16:9/4:3, 2 at >= 20:9 and on desktop
             var plate = El("sv-plate sv-plate--card sv-panel sv-help19__table", body);
@@ -632,7 +632,16 @@ namespace SkiView.UI
             tutCrumb.text = tutStep == 0 ? "TUTORIAL" : $"TUTORIAL · STEP {tutStep} OF 10";
             int di = 0; foreach (var d in tutDots.Children()) { d.EnableInClassList("sv-tut19__dot--on", di == tutStep - 1); d.EnableInClassList("sv-tut19__dot--done", di < tutStep - 1); di++; }
             string who = SkiViewPlayer.Name;
-            tutTitle.text = tutStep == 0 && !string.IsNullOrEmpty(who) ? "Welcome to Ski View, " + who : t.title;
+            if (tutStep == 0 && !string.IsNullOrEmpty(who))
+            {
+                tutTitle.text = "Welcome to Ski View, " + who;
+                tutTitle.EnableInClassList("sv-tut19__name", true);
+            }
+            else
+            {
+                tutTitle.text = t.title;
+                tutTitle.EnableInClassList("sv-tut19__name", false);
+            }
             tutText.text = touch ? t.touch : t.keys;
             tutKeys.Clear();
             tutProg.text = "";

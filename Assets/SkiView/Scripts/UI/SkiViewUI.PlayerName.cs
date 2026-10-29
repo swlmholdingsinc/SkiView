@@ -10,7 +10,9 @@ namespace SkiView.UI
         TextField nameField;
         Button nameContinue, nameBack;
         Label nameHint;
-        bool nameRequired, nameSync;
+        bool nameRequired, nameSync, nameBusy;
+        TouchScreenKeyboard nameKb;
+        System.Action nameThen;
 
         void BuildPlayerName()
         {
@@ -32,7 +34,7 @@ namespace SkiView.UI
             nameHint.style.whiteSpace = WhiteSpace.Normal;
             nameHint.style.marginTop = 8; nameHint.style.marginBottom = 16;
 
-            nameField = new TextField { multiline = false, maxLength = 16, hideMobileInput = false };
+            nameField = new TextField { multiline = false, maxLength = SkiViewPlayer.MaxLen, hideMobileInput = false };
             nameField.keyboardType = TouchScreenKeyboardType.Default;
             nameField.AddToClassList("sv-name__field");
             nameField.style.minHeight = 88;
@@ -57,26 +59,65 @@ namespace SkiView.UI
 
         const string NameRules = "1–12 characters. Letters, digits, spaces, hyphens, or apostrophes.";
 
-        void OnNameEdited(ChangeEvent<string> e)
+        void OnNameEdited(ChangeEvent<string> _)
         {
             if (nameSync) return;
-            string raw = e.newValue ?? "";
-            string shown = raw.Replace('\u2019', '\'').Replace('\u2018', '\'').ToUpperInvariant();
-            if (shown.Length > 16) shown = shown.Substring(0, 16);
-            if (shown != raw)
-            {
-                nameSync = true;
-                nameField.SetValueWithoutNotify(shown);
-                nameSync = false;
-            }
             RefreshNameContinue();
         }
 
         void OnNameKey(KeyDownEvent e)
         {
             if (e.keyCode != KeyCode.Return && e.keyCode != KeyCode.KeypadEnter) return;
-            if (nameContinue != null && nameContinue.enabledSelf) CommitPlayerName();
             e.StopPropagation();
+            TrySubmitName();
+        }
+
+        void OpenNameKeyboard()
+        {
+            if (!TouchScreenKeyboard.isSupported || !Application.isMobilePlatform) return;
+            TouchScreenKeyboard.hideInput = false;
+            nameKb = TouchScreenKeyboard.Open(nameField.value ?? "", TouchScreenKeyboardType.Default, false, false, false, false, "", SkiViewPlayer.MaxLen);
+        }
+
+        /// <summary>Mobile Done closes the keyboard with Status.Done. Same action as CONTINUE, and only when the name is valid.</summary>
+        internal void TickNameKeyboard()
+        {
+            if (nameKb == null) return;
+            if (nameScreen == null || !nameScreen.ClassListContains("sv-menu--open")) { nameKb = null; return; }
+            var st = nameKb.status;
+            if (st == TouchScreenKeyboard.Status.Visible)
+            {
+                string t = nameKb.text ?? "";
+                if (nameField != null && t != nameField.value)
+                {
+                    nameSync = true;
+                    nameField.SetValueWithoutNotify(t);
+                    nameSync = false;
+                    RefreshNameContinue();
+                }
+                return;
+            }
+            if (st == TouchScreenKeyboard.Status.Done)
+            {
+                string t = nameKb.text ?? "";
+                nameKb = null;
+                if (nameField != null)
+                {
+                    nameSync = true;
+                    nameField.SetValueWithoutNotify(t);
+                    nameSync = false;
+                    RefreshNameContinue();
+                }
+                TrySubmitName();
+                return;
+            }
+            if (st == TouchScreenKeyboard.Status.Canceled || st == TouchScreenKeyboard.Status.LostFocus)
+                nameKb = null;
+        }
+
+        void TrySubmitName()
+        {
+            if (nameContinue != null && nameContinue.enabledSelf) CommitPlayerName();
         }
 
         void RefreshNameContinue()
@@ -104,8 +145,7 @@ namespace SkiView.UI
             nameField.schedule.Execute(() =>
             {
                 nameField.Focus();
-                if (Application.platform == RuntimePlatform.Android)
-                    TouchScreenKeyboard.hideInput = false;
+                OpenNameKeyboard();
             }).StartingIn(40);
         }
 
@@ -117,15 +157,35 @@ namespace SkiView.UI
 
         void CommitPlayerName()
         {
+            if (nameBusy) return;
             if (!SkiViewPlayer.TrySave(nameField.value)) { RefreshNameContinue(); return; }
+            nameBusy = true;
             bool first = nameRequired;
             nameRequired = false;
+            nameKb = null;
             if (first && game != null) game.RefreshNameBanner();
             if (first && PlayerPrefs.GetInt(TUT_PREF, 0) == 0 && tutStep < 0
                 && !SkiViewArgs.Has("at") && !SkiViewArgs.Has("ui") && Application.isPlaying)
                 StartTutorial(0);
-            if (!first) Open(settings);
+            if (!first) { nameBusy = false; Open(settings); return; }
+            var next = nameThen;
+            nameThen = null;
+            if (SkipTitle())
+            {
+                CloseMenus();
+                next?.Invoke();
+            }
             else OpenTitle();
+            game?.ReleaseHeldArgs();
+            nameBusy = false;
+        }
+
+        void OpenLinkedUi(string v)
+        {
+            if (OpenFromArg(v)) return;
+            if (v == "credits") Open(credits);
+            else if (v == "license") Open(license);
+            else { int t = v == "graphics" ? 0 : v == "audio" ? 1 : v == "controls" ? 2 : -1; if (t >= 0) { tab = t; Open(settings); } }
         }
     }
 }

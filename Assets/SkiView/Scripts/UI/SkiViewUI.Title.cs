@@ -91,20 +91,17 @@ namespace SkiView.UI
             {
                 var jsub = jBtn.Q(className: "sv-event__sub"); if (jsub is Label jl) jl.text = "3 passes · longest jump";
             }
-            if (!SkipTitle() && !skipTitleOnce) root.schedule.Execute(OpenNameOrTitle).StartingIn(50);
+            if (Application.isPlaying && SkiViewPlayer.BlocksRun)
+                root.schedule.Execute(() => OpenPlayerName(true)).StartingIn(50);
+            else if (!SkipTitle() && !skipTitleOnce)
+                root.schedule.Execute(OpenTitle).StartingIn(50);
             skipTitleOnce = false;
-        }
-
-        void OpenNameOrTitle()
-        {
-            if (SkiViewPlayer.HasName) OpenTitle();
-            else OpenPlayerName(true);
         }
 
         public void OpenTitle()
         {
             game?.FlushSlalomSet();
-            if (Application.isPlaying && !SkiViewPlayer.HasName) { OpenPlayerName(true); return; }
+            if (SkiViewPlayer.BlocksRun) { OpenPlayerName(true); return; }
             if (title == null) return;
             titleReturn = false; Open(title); titlePanel.RemoveFromClassList("sv-event-panel--open");
             var tr = title.Q("title-root"); tr.RemoveFromClassList("sv-title--in");
