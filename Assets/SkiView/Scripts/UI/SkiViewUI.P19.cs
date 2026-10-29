@@ -541,7 +541,7 @@ namespace SkiView.UI
                 }
                 pipCount.text = $"Buoys {SkierSim.Fmt(sim.passBuoys)} / 6";
             }
-            string c = game.bannerT > 0f && !string.IsNullOrEmpty(game.banner) ? game.banner.ToUpperInvariant() : game.HudCall;
+            string c = game.bannerT > 0f && !string.IsNullOrEmpty(game.banner) ? BannerForCall(game.banner) : game.HudCall;
             callText.text = c; call.style.display = string.IsNullOrEmpty(c) ? DisplayStyle.None : DisplayStyle.Flex;
             coach.text = game.CoachOn ? game.CoachLine : ""; coach.style.display = game.CoachOn ? DisplayStyle.Flex : DisplayStyle.None;
             skipPill.style.display = game.InTurnaround ? DisplayStyle.Flex : DisplayStyle.None;
@@ -550,6 +550,18 @@ namespace SkiView.UI
             if (lakes != null && lakes.ClassListContains("sv-menu--open") && Time.frameCount % 15 == 0 && forcedPack == null) RefreshLakes(false);
             TickJumpBar(); TickTutorial(); TickResults();
         }
+        /// <summary>Call-plate chrome is upper case. The saved player name in the banner keeps the typed case.</summary>
+        static string BannerForCall(string banner)
+        {
+            string skier = SkiViewPlayer.Name;
+            if (string.IsNullOrEmpty(banner) || string.IsNullOrEmpty(skier)) return banner == null ? "" : banner.ToUpperInvariant();
+            string token = " · " + skier + " · ";
+            int at = banner.IndexOf(token, StringComparison.Ordinal);
+            if (at < 0) return banner.ToUpperInvariant();
+            int nameAt = at + 3;
+            return banner.Substring(0, nameAt).ToUpperInvariant() + skier + banner.Substring(nameAt + skier.Length).ToUpperInvariant();
+        }
+
         void TickJumpBar()
         {
             if (jbar == null) return;

@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Text;
 using UnityEngine;
 
@@ -68,28 +69,56 @@ namespace SkiView
             return true;
         }
 
-        static bool Blocked(string typed)
-        {
-            string upper = typed.ToUpperInvariant();
-            if (ContainsBlocked(Compact(upper))) return true;
-            var parts = upper.Split(' ');
-            for (int i = 0; i < parts.Length; i++)
-                if (ContainsBlocked(Compact(parts[i]))) return true;
-            return false;
-        }
+        /// <summary>Leetspeak fold of a copy: lower case, accents stripped, 4/@ a, 3 e, 0 o, 1/!/| i or l, 5/$ s, 7 t, and spaces, dots, dashes and underscores removed.</summary>
+        static bool Blocked(string typed) => FoldContainsBan(Fold(typed), 0, new StringBuilder());
 
-        static string Compact(string s)
+        static string Fold(string typed)
         {
-            var sb = new StringBuilder(s.Length);
-            for (int i = 0; i < s.Length; i++)
+            string lower = typed.ToLowerInvariant().Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder(lower.Length);
+            for (int i = 0; i < lower.Length; i++)
             {
-                char c = s[i];
-                if (char.IsLetter(c) || (c >= '0' && c <= '9')) sb.Append(c);
+                char c = lower[i];
+                if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark) continue;
+                switch (c)
+                {
+                    case '4': case '@': sb.Append('a'); break;
+                    case '3': sb.Append('e'); break;
+                    case '0': sb.Append('o'); break;
+                    case '1': case '!': case '|': sb.Append('\u0001'); break; // i or l
+                    case '5': case '$': sb.Append('s'); break;
+                    case '7': sb.Append('t'); break;
+                    case ' ': case '.': case '-': case '_':
+                    case '\u2010': case '\u2011': case '\u2012': case '\u2013': case '\u2014': case '\u2212':
+                        break;
+                    default: sb.Append(c); break;
+                }
             }
             return sb.ToString();
         }
 
-        static bool ContainsBlocked(string compact) =>
-            compact.Contains("WADE") || compact.Contains("FELDERPUSS");
+        static bool FoldContainsBan(string src, int i, StringBuilder acc)
+        {
+            if (i == src.Length)
+            {
+                string s = acc.ToString();
+                return s.Contains("wade") || s.Contains("felderpuss");
+            }
+            char c = src[i];
+            if (c == '\u0001')
+            {
+                acc.Append('i');
+                if (FoldContainsBan(src, i + 1, acc)) return true;
+                acc.Length--;
+                acc.Append('l');
+                bool hit = FoldContainsBan(src, i + 1, acc);
+                acc.Length--;
+                return hit;
+            }
+            acc.Append(c);
+            bool ok = FoldContainsBan(src, i + 1, acc);
+            acc.Length--;
+            return ok;
+        }
     }
 }
