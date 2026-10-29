@@ -82,12 +82,14 @@ namespace SkiView.UI
             root.EnableInClassList("sv-motion-reduced", SkiViewGame.ReducedMotion);
             BuildHud19(safe);
             BuildSettings(); BuildCredits(); BuildLicense(); BuildPause(); BuildLakes(); BuildHelp(); BuildClinic(); BuildPlayerName(); BuildTitle();
+            if (SkiViewPlayer.BlocksRun) { timeScale0 = 1f; Time.timeScale = 0f; }
             // capture / review: ?ui=graphics|audio|controls|credits|license opens that screen (WebGL)
             string url = Application.absoluteURL ?? ""; int q = url.IndexOf("ui=");
             if (q >= 0)
             {
                 string v = url.Substring(q + 3); int amp = v.IndexOf('&'); if (amp >= 0) v = v.Substring(0, amp);
-                if (OpenFromArg(v)) { }
+                if (SkiViewPlayer.BlocksRun) nameThen = () => OpenLinkedUi(v);
+                else if (OpenFromArg(v)) { }
                 else if (v == "credits") root.schedule.Execute(() => Open(credits)).StartingIn(300);
                 else if (v == "license") root.schedule.Execute(() => Open(license)).StartingIn(300);
                 else { int t = v == "graphics" ? 0 : v == "audio" ? 1 : v == "controls" ? 2 : -1; if (t >= 0) { tab = t; root.schedule.Execute(() => { Open(settings); }).StartingIn(300); } }
@@ -275,6 +277,7 @@ namespace SkiView.UI
                 if (MenuOpen) NavBack(); else OpenPause();
             }   // Esc / Android back
             if (Input.GetKeyDown(KeyCode.Tab) && tutStep >= 0) EndTutorial();
+            TickNameKeyboard();
             Tick19();
             if (!MenuOpen && Input.GetKeyDown(KeyCode.JoystickButton5)) CamPressed();
         }

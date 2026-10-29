@@ -38,10 +38,19 @@ namespace SkiView
         public bool InTurnaround => turnaround && (mode == Mode.Sink || mode == Mode.DeepStart || mode == Mode.Turn);
         public bool CutOn => cutOn; public bool Popped => popped;
         public static bool HudHidden => SkiViewArgs.Get("hud") == "0";
-        bool argsApplied;
+        bool argsApplied, argsHeld;
+        /// <summary>Apply URL / command-line args that were held until the player entered a name.</summary>
+        public void ReleaseHeldArgs()
+        {
+            if (!argsHeld) return;
+            argsHeld = false;
+            ApplyArgs();
+        }
         void ApplyArgs()
         {
-            if (argsApplied || !Application.isPlaying) return; argsApplied = true;
+            if (argsApplied || !Application.isPlaying) return;
+            if (SkiViewPlayer.BlocksRun) { argsHeld = true; return; }
+            argsApplied = true;
             string c = SkiViewArgs.Get("cam");
             if (c != null) { var m = c == "boat" ? CamMode.Broadcast : c == "fp" || c == "first" || c == "1st" ? CamMode.FirstPerson : c == "close" ? CamMode.CloseChase : CamMode.SkierChase; SetCamera(m); camModeLast = m; SkiView.UI.SkiViewUI.Instance?.ShowCamToast(m); }   // Phase 2 fix: the run-start toast ran before args, so the pill kept the old view name
             if (SkiViewArgs.Get("mode") == "jump" && jumpRamp != null && !jumpMode) ToggleJumpMode();
