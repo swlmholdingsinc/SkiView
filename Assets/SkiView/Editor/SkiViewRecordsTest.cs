@@ -11,6 +11,9 @@ public static class SkiViewRecordsTest
         int fails = 0;
         void Check(bool ok, string what) { Debug.Log($"[RecordsTest] {(ok ? "PASS" : "FAIL")} {what}"); if (!ok) fails++; }
         SkiViewRecords.UseMemoryStore(true);
+        bool hadPlayer = PlayerPrefs.HasKey(SkiViewRecords.PlayerNamePref);
+        string prevPlayer = PlayerPrefs.GetString(SkiViewRecords.PlayerNamePref, "");
+        PlayerPrefs.DeleteKey(SkiViewRecords.PlayerNamePref);
         try
         {
             var slalom = SkiViewRecords.Discipline.Slalom;
@@ -25,7 +28,7 @@ public static class SkiViewRecordsTest
 
             var blank = SkiViewRecords.Submit(slalom, 8f, "Cedar Bend", 1, 2f, "   ", 2, 638000000000000100L);
             Check(blank.qualified && blank.rank == 1, "higher rope score ranks first");
-            Check(SkiViewRecords.Load(slalom)[0].holder == "SCOTT", "blank holder falls back to SCOTT");
+            Check(SkiViewRecords.Load(slalom)[0].holder == "PLAYER", "blank holder falls back to PLAYER, not a branding name");
             Check(SkiViewRecords.Format(slalom, SkiViewRecords.Load(slalom)[0]) == "2 @ 22 OFF", "2 @ 22 OFF");
 
             var tie = SkiViewRecords.Submit(slalom, 8f, "later tie", 1, 2f, "SCOTT", 3, 638000000000000200L);
@@ -83,8 +86,59 @@ public static class SkiViewRecordsTest
             var jumpBoard = SkiViewRecords.Load(SkiViewRecords.Discipline.Jump);
             Check(jumpBoard.Count == SkiViewRecords.Capacity && jumpBoard[0].score > jumpBoard[9].score, "persisted jump board keeps 10 and stays ranked");
             Check(!ContainsScore(jumpBoard, 32.5f), "an older lower jump drops off a full board");
+
+            var open = new SkiViewRecords.SlalomSet();
+            SkiViewRecords.SlalomSet done;
+            int submits = 0;
+            void Pass(int rope, float buoys, bool clean)
+            {
+                if (!SkiViewRecords.NoteSlalomSetPass(ref open, rope, buoys, clean, "Ski View", out done)) return;
+                submits++;
+                Check(submits == 1, "a set submits on the pass that ends it and not before");
+            }
+            Pass(0, 6f, true);
+            Pass(1, 6f, true);
+            Check(submits == 0 && open.has && open.rope == 1 && Mathf.Approximately(open.buoys, 6f), "full passes stay in the set and keep the best score");
+            Pass(2, 2f, false);
+            Check(submits == 1 && done.has && done.rope == 2 && Mathf.Approximately(done.buoys, 2f) && !open.has, "the miss ends the set with its best pass, once");
+
+            open = default;
+            Check(!SkiViewRecords.NoteSlalomSetPass(ref open, 0, 6f, true, "lake", out done), "a lone full pass does not submit yet");
+            Check(SkiViewRecords.NoteSlalomSetPass(ref open, 1, 0f, false, "lake", out done) && done.has && done.rope == 0 && Mathf.Approximately(done.buoys, 6f), "a zero-buoy miss keeps the last completed pass");
+            Check(!open.has, "the set is clear after it ends");
+
+            open = default;
+            Check(SkiViewRecords.NoteSlalomSetPass(ref open, 0, 0f, false, "lake", out done) && !done.has, "a set with no scored pass submits nothing");
+            open = default;
+            Check(!SkiViewRecords.NoteSlalomSetPass(ref open, 0, 6f, true, "a", out done), "clean pass opens the set");
+            Check(!SkiViewRecords.NoteSlalomSetPass(ref open, 3, 4f, true, "b", out done) && open.rope == 3, "a later better full pass replaces the running best without submitting");
+            SkiViewRecords.SlalomSet flushed;
+            Check(SkiViewRecords.TakeSlalomSet(ref open, out flushed) && flushed.rope == 3 && Mathf.Approximately(flushed.buoys, 4f) && !open.has, "leaving the set records the best pass once");
+            Check(!SkiViewRecords.TakeSlalomSet(ref open, out flushed), "a second leave does not record the set again");
+
+            Check(!SkiViewRecords.AllowRecord(true, false), "clinic blocks records");
+            Check(!SkiViewRecords.AllowRecord(false, true), "tutorial blocks records");
+            Check(!SkiViewRecords.AllowRecord(true, true), "clinic and tutorial together block records");
+            Check(SkiViewRecords.AllowRecord(false, false), "a normal run may record");
+
+            Check(SkiViewRecords.HolderName() == SkiViewRecords.FallbackHolder, "missing sv.player.name falls back to PLAYER");
+            Check(SkiViewRecords.HolderName() != SkiViewBranding.SkierName, "the fallback is not the branding.json skier name");
+            var unnamed = SkiViewRecords.Submit(SkiViewRecords.Discipline.Trick, 15f, "no name", holder: null, seq: 50);
+            Check(unnamed.qualified && HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 50) == "PLAYER", "a record written with no name stores PLAYER");
+            PlayerPrefs.SetString(SkiViewRecords.PlayerNamePref, "  CASEY  ");
+            PlayerPrefs.Save();
+            Check(SkiViewRecords.HolderName() == "CASEY", "sv.player.name is trimmed");
+            var named = SkiViewRecords.Submit(SkiViewRecords.Discipline.Trick, 16f, "named", holder: "   ", seq: 51);
+            Check(named.qualified && HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 51) == "CASEY", "a blank holder argument still stamps the saved player name");
+            Check(HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 51) != SkiViewBranding.SkierName, "the stamped name is not taken from branding.json");
         }
-        finally { SkiViewRecords.UseMemoryStore(false); }
+        finally
+        {
+            SkiViewRecords.UseMemoryStore(false);
+            if (hadPlayer) PlayerPrefs.SetString(SkiViewRecords.PlayerNamePref, prevPlayer);
+            else PlayerPrefs.DeleteKey(SkiViewRecords.PlayerNamePref);
+            PlayerPrefs.Save();
+        }
 
         Debug.Log($"[RecordsTest] {fails} failure(s)");
         if (Application.isBatchMode) UnityEditor.EditorApplication.Exit(fails == 0 ? 0 : 3);
@@ -94,5 +148,11 @@ public static class SkiViewRecordsTest
     {
         for (int i = 0; i < board.Count; i++) if (Mathf.Approximately(board[i].score, score)) return true;
         return false;
+    }
+
+    static string HolderOf(List<SkiViewRecords.Entry> board, int seq)
+    {
+        for (int i = 0; i < board.Count; i++) if (board[i].seq == seq) return board[i].holder;
+        return "";
     }
 }

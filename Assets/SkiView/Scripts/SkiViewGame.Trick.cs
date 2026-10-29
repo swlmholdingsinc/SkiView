@@ -133,6 +133,7 @@ namespace SkiView
 
         public void ToggleTrickMode()
         {
+            if (!trickMode) FlushSlalomSet();
             if (trickMode) SkiAudio.Instance?.UiBack(); else SkiAudio.Instance?.UiConfirm();
             trickMode = !trickMode;
             if (trickMode && jumpMode) { jumpMode = false; SetJumpGear(false); }

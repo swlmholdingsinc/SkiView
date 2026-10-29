@@ -614,6 +614,7 @@ namespace SkiView
         {
             if (jumpRamp == null && !jumpMode) return;   // pass 15: slalom-only lakes (no ramp)
             if (jumpOnly && jumpMode) return;            // pass 18: jump-only lake
+            if (!jumpMode) FlushSlalomSet();
             if (jumpMode) SkiAudio.Instance?.UiBack(); else SkiAudio.Instance?.UiConfirm();
             jumpMode = !jumpMode; SetJumpGear(jumpMode);
             if (jumpMode)

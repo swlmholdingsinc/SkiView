@@ -69,7 +69,7 @@ namespace SkiView.UI
                 if (fresh) row.AddToClassList("sv-row--selected");
                 Lb((i + 1).ToString(), "sv-rec-rank", row);
                 var mid = El("sv-rec-mid", row);
-                Lb(string.IsNullOrEmpty(e.holder) ? "SCOTT" : e.holder, "t-label", mid);
+                Lb(string.IsNullOrEmpty(e.holder) ? SkiViewRecords.FallbackHolder : e.holder, "t-label", mid);
                 string sub = e.detail ?? "";
                 string when = SkiViewRecords.AchievedLabel(e);
                 if (!string.IsNullOrEmpty(when)) sub = string.IsNullOrEmpty(sub) ? when : sub + " · " + when;

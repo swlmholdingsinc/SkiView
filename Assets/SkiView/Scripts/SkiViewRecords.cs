@@ -13,13 +13,17 @@ namespace SkiView
     /// (lower sequence). Ranks are unique — a tie does not share a place.
     /// A run qualifies when the board has fewer than 10 scores, or its score is strictly
     /// higher than 10th place. A tie with 10th place stays off the list.
-    /// Scores at or below zero are not recorded. The same skier can hold more than one row;
-    /// each qualifying run is its own result. The holder name is the skier display name (Scott).
+    /// Scores at or below zero are not recorded. The same player can hold more than one row.
+    /// Slalom records one score per set (the best pass), not one row per pass.
+    /// The holder is PlayerPrefs <c>sv.player.name</c>, or PLAYER when that is empty. Branding is not a name source.
     /// </summary>
     public static class SkiViewRecords
     {
         public const int Capacity = 10;
         public const string PrefPrefix = "sv.records.v1.";
+        /// <summary>Saved on first launch by the player-name prompt. Records read it at write time.</summary>
+        public const string PlayerNamePref = "sv.player.name";
+        public const string FallbackHolder = "PLAYER";
 
         public enum Discipline { Slalom, Jump, Trick }
 
@@ -58,10 +62,59 @@ namespace SkiView
 
         public static Place Miss(Discipline d) => new Place { attempted = true, discipline = d };
 
+        /// <summary>Clinic and the tutorial never write a record. Same rule for slalom, jump, and tricks.</summary>
+        public static bool AllowRecord(bool clinicActive, bool tutorialRunning) => !clinicActive && !tutorialRunning;
+
+        /// <summary>The running best pass of one slalom set. A set ends on the first pass that is not clean.</summary>
+        public struct SlalomSet
+        {
+            public bool has;
+            public float score;
+            public int rope;
+            public float buoys;
+            public string detail;
+        }
+
+        /// <summary>
+        /// Fold one pass into the open set. A clean pass only updates the running best.
+        /// A pass that is not clean ends the set: <paramref name="submit"/> is that best score (if any) and the set is cleared.
+        /// Returns true when the set ended and the caller should record <paramref name="submit"/> once.
+        /// </summary>
+        public static bool NoteSlalomSetPass(ref SlalomSet set, int rope, float buoys, bool clean, string detail, out SlalomSet submit)
+        {
+            ConsiderSlalomPass(ref set, rope, buoys, detail);
+            submit = default;
+            if (clean) return false;
+            submit = set;
+            set = default;
+            return true;
+        }
+
+        /// <summary>The player left or restarted before a miss. Returns the best pass so far, once, and clears the set.</summary>
+        public static bool TakeSlalomSet(ref SlalomSet set, out SlalomSet submit)
+        {
+            submit = set;
+            set = default;
+            return submit.has;
+        }
+
+        static void ConsiderSlalomPass(ref SlalomSet set, int rope, float buoys, string detail)
+        {
+            if (buoys <= 0.01f) return;
+            float score = rope * 6f + buoys;
+            if (set.has && score <= set.score) return;
+            set.has = true;
+            set.score = score;
+            set.rope = rope;
+            set.buoys = buoys;
+            set.detail = detail ?? "";
+        }
+
+        /// <summary>PlayerPrefs <see cref="PlayerNamePref"/>, trimmed. Empty or missing becomes <see cref="FallbackHolder"/>.</summary>
         public static string HolderName()
         {
-            string n = SkiViewBranding.SkierName;
-            if (string.IsNullOrWhiteSpace(n)) n = "SCOTT";
+            string n = PlayerPrefs.GetString(PlayerNamePref, "");
+            if (string.IsNullOrWhiteSpace(n)) return FallbackHolder;
             return n.Trim();
         }
 
@@ -93,7 +146,7 @@ namespace SkiView
             if (entry == null || float.IsNaN(entry.score) || float.IsInfinity(entry.score) || entry.score <= 0f)
                 return new Place { attempted = true, qualified = false, count = board.Count, score = entry != null && !float.IsNaN(entry.score) && !float.IsInfinity(entry.score) ? entry.score : 0f };
 
-            if (string.IsNullOrWhiteSpace(entry.holder)) entry.holder = "SCOTT";
+            if (string.IsNullOrWhiteSpace(entry.holder)) entry.holder = FallbackHolder;
             else entry.holder = entry.holder.Trim();
             if (entry.detail == null) entry.detail = "";
             if (entry.seq <= 0) entry.seq = NextSeq(board);
@@ -133,7 +186,7 @@ namespace SkiView
             {
                 var e = bag.entries[i];
                 if (e == null || float.IsNaN(e.score) || float.IsInfinity(e.score) || e.score <= 0f) continue;
-                if (string.IsNullOrWhiteSpace(e.holder)) e.holder = "SCOTT";
+                if (string.IsNullOrWhiteSpace(e.holder)) e.holder = FallbackHolder;
                 if (e.detail == null) e.detail = "";
                 board.Add(e);
             }

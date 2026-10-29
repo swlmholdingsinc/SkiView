@@ -860,6 +860,7 @@ namespace SkiView
         public void NextLake()
         {
             if (lakeScenes == null || lakeScenes.Length < 2) return;
+            FlushSlalomSet();
             SkiAudio.Instance?.UiConfirm();
             int i = System.Array.IndexOf(lakeScenes, SceneManager.GetActiveScene().name);
             string next = lakeScenes[(i + 1 + lakeScenes.Length) % lakeScenes.Length];

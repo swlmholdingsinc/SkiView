@@ -10,7 +10,7 @@ namespace SkiView.UI
         bool TitleFlow => runSetup != null && IsOpen(runSetup);
         static bool IsOpen(VisualElement m) => m != null && m.ClassListContains("sv-menu--open");
 
-        public void ToTitle() { titleReturn = false; pauseReturn = false; foreach (var x in menus) x?.RemoveFromClassList("sv-menu--open"); OpenTitle(); }
+        public void ToTitle() { game?.FlushSlalomSet(); titleReturn = false; pauseReturn = false; foreach (var x in menus) x?.RemoveFromClassList("sv-menu--open"); OpenTitle(); }
 
         public void NavBack()
         {
