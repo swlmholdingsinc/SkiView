@@ -570,7 +570,7 @@ namespace SkiView.UI
         struct TutCopy { public string title, touch, keys; }
         static readonly TutCopy[] TUT =
         {
-            new TutCopy { title = "Welcome to Ski View, Scott", touch = "Thirty seconds of basics, then the lake is yours.", keys = "Thirty seconds of basics, then the lake is yours." },
+            new TutCopy { title = "Welcome to Ski View", touch = "Thirty seconds of basics, then the lake is yours.", keys = "Thirty seconds of basics, then the lake is yours." },
             new TutCopy { title = "HANG ON", touch = "Sit back, tips up. The boat does the work.", keys = "Sit back, tips up. The boat does the work." },
             new TutCopy { title = "LEAN TO CUT", touch = "Hold the left side of the screen to lean left. Hold the right side to lean right. Let go to ride flat.", keys = "Hold A / ← or D / → to lean. Let go to ride flat." },
             new TutCopy { title = "GATES, THEN SIX BUOYS", touch = "Go through the gate, then round the outside of each orange buoy. Half a buoy still counts.", keys = "Go through the gate, then round the outside of each orange buoy. Half a buoy still counts." },
@@ -593,7 +593,7 @@ namespace SkiView.UI
             tutCard.style.display = DisplayStyle.None;
             int forced = SkiViewArgs.I("tutorial", -1);
             if (forced >= 0) root.schedule.Execute(() => StartTutorial(forced)).StartingIn(200);
-            else if (PlayerPrefs.GetInt(TUT_PREF, 0) == 0 && !SkiViewGame.HudHidden && !SkiViewArgs.Has("at") && !SkiViewArgs.Has("ui") && Application.isPlaying)
+            else if (PlayerPrefs.GetInt(TUT_PREF, 0) == 0 && SkiViewPlayer.HasName && !SkiViewGame.HudHidden && !SkiViewArgs.Has("at") && !SkiViewArgs.Has("ui") && Application.isPlaying)
                 root.schedule.Execute(() => StartTutorial(0)).StartingIn(400);
         }
         public void StartTutorial(int step) { if (game == null) return; tutStep = step; ShowStep(); }
@@ -611,7 +611,8 @@ namespace SkiView.UI
             tutCard.style.display = DisplayStyle.Flex;
             tutCrumb.text = tutStep == 0 ? "TUTORIAL" : $"TUTORIAL · STEP {tutStep} OF 10";
             int di = 0; foreach (var d in tutDots.Children()) { d.EnableInClassList("sv-tut19__dot--on", di == tutStep - 1); d.EnableInClassList("sv-tut19__dot--done", di < tutStep - 1); di++; }
-            tutTitle.text = t.title;
+            string who = SkiViewPlayer.Name;
+            tutTitle.text = tutStep == 0 && !string.IsNullOrEmpty(who) ? "Welcome to Ski View, " + who : t.title;
             tutText.text = touch ? t.touch : t.keys;
             tutKeys.Clear();
             tutProg.text = "";

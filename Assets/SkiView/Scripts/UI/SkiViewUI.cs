@@ -81,7 +81,7 @@ namespace SkiView.UI
             }
             root.EnableInClassList("sv-motion-reduced", SkiViewGame.ReducedMotion);
             BuildHud19(safe);
-            BuildSettings(); BuildCredits(); BuildLicense(); BuildPause(); BuildLakes(); BuildHelp(); BuildClinic(); BuildTitle();
+            BuildSettings(); BuildCredits(); BuildLicense(); BuildPause(); BuildLakes(); BuildHelp(); BuildClinic(); BuildPlayerName(); BuildTitle();
             // capture / review: ?ui=graphics|audio|controls|credits|license opens that screen (WebGL)
             string url = Application.absoluteURL ?? ""; int q = url.IndexOf("ui=");
             if (q >= 0)
@@ -191,6 +191,9 @@ namespace SkiView.UI
             }
             else
             {
+                var nameRow = Row("CHANGE NAME", SkiViewPlayer.HasName ? SkiViewPlayer.Name : "Required");
+                var change = Btn("CHANGE NAME", "sv-btn", nameRow, () => OpenPlayerName(false));
+                change.style.minHeight = 88; change.style.height = 88;
                 int cur = SkiViewGame.DefaultCamera >= 0 ? CycleIndex((SkiViewGame.CamMode)SkiViewGame.DefaultCamera) : 0;
                 Seg(Row("DEFAULT CAMERA", "EVERY RUN STARTS IN THIS VIEW; CAM CHANGES IT FOR THE CURRENT RUN ONLY"), new[] { "HIGH CHASE", "CLOSE CHASE", "FIRST PERSON", "BOAT CAM" },
                     cur, k => SkiViewGame.SaveCameraSettings((int)FromCycle(k), SkiViewGame.ReducedMotion));
