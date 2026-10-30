@@ -26,6 +26,9 @@
                 <ui:Button name="sec-settings" class="sv-sec" text="SETTINGS"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
                 <ui:Button name="sec-credits" class="sv-sec" text="CREDITS"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
             </ui:VisualElement>
+            <ui:VisualElement name="records-row" class="sv-sec-row">
+                <ui:Button name="sec-records" class="sv-sec" text="WORLD RECORDS"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
+            </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="event-panel" class="sv-event-panel">
             <ui:Label text="SLALOM" /><ui:Label text="READY TO SKI" /><ui:Label name="last-setup" text="Last setup: {LAKE} · {ROPE} off · {SPEED} mph" />

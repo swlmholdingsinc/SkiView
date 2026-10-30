@@ -10,7 +10,7 @@ namespace SkiView.UI
         bool TitleFlow => runSetup != null && IsOpen(runSetup);
         static bool IsOpen(VisualElement m) => m != null && m.ClassListContains("sv-menu--open");
 
-        public void ToTitle() { titleReturn = false; pauseReturn = false; foreach (var x in menus) x?.RemoveFromClassList("sv-menu--open"); OpenTitle(); }
+        public void ToTitle() { game?.FlushSlalomSet(); titleReturn = false; pauseReturn = false; foreach (var x in menus) x?.RemoveFromClassList("sv-menu--open"); OpenTitle(); }
 
         public void NavBack()
         {
@@ -18,7 +18,7 @@ namespace SkiView.UI
             if (IsOpen(lakes)) { if (lakesFromSetup) OpenRunSetup(); else Open(pause); return; }
             if (IsOpen(runSetup)) { ToTitle(); OpenEventPanel(panelJump, panelTricks); return; }
             if (IsOpen(credits)) { Open(settings); return; }
-            if ((IsOpen(settings) || IsOpen(help)) && pauseReturn && !titleReturn) { pauseReturn = false; Open(pause); return; }
+            if ((IsOpen(settings) || IsOpen(help) || IsOpen(recordsMenu)) && pauseReturn && !titleReturn) { pauseReturn = false; Open(pause); return; }
             pauseReturn = false; CloseMenus();
         }
     }

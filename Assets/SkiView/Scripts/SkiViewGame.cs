@@ -505,6 +505,7 @@ namespace SkiView
                 if (mode == Mode.Pass) mode = Mode.Turn;
                 return;   // no rope shorten in Clinic submode
             }
+            NoteSlalomRecord(res);
             if (res.clean)
             {
                 cleanPasses++;
@@ -869,6 +870,7 @@ namespace SkiView
         public void NextLake()
         {
             if (lakeScenes == null || lakeScenes.Length < 2) return;
+            FlushSlalomSet();
             SkiAudio.Instance?.UiConfirm();
             int i = System.Array.IndexOf(lakeScenes, SceneManager.GetActiveScene().name);
             string next = lakeScenes[(i + 1 + lakeScenes.Length) % lakeScenes.Length];

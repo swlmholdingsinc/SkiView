@@ -165,6 +165,7 @@ namespace SkiView
             if (JumpPassCount >= JUMP_PASSES)
             {
                 JumpResultsOpen = true;
+                NoteJumpRecord();
                 banner = SkiView.UI.SkiViewUI.Kmh
                     ? $"ROUND · BEST {JumpBest:0.0} m"
                     : $"ROUND · BEST {Mathf.FloorToInt(JumpBest / 0.3048f + 0.5f)} ft";
@@ -613,6 +614,7 @@ namespace SkiView
         {
             if (jumpRamp == null && !jumpMode) return;   // pass 15: slalom-only lakes (no ramp)
             if (jumpOnly && jumpMode) return;            // pass 18: jump-only lake
+            if (!jumpMode) FlushSlalomSet();
             if (jumpMode) SkiAudio.Instance?.UiBack(); else SkiAudio.Instance?.UiConfirm();
             jumpMode = !jumpMode; SetJumpGear(jumpMode);
             if (jumpMode)

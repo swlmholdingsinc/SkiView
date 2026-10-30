@@ -172,6 +172,14 @@ namespace SkiView.UI
             Btn("CONTROLS HELP", "sv-btn", col, () => { pauseReturn = true; Open(help); }, "controls");
             pauseJump = Btn("JUMP MODE: OFF", "sv-btn", col, () => { game?.ToggleJumpMode(); CloseMenus(); }, "jump-distance");
             Btn("CHANGE LAKE", "sv-btn", col, () => { lakesFromSetup = false; Open(lakes); }, "back");
+            Btn("WORLD RECORDS", "sv-btn", col, () =>
+            {
+                pauseReturn = true; titleReturn = false;
+                var d = SkiViewRecords.Discipline.Slalom;
+                if (game != null && game.trickMode) d = SkiViewRecords.Discipline.Trick;
+                else if (game != null && game.jumpMode) d = SkiViewRecords.Discipline.Jump;
+                OpenRecords(d, "PAUSED");
+            }, "trophy");
             Btn("MAIN MENU", "sv-btn sv-btn--ghost", col, ToTitle, "back");   // b9: the title screen, not lake select
             var tp = El("sv-plate sv-plate--card sv-pause19__this", body); El("sv-strip", tp); Lb("THIS PASS", "t-label", tp);
             Label KV(string k, string icon) { var r = El("sv-pause19__kv", tp); var ic = El("sv-key19__icon", r); ic.style.backgroundImage = new StyleBackground(Resources.Load<VectorImage>("SkiViewUI/Icons/" + icon)); Lb(k, "t-micro sv-pause19__k", r); return Lb("", "t-label", r); }
@@ -228,12 +236,17 @@ namespace SkiView.UI
             Lb("PASS COMPLETE", "t-micro", results);
             var row = El("sv-results19__row", results); rsScore = Lb("", "t-num-xl sv-results19__num", row); rsSuffix = Lb("", "t-h2", row);
             rsRope = Lb("", "t-label", results); rsPb = Lb("", "t-caption", results);
+            rsRecordBox = El("sv-results19__records", results);
+            rsRecordHead = Lb("", "t-micro", rsRecordBox);
+            var rsScroll = new ScrollView(ScrollViewMode.Vertical); rsScroll.AddToClassList("sv-results19__recscroll"); rsRecordBox.Add(rsScroll); rsRecordLines = rsScroll.contentContainer;
+            rsRecordBox.style.display = DisplayStyle.None;
             var det = El("sv-results19__details", results); Lb("DETAILS", "t-micro sv-results19__dk", det); rsDetails = Lb("", "t-caption sv-results19__dv", det);
             var act = El("sv-results19__act", results);
             // b10.27 T24 Gap A: NEXT continues drop (SAME if rope choice still open); TITLE matches Jump/Tricks
             rsMain = Btn("NEXT PASS", "sv-btn sv-btn--primary", act, () => { if (game != null && game.DropPhase >= 2 && game.RopeChoicePending) game.ChooseRope(false); results.style.display = DisplayStyle.None; }, "play");   // b9.1: the boat tows him round the island to the next pass (skip pill still jumps ahead)
             rsNextCap = Lb("", "t-caption", results);
             rsAlt = Btn("RETRY PASS", "sv-btn", act, () => { results.style.display = DisplayStyle.None; game?.RetryPass(); }, "retry");
+            Btn("RECORDS", "sv-btn sv-btn--ghost", act, OpenRecordsFromResults, "trophy");
             rsTitle = Btn("TITLE", "sv-btn sv-btn--ghost", act, () => { results.style.display = DisplayStyle.None; ToTitle(); }, "back");
             results.style.display = DisplayStyle.None;
             // b9.1a: rope choice while he floats and the boat circles back (touch here; keys: left/right + Enter, S = shorten)
@@ -298,10 +311,11 @@ namespace SkiView.UI
                     rsMain.text = "JUMP AGAIN"; rsAlt.text = "TITLE"; rsAlt.EnableInClassList("sv-btn--primary", false);
                     rsMain.EnableInClassList("sv-btn--primary", true);
                     if (rsTitle != null) rsTitle.style.display = DisplayStyle.None;
-                    rsMain.clickable = new Clickable(() => { results.style.display = DisplayStyle.None; results.RemoveFromClassList("sv-results19--jump"); game.BeginJumpRound(); });
-                    rsAlt.clickable = new Clickable(() => { results.style.display = DisplayStyle.None; results.RemoveFromClassList("sv-results19--jump"); game.CloseJumpResults(); if (game.jumpMode) game.ToggleJumpMode(); OpenTitle(); });
+                    rsMain.clickable = new Clickable(() => { results.style.display = DisplayStyle.None; results.RemoveFromClassList("sv-results19--jump"); recordListSeq = int.MinValue; recordListShown = false; game.BeginJumpRound(); });
+                    rsAlt.clickable = new Clickable(() => { results.style.display = DisplayStyle.None; results.RemoveFromClassList("sv-results19--jump"); recordListSeq = int.MinValue; recordListShown = false; game.CloseJumpResults(); if (game.jumpMode) game.ToggleJumpMode(); OpenTitle(); });
                     results.style.display = DisplayStyle.Flex;
                 }
+                ShowRecordList(SkiViewRecords.Discipline.Jump);
                 rsModePrev = m;
                 return;
             }
@@ -332,10 +346,11 @@ namespace SkiView.UI
                     rsMain.text = "TRICK AGAIN"; rsAlt.text = "TITLE"; rsAlt.EnableInClassList("sv-btn--primary", false);
                     rsMain.EnableInClassList("sv-btn--primary", true);
                     if (rsTitle != null) rsTitle.style.display = DisplayStyle.None;
-                    rsMain.clickable = new Clickable(() => { results.style.display = DisplayStyle.None; results.RemoveFromClassList("sv-results19--trick"); game.BeginTrickRound(); });
-                    rsAlt.clickable = new Clickable(() => { results.style.display = DisplayStyle.None; results.RemoveFromClassList("sv-results19--trick"); game.CloseTrickResults(); OpenTitle(); });
+                    rsMain.clickable = new Clickable(() => { results.style.display = DisplayStyle.None; results.RemoveFromClassList("sv-results19--trick"); recordListSeq = int.MinValue; recordListShown = false; game.BeginTrickRound(); });
+                    rsAlt.clickable = new Clickable(() => { results.style.display = DisplayStyle.None; results.RemoveFromClassList("sv-results19--trick"); recordListSeq = int.MinValue; recordListShown = false; game.CloseTrickResults(); OpenTitle(); });
                     results.style.display = DisplayStyle.Flex;
                 }
+                ShowRecordList(SkiViewRecords.Discipline.Trick);
                 rsModePrev = m;
                 return;
             }
@@ -356,11 +371,14 @@ namespace SkiView.UI
             {
                 var res = sim.last; rsRopeIdx = res.rope; float b = res.buoys; bool full = res.clean; float sc = rsRopeIdx * 6f + b;
                 float pb0 = Pb(game.lakeId); bool newPb = sc > pb0 + 0.01f; if (newPb) { PlayerPrefs.SetFloat("sv.pb." + game.lakeId, sc); PlayerPrefs.Save(); }
-                results.EnableInClassList("sv-results19--pb", newPb); rsBanner.style.display = newPb ? DisplayStyle.Flex : DisplayStyle.None;
                 rsScore.text = SkierSim.Fmt(b); rsSuffix.text = " @ " + SkierSim.ROPE_LABEL[rsRopeIdx];
                 rsRope.text = $"{RopeOff(rsRopeIdx)} | {SpeedMph(game != null ? game.RunMph : 34f)} | Pass {Mathf.Max(1, game.passes)}";
                 rsDetails.text = $"{sim.Breakdown(res)} · rope {SkierSim.ROPE_M[rsRopeIdx]:0.00} m · {SpeedMph(game != null ? game.RunMph : 34f)}";
                 rsPb.text = newPb ? $"PERSONAL BEST {PbFmt(sc)}" + (pb0 >= 0f ? $" · WAS {PbFmt(pb0)}" : "") : $"PERSONAL BEST {PbFmt(Mathf.Max(pb0, sc))}";
+                bool wr = game.LastRecord.attempted && game.LastRecord.discipline == SkiViewRecords.Discipline.Slalom && game.LastRecord.qualified && game.LastRecord.rank == 1;
+                rsBanner.text = wr ? "NEW WORLD RECORD" : "NEW PERSONAL BEST";
+                results.EnableInClassList("sv-results19--pb", newPb || wr); rsBanner.style.display = (newPb || wr) ? DisplayStyle.Flex : DisplayStyle.None;
+                ShowRecordList(SkiViewRecords.Discipline.Slalom);
                 int next = Mathf.Min(rsRopeIdx + 1, SkierSim.ROPE_M.Length - 1);
                 // NEXT PASS only after a full pass (the rope shortens only then); after a partial pass RETRY is the main action
                 rsMain.style.display = full ? DisplayStyle.Flex : DisplayStyle.None; rsNextCap.style.display = full ? DisplayStyle.Flex : DisplayStyle.None;
@@ -368,7 +386,7 @@ namespace SkiView.UI
                 rsAlt.EnableInClassList("sv-btn--primary", !full);
                 results.style.display = DisplayStyle.Flex; results.schedule.Execute(() => results.style.display = DisplayStyle.None).StartingIn(9000);
             }
-            if (m == SkiViewGame.Mode.Pass) results.style.display = DisplayStyle.None;
+            if (m == SkiViewGame.Mode.Pass) { results.style.display = DisplayStyle.None; recordListSeq = int.MinValue; recordListShown = false; }
             rsModePrev = m;
         }
 
@@ -436,6 +454,7 @@ namespace SkiView.UI
         bool OpenFromArg(string v)
         {
             if (v == "pause") { root.schedule.Execute(() => Open(pause)).StartingIn(300); return true; }
+            if (v == "records" || v == "worldrecords") { root.schedule.Execute(() => OpenRecords(SkiViewRecords.Discipline.Slalom, "TITLE")).StartingIn(300); return true; }
             if (v == "help") { root.schedule.Execute(() => Open(help)).StartingIn(300); return true; }
             if (v == "setup" || v == "ski") { root.schedule.Execute(() => OpenSetupCapture()).StartingIn(300); return true; }
             if (v == "clinic" || v == "clinic_list") { root.schedule.Execute(OpenClinicList).StartingIn(300); return true; }
@@ -579,6 +598,7 @@ namespace SkiView.UI
 
         // ---------------- tutorial (13-13d, tutorial-script.md) ----------------
         int tutStep = -1; float tutT; int tutCross0, tutCam0; SkiViewGame.CamMode tutCamLast; const string TUT_PREF = "sv.tutorial.done";
+        public bool TutorialRunning => tutStep >= 0;
         struct TutCopy { public string title, touch, keys; }
         static readonly TutCopy[] TUT =
         {

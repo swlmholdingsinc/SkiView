@@ -7,6 +7,7 @@ namespace SkiView.UI
     public partial class SkiViewUI
     {
         VisualElement nameScreen;
+        public bool PlayerNameOpen => nameScreen != null && nameScreen.ClassListContains("sv-menu--open");
         TextField nameField;
         Button nameContinue, nameBack;
         Label nameHint;
@@ -137,6 +138,11 @@ namespace SkiView.UI
             if (nameScreen == null) return;
             nameRequired = required || !SkiViewPlayer.HasName;
             if (nameBack != null) nameBack.style.display = nameRequired ? DisplayStyle.None : DisplayStyle.Flex;
+            if (PlayerNameOpen)
+            {
+                RefreshNameContinue();
+                return;
+            }
             nameSync = true;
             nameField.SetValueWithoutNotify(SkiViewPlayer.Name ?? "");
             nameSync = false;
@@ -159,6 +165,8 @@ namespace SkiView.UI
         {
             if (nameBusy) return;
             if (!SkiViewPlayer.TrySave(nameField.value)) { RefreshNameContinue(); return; }
+            if (game != null) game.CommitPendingRecord();
+            else SkiViewRecords.CommitPending();
             nameBusy = true;
             bool first = nameRequired;
             nameRequired = false;
