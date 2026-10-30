@@ -82,6 +82,7 @@ namespace SkiView.UI
             root.EnableInClassList("sv-motion-reduced", SkiViewGame.ReducedMotion);
             BuildHud19(safe);
             BuildSettings(); BuildCredits(); BuildLicense(); BuildPause(); BuildLakes(); BuildHelp(); BuildClinic(); BuildRecords(); BuildTitle();
+            ImportLegacyLakeBests();
             // capture / review: ?ui=graphics|audio|controls|credits|license opens that screen (WebGL)
             string url = Application.absoluteURL ?? ""; int q = url.IndexOf("ui=");
             if (q >= 0)

@@ -64,7 +64,7 @@ namespace SkiView.UI
             {
                 var e = board[i];
                 var row = El("sv-rec-row", recordsBody);
-                if (i == 0) row.AddToClassList("sv-rec-row--top");
+                if (i < 3) row.AddToClassList("sv-rec-row--top");
                 bool fresh = game != null && game.LastRecord.qualified && game.LastRecord.discipline == d && game.LastRecord.seq == e.seq;
                 if (fresh) row.AddToClassList("sv-row--selected");
                 Lb((i + 1).ToString(), "sv-rec-rank", row);
@@ -123,7 +123,7 @@ namespace SkiView.UI
                         {
                             var e = board[i];
                             var line = Lb($"{i + 1}   {SkiViewRecords.ResolveHolder(e.holder)}   {SkiViewRecords.Format(d, e)}", "t-caption sv-results19__recline", rsRecordLines);
-                            if (p.qualified && p.seq == e.seq) line.AddToClassList("t-gold");
+                            if (i < 3) line.AddToClassList("t-gold");
                         }
                     }
                 }
@@ -132,12 +132,24 @@ namespace SkiView.UI
                 recordListShown = true;
                 rsRecordBox.style.display = DisplayStyle.Flex;
             }
-            if (p.qualified && p.rank == 1 && rsBanner != null && results != null)
+            ApplyRecordBanner(p);
+        }
+
+        /// <summary>Every top-10 place gets a banner. Ranks 1–3 keep the gold plate; 4–10 stay on the board without it.</summary>
+        void ApplyRecordBanner(SkiViewRecords.Place p)
+        {
+            if (rsBanner == null || results == null || !p.attempted) return;
+            if (p.score <= 0f)
             {
-                rsBanner.text = "NEW WORLD RECORD";
-                rsBanner.style.display = DisplayStyle.Flex;
-                results.EnableInClassList("sv-results19--pb", true);
+                rsBanner.style.display = DisplayStyle.None;
+                results.EnableInClassList("sv-results19--pb", false);
+                return;
             }
+            rsBanner.text = SkiViewRecords.BannerText(p);
+            bool podium = SkiViewRecords.Podium(p);
+            rsBanner.EnableInClassList("sv-results19__pb--plain", !podium);
+            results.EnableInClassList("sv-results19--pb", podium);
+            rsBanner.style.display = DisplayStyle.Flex;
         }
     }
 }

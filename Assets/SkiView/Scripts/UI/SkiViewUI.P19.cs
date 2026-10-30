@@ -183,7 +183,7 @@ namespace SkiView.UI
             Btn("MAIN MENU", "sv-btn sv-btn--ghost", col, ToTitle, "back");   // b9: the title screen, not lake select
             var tp = El("sv-plate sv-plate--card sv-pause19__this", body); El("sv-strip", tp); Lb("THIS PASS", "t-label", tp);
             Label KV(string k, string icon) { var r = El("sv-pause19__kv", tp); var ic = El("sv-key19__icon", r); ic.style.backgroundImage = new StyleBackground(Resources.Load<VectorImage>("SkiViewUI/Icons/" + icon)); Lb(k, "t-micro sv-pause19__k", r); return Lb("", "t-label", r); }
-            tpRope = KV("ROPE", "rope"); tpSpeed = KV("SPEED", "speed"); tpBuoys = KV("BUOYS SO FAR", "buoy"); tpPb = KV("PERSONAL BEST", "trophy"); tpPb.AddToClassList("t-gold");
+            tpRope = KV("ROPE", "rope"); tpSpeed = KV("SPEED", "speed"); tpBuoys = KV("BUOYS SO FAR", "buoy"); tpPb = KV("WORLD RECORD", "trophy"); tpPb.AddToClassList("t-gold");
             tpPips = El("sv-pause19__pips", tp); for (int i = 0; i < 7; i++) { if (i == 0) GatePill(tpPips, true); else El("sv-pip", tpPips); };
         }
         public void OpenPause() { Open(pause); }
@@ -201,13 +201,36 @@ namespace SkiView.UI
             camStep.text = ViewNames[CycleIndex(game.camMode)];
             tpRope.text = $"{SkierSim.ROPE_LABEL[ri]} · {SkierSim.ROPE_M[ri]:0.00} M"; tpSpeed.text = SpeedMph(game != null ? game.RunMph : 34f).ToUpperInvariant();
             float b = sim != null && game.mode == SkiViewGame.Mode.Pass ? sim.passBuoys : 0f; tpBuoys.text = b.ToString("0.#");
-            tpPb.text = PbText(game.lakeId);
+            tpPb.text = WorldRecordText();
             int k = 0; foreach (var e in tpPips.Children()) { if (k > 0) { e.EnableInClassList("sv-pip--done", b >= k); e.EnableInClassList("sv-pip--half", b > k - 1 && b < k); } k++; }
         }
-        // personal best per lake: score = rope index * 6 + buoys (PlayerPrefs sv.pb.<lake>)
+        // personal best per lake: score = rope index * 6 + buoys (PlayerPrefs sv.pb.<lake>). Copied once onto the slalom world-record board.
         static float Pb(string lake) => PlayerPrefs.GetFloat("sv.pb." + lake, -1f);
         static string PbFmt(float sc) => sc < 0f ? "—" : $"{(sc % 6f < 0.01f && sc > 0f ? 6f : sc % 6f):0.#} @ {SkierSim.ROPE_LABEL[Mathf.Clamp(Mathf.FloorToInt((sc - 0.01f) / 6f), 0, 8)]}";
-        static string PbText(string lake) => PbFmt(Pb(lake));
+
+        /// <summary>One-time copy of sv.pb.&lt;lake&gt; onto the slalom board. Later runs read the flag and do nothing.</summary>
+        void ImportLegacyLakeBests()
+        {
+            var rows = new List<SkiViewRecords.LegacyBest>();
+            for (int i = 0; i < LAKES.Length; i++)
+            {
+                string key = "sv.pb." + LAKES[i].id;
+                if (!PlayerPrefs.HasKey(key)) continue;
+                float sc = PlayerPrefs.GetFloat(key, -1f);
+                if (sc <= 0f) continue;
+                rows.Add(new SkiViewRecords.LegacyBest { name = LAKES[i].name, score = sc });
+            }
+            SkiViewRecords.ImportLegacyPersonalBestsOnce(rows.ToArray());
+        }
+
+        string WorldRecordText()
+        {
+            var d = SkiViewRecords.Discipline.Slalom;
+            if (game != null && game.trickMode) d = SkiViewRecords.Discipline.Trick;
+            else if (game != null && game.jumpMode) d = SkiViewRecords.Discipline.Jump;
+            var board = SkiViewRecords.Load(d);
+            return board.Count == 0 ? "—" : SkiViewRecords.Format(d, board[0]);
+        }
 
         Label trickTbdChip;
         void EnsureTrickTbdChip(VisualElement host)
@@ -246,7 +269,7 @@ namespace SkiView.UI
             rsMain = Btn("NEXT PASS", "sv-btn sv-btn--primary", act, () => { if (game != null && game.DropPhase >= 2 && game.RopeChoicePending) game.ChooseRope(false); results.style.display = DisplayStyle.None; }, "play");   // b9.1: the boat tows him round the island to the next pass (skip pill still jumps ahead)
             rsNextCap = Lb("", "t-caption", results);
             rsAlt = Btn("RETRY PASS", "sv-btn", act, () => { results.style.display = DisplayStyle.None; game?.RetryPass(); }, "retry");
-            Btn("RECORDS", "sv-btn sv-btn--ghost", act, OpenRecordsFromResults, "trophy");
+            Btn("WORLD RECORDS", "sv-btn sv-btn--ghost", act, OpenRecordsFromResults, "trophy");
             rsTitle = Btn("TITLE", "sv-btn sv-btn--ghost", act, () => { results.style.display = DisplayStyle.None; ToTitle(); }, "back");
             results.style.display = DisplayStyle.None;
             // b9.1a: rope choice while he floats and the boat circles back (touch here; keys: left/right + Enter, S = shorten)
@@ -374,10 +397,17 @@ namespace SkiView.UI
                 rsScore.text = SkierSim.Fmt(b); rsSuffix.text = " @ " + SkierSim.ROPE_LABEL[rsRopeIdx];
                 rsRope.text = $"{RopeOff(rsRopeIdx)} | {SpeedMph(game != null ? game.RunMph : 34f)} | Pass {Mathf.Max(1, game.passes)}";
                 rsDetails.text = $"{sim.Breakdown(res)} · rope {SkierSim.ROPE_M[rsRopeIdx]:0.00} m · {SpeedMph(game != null ? game.RunMph : 34f)}";
-                rsPb.text = newPb ? $"PERSONAL BEST {PbFmt(sc)}" + (pb0 >= 0f ? $" · WAS {PbFmt(pb0)}" : "") : $"PERSONAL BEST {PbFmt(Mathf.Max(pb0, sc))}";
-                bool wr = game.LastRecord.attempted && game.LastRecord.discipline == SkiViewRecords.Discipline.Slalom && game.LastRecord.qualified && game.LastRecord.rank == 1;
-                rsBanner.text = wr ? "NEW WORLD RECORD" : "NEW PERSONAL BEST";
-                results.EnableInClassList("sv-results19--pb", newPb || wr); rsBanner.style.display = (newPb || wr) ? DisplayStyle.Flex : DisplayStyle.None;
+                bool judged = game.LastRecord.attempted && game.LastRecord.discipline == SkiViewRecords.Discipline.Slalom;
+                rsPb.text = judged && game.LastRecord.score > 0f
+                    ? SkiViewRecords.PlacementHeading(game.LastRecord, SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom).Count)
+                    : (newPb ? $"BEST THIS LAKE {PbFmt(sc)}" + (pb0 >= 0f ? $" · WAS {PbFmt(pb0)}" : "") : $"BEST THIS LAKE {PbFmt(Mathf.Max(pb0, sc))}");
+                if (!judged)
+                {
+                    rsBanner.text = "NEW PERSONAL BEST";
+                    rsBanner.EnableInClassList("sv-results19__pb--plain", false);
+                    results.EnableInClassList("sv-results19--pb", newPb);
+                    rsBanner.style.display = newPb ? DisplayStyle.Flex : DisplayStyle.None;
+                }
                 ShowRecordList(SkiViewRecords.Discipline.Slalom);
                 int next = Mathf.Min(rsRopeIdx + 1, SkierSim.ROPE_M.Length - 1);
                 // NEXT PASS only after a full pass (the rope shortens only then); after a partial pass RETRY is the main action
