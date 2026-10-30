@@ -272,8 +272,9 @@ namespace SkiView
             Vector3 bar = Vector3.Cross(up, dirP); if (bar.sqrMagnitude < 1e-6f) bar = right; else bar.Normalize();
             Vector3 tL = handleC - bar * handHalf, tR = handleC + bar * handHalf;
             Vector3 boatH = toBoat; boatH.y = 0f; if (boatH.sqrMagnitude > 1e-6f) boatH.Normalize(); else boatH = fwd;
-            Vector3 reachDir = reachTowardBoat == 0 ? -boatH : boatH * reachTowardBoat;
-            float wantSide = Mathf.Sign(Vector3.Dot(reachDir, right));
+            Vector3 reachDir = boatH;   // #125: handle arm reaches inward toward the boat at every buoy
+            // #125: the OUTSIDE hand (away from the boat) is the one released, consistently; the free arm goes out over the buoy side
+            float wantSide = -Mathf.Sign(Vector3.Dot(boatH, right));
             if (Mathf.Abs(wantSide) < 0.05f) wantSide = releaseSide >= 0f ? 1f : -1f;
             float wantRel = J ? 0f : (buoy > 0 ? ph.free : Mathf.Clamp01((turnReach - 0.25f) / 0.5f));
             releaseW = Mathf.Lerp(releaseW, wantRel, dt <= 0f ? 1f : 1f - Mathf.Exp(-6f * dt));

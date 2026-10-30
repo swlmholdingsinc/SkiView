@@ -85,8 +85,9 @@ namespace SkiView
         public float jumpHandleDrop = 0.04f;
         public float waterTip = 4f;
 
-        /// <summary>+1 = free arm and upper body reach toward the boat (buoys 1, 3, 5). -1 = away (2, 4, 6).</summary>
-        public static int ReachTowardBoat(int buoy1to6) => ((buoy1to6 & 1) == 1) ? 1 : -1;
+        /// <summary>#125 (Ray's per-buoy table): the boat is always inside the turn, so the reach goes inward toward the boat path
+        /// at EVERY buoy. Odd/even only mirror the course side (BuoyX), which the toBoat vector already carries.</summary>
+        public static int ReachTowardBoat(int buoy1to6) => 1;
 
         /// <summary>Buoy being turned. After the ball is taken, pendingHalf stays set until the centreline, so the hookup still belongs to that buoy.</summary>
         public static int ActiveTurnBuoy(int nextBuoy, float pendingHalf)
@@ -96,7 +97,7 @@ namespace SkiView
             return Mathf.Clamp(nextBuoy < 1 ? 1 : nextBuoy, 1, 6);
         }
 
-        /// <summary>Horizontal unit direction of the free arm. Dot with toBoat is positive only on odd buoys.</summary>
+        /// <summary>Horizontal unit direction of the reach. Dot with toBoat is positive at every buoy (#125).</summary>
         public static Vector3 FreeArmDir(Vector3 toBoatHorizontal, int buoy1to6)
         {
             Vector3 t = toBoatHorizontal; t.y = 0f;
