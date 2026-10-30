@@ -160,6 +160,11 @@ namespace SkiView
             if (JumpPassCount >= JUMP_PASSES) return;
             jumpRound[JumpPassCount] = new JumpPassRec { kind = kind, dist = dist };
             if (kind == "SCORED" && dist > JumpBest) JumpBest = dist;
+            if (kind == "SCORED" && dist > 0f)
+            {   // persistent per-lake jump personal best -> PB stinger (not on the very first recorded jump)
+                string pbKey = "sv.jump.pb." + lakeId; float pb = PlayerPrefs.GetFloat(pbKey, 0f);
+                if (dist > pb + 0.01f) { PlayerPrefs.SetFloat(pbKey, dist); PlayerPrefs.Save(); if (pb > 0f) SkiAudio.Instance?.PersonalBest(); }
+            }
             JumpPassCount++;
             passes = JumpPassCount;   // HUD reuse
             if (JumpPassCount >= JUMP_PASSES)
