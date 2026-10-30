@@ -147,6 +147,7 @@ namespace SkiView
 
         public void Init()
         {
+            SkiViewRecords.ImportLegacyPersonalBests();
             SkierSim.GateLog = m => Debug.Log("[SkiView] gates: " + m);
             if (path == null || path.Count == 0) return;
             EnsureIslandCentres();   // b10.7: scenes predate the field; load from Resources so mouth/channel math works in WebGL

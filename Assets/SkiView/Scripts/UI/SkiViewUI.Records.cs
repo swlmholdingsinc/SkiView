@@ -64,7 +64,7 @@ namespace SkiView.UI
             {
                 var e = board[i];
                 var row = El("sv-rec-row", recordsBody);
-                if (i == 0) row.AddToClassList("sv-rec-row--top");
+                if (SkiViewRecords.IsGoldRank(i + 1)) row.AddToClassList("sv-rec-row--top");
                 bool fresh = game != null && game.LastRecord.qualified && game.LastRecord.discipline == d && game.LastRecord.seq == e.seq;
                 if (fresh) row.AddToClassList("sv-row--selected");
                 Lb((i + 1).ToString(), "sv-rec-rank", row);
@@ -123,7 +123,7 @@ namespace SkiView.UI
                         {
                             var e = board[i];
                             var line = Lb($"{i + 1}   {SkiViewRecords.ResolveHolder(e.holder)}   {SkiViewRecords.Format(d, e)}", "t-caption sv-results19__recline", rsRecordLines);
-                            if (p.qualified && p.seq == e.seq) line.AddToClassList("t-gold");
+                            if (SkiViewRecords.IsGoldRank(i + 1)) line.AddToClassList("t-gold");
                         }
                     }
                 }
@@ -132,11 +132,13 @@ namespace SkiView.UI
                 recordListShown = true;
                 rsRecordBox.style.display = DisplayStyle.Flex;
             }
-            if (p.qualified && p.rank == 1 && rsBanner != null && results != null)
+            if (p.qualified && p.rank >= 1 && rsBanner != null && results != null)
             {
-                rsBanner.text = "NEW WORLD RECORD";
+                bool gold = SkiViewRecords.IsGoldRank(p.rank);
+                rsBanner.text = SkiViewRecords.BannerText(p);
+                rsBanner.EnableInClassList("sv-results19__pb--plain", !gold);
                 rsBanner.style.display = DisplayStyle.Flex;
-                results.EnableInClassList("sv-results19--pb", true);
+                results.EnableInClassList("sv-results19--pb", gold);
             }
         }
     }

@@ -17,6 +17,8 @@ namespace SkiView
     /// Slalom records one score per set: the furthest pass that scored, not one row per pass.
     /// The holder is always <see cref="HolderName"/>: PlayerPrefs sv.player.name, or PLAYER when that is empty.
     /// Branding is not a name source. Old rows with a blank holder, or the old branding name, display as <see cref="HolderName"/>.
+    /// A top-10 finish announces its rank. Ranks 1–3 use the gold treatment. Ranks 4–10 still get a banner.
+    /// Saved per-lake personal bests are copied onto the slalom board once (<see cref="ImportLegacyPersonalBests"/>).
     /// </summary>
     public static class SkiViewRecords
     {
@@ -63,6 +65,9 @@ namespace SkiView
 
         /// <summary>Test hook. Replaces one saved board. Respects the memory store.</summary>
         public static void SetRawForTests(Discipline d, string json) { Write(Key(d), json ?? ""); }
+
+        /// <summary>Test hook. Writes one prefs key in the memory store, including <see cref="PbImportedKey"/>.</summary>
+        public static void SetPrefForTests(string key, string value) { Write(key, value ?? ""); }
 
         public static Place Miss(Discipline d) => new Place { attempted = true, discipline = d };
 
@@ -250,6 +255,17 @@ namespace SkiView
             return boardCount == 0 ? "WORLD RECORDS · NONE YET" : "WORLD RECORDS";
         }
 
+        /// <summary>Results banner. Rank 1 keeps the record line. Ranks 2–10 still announce the place. Empty when the run missed the board.</summary>
+        public static string BannerText(Place p)
+        {
+            if (!p.qualified || p.rank < 1 || p.rank > Capacity) return "";
+            if (p.rank == 1) return "NEW WORLD RECORD";
+            return "WORLD RECORDS · RANK " + p.rank;
+        }
+
+        /// <summary>Gold treatment is ranks 1–3. Ranks 4–10 still get a banner, without the gold.</summary>
+        public static bool IsGoldRank(int rank) => rank >= 1 && rank <= 3;
+
         public static string DisciplineName(Discipline d) => d == Discipline.Jump ? "JUMP" : d == Discipline.Trick ? "TRICKS" : "SLALOM";
 
         /// <summary>True when a should be listed above b. Equal scores: lower seq (earlier) wins.</summary>
@@ -280,6 +296,94 @@ namespace SkiView
         {
             var bag = new SaveBag { entries = board.ToArray() };
             Write(Key(d), JsonUtility.ToJson(bag));
+        }
+
+        /// <summary>Set after the old per-lake slalom personal bests (sv.pb.*) have been considered for the slalom board.</summary>
+        public const string PbImportedKey = PrefPrefix + "pbImported";
+        public const string LegacyPbPrefix = "sv.pb.";
+
+        public struct LegacyPb
+        {
+            public string id;
+            public string detail;
+        }
+
+        /// <summary>Lake ids that SkiViewUI writes as sv.pb.&lt;id&gt;. Detail is the name stored on the imported row.</summary>
+        public static readonly LegacyPb[] LegacyPersonalBests =
+        {
+            new LegacyPb { id = "skiview", detail = "Ski View" },
+            new LegacyPb { id = "cedarbend", detail = "Cedar Bend" },
+            new LegacyPb { id = "saltwhite", detail = "Saltwhite" },
+            new LegacyPb { id = "villaserena", detail = "Villa Serena" },
+            new LegacyPb { id = "tallpine", detail = "Tall Pine" },
+            new LegacyPb { id = "heronmarsh", detail = "Heron Marsh" },
+            new LegacyPb { id = "harrowpond", detail = "Harrow Pond" },
+            new LegacyPb { id = "gulfwind", detail = "Gulfwind" },
+            new LegacyPb { id = "saguaro", detail = "Saguaro" },
+            new LegacyPb { id = "marrowind", detail = "Marrowind" },
+        };
+
+        public static bool PersonalBestsImported => Read(PbImportedKey) == "1";
+
+        /// <summary>
+        /// Once, copy each saved per-lake slalom personal best onto the slalom board.
+        /// The score is the same rope-index × 6 + buoys value the results plate already stores.
+        /// A best that does not make the top 10 is still counted, so the import does not retry.
+        /// A second call is a no-op. Safe to call again if the flag was not saved: a row with the same lake and score is not inserted twice.
+        /// </summary>
+        public static bool ImportLegacyPersonalBests()
+        {
+            if (PersonalBestsImported) return true;
+            var board = Load(Discipline.Slalom);
+            bool changed = false;
+            for (int i = 0; i < LegacyPersonalBests.Length; i++)
+            {
+                var lake = LegacyPersonalBests[i];
+                if (string.IsNullOrEmpty(lake.id)) continue;
+                string pref = LegacyPbPrefix + lake.id;
+                if (!PlayerPrefs.HasKey(pref)) continue;
+                float score = PlayerPrefs.GetFloat(pref, -1f);
+                if (float.IsNaN(score) || float.IsInfinity(score) || score <= 0.01f) continue;
+                if (BoardHasScore(board, lake.detail, score)) continue;
+                DecodeSlalomScore(score, out int rope, out float buoys);
+                var entry = new Entry
+                {
+                    holder = HolderName(),
+                    score = score,
+                    detail = lake.detail ?? "",
+                    rope = rope,
+                    buoys = buoys,
+                    achieved = "0"
+                };
+                var place = TryInsert(board, entry);
+                if (place.qualified) changed = true;
+            }
+            if (changed) Save(Discipline.Slalom, board);
+            Write(PbImportedKey, "1");
+            return true;
+        }
+
+        /// <summary>Inverse of the results-plate personal best: score = rope index × 6 + buoys, with 6 buoys landing on the next multiple.</summary>
+        public static void DecodeSlalomScore(float score, out int rope, out float buoys)
+        {
+            rope = 0;
+            buoys = 0f;
+            if (float.IsNaN(score) || float.IsInfinity(score) || score <= 0f) return;
+            rope = Mathf.Clamp(Mathf.FloorToInt((score - 0.01f) / 6f), 0, SkierSim.ROPE_LABEL.Length - 1);
+            float mod = score % 6f;
+            buoys = mod < 0.01f ? 6f : mod;
+        }
+
+        static bool BoardHasScore(List<Entry> board, string detail, float score)
+        {
+            if (board == null) return false;
+            for (int i = 0; i < board.Count; i++)
+            {
+                var e = board[i];
+                if (e == null || !Mathf.Approximately(e.score, score)) continue;
+                if (string.Equals(e.detail ?? "", detail ?? "", StringComparison.Ordinal)) return true;
+            }
+            return false;
         }
 
         static string Key(Discipline d) => PrefPrefix + (d == Discipline.Jump ? "jump" : d == Discipline.Trick ? "trick" : "slalom");

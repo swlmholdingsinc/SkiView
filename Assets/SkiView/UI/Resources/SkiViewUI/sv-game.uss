@@ -112,6 +112,7 @@
 .sv-results19--pb > .sv-strip { background-color: var(--sv-gold); }
 .sv-results19--pb .sv-results19__num { color: var(--sv-gold); }
 .sv-results19__pb { -unity-font-definition: var(--sv-font-cond-700); font-size: 26px; letter-spacing: 3px; color: var(--sv-ink-900); background-color: var(--sv-gold); padding: 6px 14px; align-self: flex-start; margin-bottom: 10px; }
+.sv-results19__pb--plain { color: var(--sv-text); background-color: var(--sv-ink-800); }
 .sv-results19__row { flex-direction: row; align-items: flex-end; }
 .sv-results19__num { font-size: 140px; }
 .sv-results19__act { flex-direction: row; flex-wrap: wrap; margin-top: 18px; }

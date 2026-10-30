@@ -168,12 +168,55 @@ public static class SkiViewRecordsTest
             Check(HolderOf(renamed, 2) == "CASEY" && HolderOf(renamed, 4) == "CASEY" && HolderOf(renamed, 3) == "CASEY", "old SCOTT rows follow the saved player name");
             Check(!BoardHasHolder(renamed, "SCOTT"), "after the name changes, loaded rows do not contain an untyped SCOTT");
             Check(HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 60) == "CASEY", "a stored SCOTT row displays as the saved player name");
+
+            Check(SkiViewRecords.BannerText(miss) == "", "a miss has no rank banner");
+            Check(SkiViewRecords.BannerText(cut) == "", "outside the top 10 has no rank banner");
+            Check(SkiViewRecords.BannerText(wr) == "NEW WORLD RECORD", "rank 1 banner");
+            Check(SkiViewRecords.BannerText(topTie) == "WORLD RECORDS · RANK 2", "every other top-10 rank gets a banner");
+            var rank4 = topTie; rank4.rank = 4;
+            Check(SkiViewRecords.BannerText(rank4) == "WORLD RECORDS · RANK 4", "rank 4 banner");
+            Check(SkiViewRecords.IsGoldRank(1) && SkiViewRecords.IsGoldRank(2) && SkiViewRecords.IsGoldRank(3), "ranks 1 through 3 are gold");
+            Check(!SkiViewRecords.IsGoldRank(4) && !SkiViewRecords.IsGoldRank(10) && !SkiViewRecords.IsGoldRank(0), "ranks outside 1 through 3 are not gold");
+
+            SkiViewRecords.DecodeSlalomScore(6f, out int rope6, out float buoys6);
+            Check(rope6 == 0 && Mathf.Approximately(buoys6, 6f), "score 6 is 6 buoys at 15 off");
+            SkiViewRecords.DecodeSlalomScore(8f, out int rope8, out float buoys8);
+            Check(rope8 == 1 && Mathf.Approximately(buoys8, 2f), "score 8 is 2 buoys at 22 off");
+            SkiViewRecords.DecodeSlalomScore(12f, out int rope12, out float buoys12);
+            Check(rope12 == 1 && Mathf.Approximately(buoys12, 6f), "score 12 is 6 buoys at 22 off");
+
+            SkiViewRecords.UseMemoryStore(true);
+            ClearLegacyPbs();
+            PlayerPrefs.SetFloat(SkiViewRecords.LegacyPbPrefix + "skiview", 8f);
+            PlayerPrefs.SetFloat(SkiViewRecords.LegacyPbPrefix + "cedarbend", 0f);
+            PlayerPrefs.Save();
+            Check(SkiViewRecords.ImportLegacyPersonalBests() && SkiViewRecords.PersonalBestsImported, "import runs once and sets the flag");
+            var imported = SkiViewRecords.Load(slalom);
+            Check(imported.Count == 1 && imported[0].detail == "Ski View" && Mathf.Approximately(imported[0].score, 8f), "the Ski View personal best is on the slalom board");
+            Check(imported[0].rope == 1 && Mathf.Approximately(imported[0].buoys, 2f), "the imported row keeps the rope and the buoys");
+            Check(SkiViewRecords.Format(slalom, imported[0]) == "2 @ 22 OFF", "the imported row formats as the old personal best");
+            Check(string.IsNullOrEmpty(SkiViewRecords.AchievedLabel(imported[0])), "an imported best does not invent a date");
+            Check(!DetailExists(imported, "Cedar Bend"), "a zero personal best is not imported");
+            SkiViewRecords.SetPrefForTests(SkiViewRecords.PbImportedKey, "");
+            Check(SkiViewRecords.ImportLegacyPersonalBests(), "a retry after a lost flag still finishes");
+            Check(CountDetail(SkiViewRecords.Load(slalom), "Ski View") == 1, "a retry does not insert the same personal best twice");
+
+            SkiViewRecords.UseMemoryStore(true);
+            for (int n = 0; n < SkiViewRecords.Capacity; n++)
+                SkiViewRecords.Submit(slalom, 50f + n, "filled", seq: n + 1);
+            PlayerPrefs.SetFloat(SkiViewRecords.LegacyPbPrefix + "saguaro", 3f);
+            PlayerPrefs.Save();
+            Check(SkiViewRecords.ImportLegacyPersonalBests() && SkiViewRecords.PersonalBestsImported, "a full board still finishes the import");
+            var fullBoard = SkiViewRecords.Load(slalom);
+            Check(fullBoard.Count == SkiViewRecords.Capacity && !DetailExists(fullBoard, "Saguaro"), "a personal best below 10th place stays off the list");
+            ClearLegacyPbs();
         }
         finally
         {
             SkiViewRecords.UseMemoryStore(false);
             if (hadPlayer) PlayerPrefs.SetString(SkiViewRecords.PlayerNamePref, prevPlayer);
             else PlayerPrefs.DeleteKey(SkiViewRecords.PlayerNamePref);
+            ClearLegacyPbs();
             PlayerPrefs.Save();
         }
 
@@ -201,4 +244,25 @@ public static class SkiViewRecordsTest
     }
 
     static bool BoardHasHolder(SkiViewRecords.Discipline d, string holder) => BoardHasHolder(SkiViewRecords.Load(d), holder);
+
+    static bool DetailExists(List<SkiViewRecords.Entry> board, string detail)
+    {
+        for (int i = 0; i < board.Count; i++)
+            if (board[i] != null && board[i].detail == detail) return true;
+        return false;
+    }
+
+    static int CountDetail(List<SkiViewRecords.Entry> board, string detail)
+    {
+        int n = 0;
+        for (int i = 0; i < board.Count; i++)
+            if (board[i] != null && board[i].detail == detail) n++;
+        return n;
+    }
+
+    static void ClearLegacyPbs()
+    {
+        for (int i = 0; i < SkiViewRecords.LegacyPersonalBests.Length; i++)
+            PlayerPrefs.DeleteKey(SkiViewRecords.LegacyPbPrefix + SkiViewRecords.LegacyPersonalBests[i].id);
+    }
 }
