@@ -572,7 +572,8 @@ namespace SkiView
             bool air = mode == Mode.Jump && (jphase == JPhase.Flight || jphase == JPhase.Ramp);
             // Ramp, flight and landing: the root rotation is the ski pitch. Everywhere else, undo the water-stance nose-down and add a little tip.
             bool rootIsSki = mode == Mode.Jump && (jphase == JPhase.Ramp || jphase == JPhase.Flight || jphase == JPhase.Landing);
-            float tip = rootIsSki ? 0f : (mode == Mode.Jump ? 3f + jumpTip : (WaterPose ? 0f : 4f));
+            bool rideBlend = mode == Mode.Jump && jphase == JPhase.RideOut && jT < 0.35f;
+            float tip = rootIsSki ? 0f : rideBlend ? Mathf.Lerp(0f, 3f + jumpTip, jT / 0.35f) : (mode == Mode.Jump ? 3f + jumpTip : (WaterPose ? 0f : 4f));
             float vy = mode == Mode.Jump ? jumpVYaw : 0f, sink = mode == Mode.Jump ? jumpSink : 0.03f;
             if (mode == Mode.Fallen) return;   // popped free (WaterFx floats them)
             foreach (var (t, sg) in new[] { (jumpSkiL, -1f), (jumpSkiR, 1f) })
@@ -607,6 +608,13 @@ namespace SkiView
             {
                 leanRightDeg = Mathf.MoveTowards(leanRightDeg, 0f, 90f * Mathf.Max(0.016f, lastVisT < 0f ? 0.016f : Mathf.Clamp(simTime - lastVisT, 0f, 0.25f)));
                 skier.SetPositionAndRotation(skierPos, Quaternion.LookRotation(face) * Quaternion.Euler(-jumpVisualTip, 0f, 0f));
+                return true;
+            }
+            if (jphase == JPhase.RideOut && jT < 0.35f)
+            {
+                float u = Mathf.Clamp01(jT / 0.35f);
+                float rootX = Mathf.Lerp(-PoseTbl.landTip, 3f, u);
+                skier.SetPositionAndRotation(skierPos, Quaternion.LookRotation(face) * Quaternion.Euler(rootX, 0f, 0f));
                 return true;
             }
             return false;

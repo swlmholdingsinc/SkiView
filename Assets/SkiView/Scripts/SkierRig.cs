@@ -211,8 +211,9 @@ namespace SkiView
             LeanTotalDeg = rootRoll + extra;
             Vector3 leanUp = (up * Mathf.Cos(lean) + away * Mathf.Sin(lean)).normalized;
             if (J && jumpPitchDeg != 0f) leanUp = Quaternion.AngleAxis(jumpPitchDeg, right) * leanUp;
-            // shoulders open toward the boat on the pull; on the reach they follow the buoy (odd toward, even away) and finish last
-            float open = Mathf.Clamp(ph.shoulderToBoat, -1f, 1f);
+            // shoulders open toward the boat on the pull; on the reach they follow the buoy (odd toward, even away) and finish last.
+            // Ramp, air, and landing stay square — a slalom shoulder yaw here folds the flight pose.
+            float open = (J && jumpPose >= 1) ? 0f : Mathf.Clamp(ph.shoulderToBoat, -1f, 1f);
             float yawWant = (open >= 0f ? yawToBoat : -yawToBoat) * Mathf.Abs(open);
             shoulderYaw = dt <= 0f ? yawWant : Mathf.MoveTowards(shoulderYaw, yawWant, poses.shoulderYawRate * dt);
             hips.rotation = Quaternion.FromToRotation(up, leanUp) * Quaternion.AngleAxis(shoulderYaw * 0.2f, up) * hips.rotation;
