@@ -13,19 +13,28 @@ namespace SkiView
         public const int MinLen = 1;
         public const int MaxLen = 12;
 
-        /// <summary>Development builds and store-screenshot captures may run without a saved name.</summary>
+        /// <summary>Only development builds and the editor may skip the name screen. A release build (WebGL/itch included)
+        /// always requires a name: ?shot=, ?capture and /capture are ignored there (Mamta PR7-PR8-RETEST WARN).</summary>
+        public static bool AllowCaptureSkip =>
+#if UNITY_EDITOR
+            true;
+#else
+            Debug.isDebugBuild;
+#endif
+
+        /// <summary>Development builds and store-screenshot captures (debug/editor only) may run without a saved name.</summary>
         public static bool CaptureExempt =>
-            Debug.isDebugBuild
-            || SkiViewArgs.Has("shot")
-            || SkiViewArgs.Has("capture")
-            || UrlHasCapture();
+            ExemptFor(AllowCaptureSkip, Debug.isDebugBuild, SkiViewArgs.Has("shot") || SkiViewArgs.Has("capture") || UrlRequestsCapture(Application.absoluteURL));
+
+        /// <summary>Pure rule, testable: no skip at all unless <paramref name="allowSkip"/> (debug build or editor).</summary>
+        public static bool ExemptFor(bool allowSkip, bool debugBuild, bool captureRequested) => allowSkip && (debugBuild || captureRequested);
 
         /// <summary>A player build with no valid name must show the name screen before the run, URL args included.</summary>
         public static bool BlocksRun => Application.isPlaying && !HasName && !CaptureExempt;
 
-        static bool UrlHasCapture()
+        public static bool UrlRequestsCapture(string url)
         {
-            string url = Application.absoluteURL ?? "";
+            url ??= "";
             return url.IndexOf("/capture", StringComparison.OrdinalIgnoreCase) >= 0
                 || url.IndexOf("shot=", StringComparison.OrdinalIgnoreCase) >= 0;
         }

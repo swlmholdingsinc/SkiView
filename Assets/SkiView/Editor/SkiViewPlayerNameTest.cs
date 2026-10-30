@@ -38,6 +38,23 @@ public static class SkiViewPlayerNameTest
         Check(!SkiViewPlayer.TryNormalize("W\u00e1de", out _), "accented wade rejected");
         Check(!SkiViewPlayer.TryNormalize("F3LD3RPU55", out _), "leetspeak Felderpuss rejected");
         Check(!SkiViewPlayer.TryNormalize("Felderpuss", out _), "Felderpuss rejected");
+        // PR #7 follow-up: the name-screen skip is debug/editor only, never in a release (WebGL) build
+        Check(!SkiViewPlayer.ExemptFor(false, false, true), "release build + ?shot= / ?capture / /capture: NOT exempt (name screen shown)");
+        Check(!SkiViewPlayer.ExemptFor(false, false, false), "release build, no args: NOT exempt");
+        Check(!SkiViewPlayer.ExemptFor(false, true, true), "skip not allowed: NOT exempt even if debugBuild flag/args set");
+        Check(SkiViewPlayer.ExemptFor(true, true, false), "development build: exempt");
+        Check(SkiViewPlayer.ExemptFor(true, false, true), "editor + capture arg: exempt");
+        Check(!SkiViewPlayer.ExemptFor(true, false, false), "editor, non-debug, no capture arg: not exempt");
+        Check(SkiViewPlayer.UrlRequestsCapture("https://x.itch.io/sv/index.html?shot=1"), "url ?shot= detected");
+        Check(SkiViewPlayer.UrlRequestsCapture("https://x/capture/index.html"), "url /capture detected");
+        Check(!SkiViewPlayer.UrlRequestsCapture("https://x/index.html") && !SkiViewPlayer.UrlRequestsCapture(null), "plain/null url not capture");
+        Check(SkiViewPlayer.AllowCaptureSkip, "editor: AllowCaptureSkip true (UNITY_EDITOR)");
+        {
+            string src = System.IO.File.ReadAllText("Assets/SkiView/Scripts/SkiViewPlayer.cs");
+            int a = src.IndexOf("AllowCaptureSkip =>", System.StringComparison.Ordinal);
+            string blk = a >= 0 ? src.Substring(a, System.Math.Min(160, src.Length - a)) : "";
+            Check(blk.Contains("#if UNITY_EDITOR") && blk.Contains("#else") && blk.Contains("Debug.isDebugBuild;"), "player build path of AllowCaptureSkip is Debug.isDebugBuild only");
+        }
         Check(!SkiViewPlayer.TryNormalize("fel derpuss", out _), "split Felderpuss rejected");
         Check(SkiViewPlayer.TryNormalize("Scott", out n) && n == "Scott", "Scott allowed when typed");
 
