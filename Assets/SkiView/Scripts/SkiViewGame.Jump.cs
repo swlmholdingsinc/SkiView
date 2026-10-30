@@ -96,7 +96,8 @@ namespace SkiView
         bool popped, jCrash;
         Vector3 jPos, jVel, jSide, jLip, jAxis, jRight, jToe, jFwd;
         float boatLatOff, boatLatTarget, jT0Along;
-        float jumpCrouch = -1f, jumpPitch = 0f, jumpHandleIn = 0f, jumpTip = 4f, jumpVYaw = 0f, jumpSink = 0.03f;
+        float jumpCrouch = -1f, jumpPitch = 0f, jumpHandleIn = 0f, jumpTip = 4f, jumpVYaw = 0f, jumpSink = 0.03f, jumpVisualTip = 4f;
+        SkierPoses PoseTbl => rig != null && rig.poses != null ? rig.poses : new SkierPoses();
 
         Vector3 SideOfBoat() { Vector3 r = Vector3.Cross(Vector3.up, boatFwd).normalized; return Vector3.Dot(r, jSide) >= 0f ? r : -r; }
         float RampSinA => Mathf.Clamp(RampRatio, 0.05f, 0.5f);
@@ -340,8 +341,9 @@ namespace SkiView
                     skierVel = (skierPos - skierPrev) / dt; UpdateHeadRate(dt);
                     if (runT > -0.25f && jumpDebug) Debug.Log($"[SkiView] jdbg runT {runT:0.000} phi {phi * Mathf.Rad2Deg:0.00} rate {rate:0.0} vel {skierVel.magnitude:0.0} dt {dt:0.0000} boat {boatFwd} cutOn {cutOn} cutA {cutA} cutB {cutB}");
                     // compression and edge: knees soften through the wakes, hips drop and the body stacks against the line in the cut
-                    float cut = cutOn && !jMissed ? Mathf.InverseLerp(cutA.x, -0.5f, runT) : 0f;
-                    jumpCrouch = Mathf.Lerp(0.80f, 0.70f, cut); jumpPitch = 0f; jumpHandleIn = 0f; jumpTip = 4f; jumpVYaw = 0f; jumpSink = 0.03f;
+                    var ap = PoseTbl;
+                    jumpCrouch = SkierPoses.CrouchForKnee(ap.approachKnee); jumpPitch = 0f; jumpHandleIn = ap.approachHandleIn;
+                    jumpTip = ap.approachTip; jumpVisualTip = ap.approachTip; jumpVYaw = 0f; jumpSink = 0.03f;
                     if (runT >= 0f && !jMissed)
                     {
                         // ramp contact at the toe: start the ramp phase from the actual entry point
@@ -368,8 +370,11 @@ namespace SkiView
                     bool pp = jumpPress; jumpPress = false;
                     if (!float.IsNaN(jumpPopAt)) pp = tau >= jumpPopAt; else if (autopilot) pp = tau >= AUTO_POP;
                     if (!popped && pp) { popped = true; JumpPopT = tau; }
-                    jumpCrouch = tau < 0.67f ? Mathf.Lerp(0.60f, 0.58f, tau / 0.67f) : Mathf.Lerp(0.58f, 0.93f, Mathf.InverseLerp(0.67f, 1f, tau));   // compressed, then standing up in the last third
-                    jumpPitch = 4f; jumpHandleIn = 0.6f; jumpTip = 0f; jumpSink = 0f;
+                    var tp = PoseTbl;
+                    float extend = Mathf.InverseLerp(0.55f, 1f, tau);   // tall the whole ramp, a little taller through the lip — no squat
+                    float kneeT = Mathf.Lerp(tp.takeoffKneeIn, tp.takeoffKneeOut, extend);
+                    jumpCrouch = SkierPoses.CrouchForKnee(kneeT); jumpPitch = tp.takeoffChestPitch; jumpHandleIn = tp.takeoffHandleIn;
+                    jumpTip = 0f; jumpVisualTip = 0f; jumpVYaw = 0f; jumpSink = 0f;
                     skierPos = jToe + jAxis * (rampS * cosA) + jRight * rampLat + Vector3.up * (rampS * sinA);
                     skierVel = (skierPos - skierPrev) / dt;
                     if (rampS >= rampLenOut)
@@ -412,9 +417,13 @@ namespace SkiView
                     float fall = Mathf.InverseLerp(0.4f, -0.6f, jVel.y / Mathf.Max(1f, jVel.magnitude) * 10f);
                     float pitchWant = Mathf.Lerp(Mathf.Max(18f, landPitchWant + 4f), landPitchWant, fall);
                     skiPitchFly = Mathf.MoveTowards(skiPitchFly, pitchWant, 30f * dt);
-                    float land = Mathf.Clamp01((0.9f - jPos.y) / 0.9f) * (jVel.y < 0 ? 1f : 0f);   // close the V and get ready to absorb
-                    jumpCrouch = Mathf.Lerp(Mathf.Lerp(0.93f, 0.74f, jPost), 0.78f, land); jumpPitch = Mathf.Lerp(6f, landPitchWant < 2f ? 34f : 28f, jPost) * (1f - 0.6f * land);   // b9.1e: upright, forward-leaning flight (was 68-74 deg: flew flat)
-                    jumpHandleIn = 1f; jumpTip = 0f; jumpVYaw = 7f * jPost * (1f - land); jumpSink = 0f;
+                    float land = Mathf.Clamp01((0.9f - jPos.y) / 0.9f) * (jVel.y < 0 ? 1f : 0f);   // close the V and level the skis before the water
+                    var fp = PoseTbl;
+                    fp.FlightPose(jPost, land, out float bodyFwd, out float tipUp, out float flightKnee, out float vHalf);
+                    jumpCrouch = SkierPoses.CrouchForKnee(flightKnee);
+                    jumpVisualTip = tipUp;
+                    jumpPitch = tipUp + bodyFwd;   // one hinge: cancels the ski tip and leaves the body `bodyFwd` degrees forward of vertical
+                    jumpHandleIn = fp.flightHandleIn; jumpTip = 0f; jumpVYaw = vHalf; jumpSink = 0f;
                     if (jPos.y <= 0f && jVel.y < 0f)
                     {
                         jPos.y = 0f; skierPos = jPos;
@@ -460,9 +469,28 @@ namespace SkiView
                     { Vector3 sdb = SideOfBoat(); float vs = Vector3.Dot(jVel, sdb); jVel -= sdb * (vs * (1f - Mathf.Exp(-dt / 0.6f))); jVel -= sdb * (Mathf.Clamp(Vector3.Dot(jPos - Pylon(), sdb), -1f, 1f) * 1.2f * dt); }
                     jPos += jVel * dt; jPos.y = 0f;
                     skierPos = jPos; skierVel = jVel; UpdateHeadRate(dt);
-                    float absorb = jphase == JPhase.Landing ? Mathf.Sin(Mathf.Clamp01(jT / 0.5f) * Mathf.PI) : 0f;
-                    jumpCrouch = Mathf.Lerp(0.80f, 0.56f, absorb); jumpPitch = 10f * absorb; jumpHandleIn = 0.5f * (1f - Mathf.Clamp01(jT)); jumpTip = 6f; jumpVYaw = 0f; jumpSink = 0.03f;
-                    if (jphase == JPhase.Landing && jT > 0.6f) { jphase = JPhase.RideOut; jT = 0f; }
+                    var lp = PoseTbl;
+                    if (jphase == JPhase.Landing)
+                    {
+                        float into = Mathf.Clamp01(jT / 0.22f);
+                        float back = Mathf.Clamp01((jT - 0.22f) / Mathf.Max(0.2f, lp.landRecoverSec - 0.22f));
+                        float kneeL = Mathf.Lerp(Mathf.Lerp(lp.preLandKnee, lp.landKnee, into), lp.glideKnee, back);
+                        float torso = Mathf.Lerp(Mathf.Lerp(lp.preLandLean, lp.landTorso, into), 0f, back);
+                        jumpVisualTip = Mathf.Lerp(lp.preLandTip, lp.landTip, Mathf.Clamp01(jT / 0.2f));
+                        jumpCrouch = SkierPoses.CrouchForKnee(kneeL);
+                        jumpPitch = jumpVisualTip + torso;
+                        jumpHandleIn = Mathf.Lerp(lp.flightHandleIn, lp.landHandleIn, into);
+                    }
+                    else
+                    {
+                        float ru = Mathf.Clamp01(jT / 0.4f);
+                        jumpCrouch = ru < 1f ? SkierPoses.CrouchForKnee(lp.glideKnee) : -1f;
+                        jumpPitch = Mathf.Lerp(lp.landTip, 0f, ru);
+                        jumpVisualTip = lp.waterTip;
+                        jumpHandleIn = Mathf.Lerp(lp.landHandleIn, 0.05f, ru);
+                    }
+                    jumpTip = lp.waterTip; jumpVYaw = 0f; jumpSink = 0.03f;
+                    if (jphase == JPhase.Landing && jT > lp.landRecoverSec) { jphase = JPhase.RideOut; jT = 0f; }
                     if (jphase == JPhase.RideOut && Mathf.Abs(jT - 2.0f) < dt * 0.5f)
                     {
                         JumpResult = "SCORED";
@@ -543,9 +571,10 @@ namespace SkiView
         {
             if (!JumpGearOn || jumpSkiL == null || jumpSkiR == null) return;
             bool air = mode == Mode.Jump && (jphase == JPhase.Flight || jphase == JPhase.Ramp);
-            // the root pitches 3 deg nose-down in the normal stance (body); undo it on the skis, except where the root itself is the ski pitch
-            bool rootIsSki = mode == Mode.Jump && (jphase == JPhase.Ramp || jphase == JPhase.Flight);
-            float tip = (rootIsSki ? 0f : 3f) + (mode == Mode.Jump ? jumpTip : (WaterPose ? 0f : 4f));
+            // Ramp, flight and landing: the root rotation is the ski pitch. Everywhere else, undo the water-stance nose-down and add a little tip.
+            bool rootIsSki = mode == Mode.Jump && (jphase == JPhase.Ramp || jphase == JPhase.Flight || jphase == JPhase.Landing);
+            bool rideBlend = mode == Mode.Jump && jphase == JPhase.RideOut && jT < 0.35f;
+            float tip = rootIsSki ? 0f : rideBlend ? Mathf.Lerp(0f, 3f + jumpTip, jT / 0.35f) : (mode == Mode.Jump ? 3f + jumpTip : (WaterPose ? 0f : 4f));
             float vy = mode == Mode.Jump ? jumpVYaw : 0f, sink = mode == Mode.Jump ? jumpSink : 0.03f;
             if (mode == Mode.Fallen) return;   // popped free (WaterFx floats them)
             foreach (var (t, sg) in new[] { (jumpSkiL, -1f), (jumpSkiR, 1f) })
@@ -571,8 +600,22 @@ namespace SkiView
             }
             if (jphase == JPhase.Flight)
             {
-                float roll = Mathf.Clamp(-Vector3.Dot(Vector3.Cross(Vector3.up, face), jRight) * 0f, -8f, 8f);
-                skier.SetPositionAndRotation(skierPos, Quaternion.LookRotation(face) * Quaternion.Euler(-skiPitchFly, 0f, roll));
+                float vd = lastVisT < 0f ? 0.016f : Mathf.Clamp(simTime - lastVisT, 0.016f, 0.25f);
+                leanRightDeg = Mathf.MoveTowards(leanRightDeg, 0f, 120f * vd);
+                skier.SetPositionAndRotation(skierPos, Quaternion.LookRotation(face) * Quaternion.Euler(-jumpVisualTip, 0f, 0f));
+                return true;
+            }
+            if (jphase == JPhase.Landing)
+            {
+                leanRightDeg = Mathf.MoveTowards(leanRightDeg, 0f, 90f * Mathf.Max(0.016f, lastVisT < 0f ? 0.016f : Mathf.Clamp(simTime - lastVisT, 0f, 0.25f)));
+                skier.SetPositionAndRotation(skierPos, Quaternion.LookRotation(face) * Quaternion.Euler(-jumpVisualTip, 0f, 0f));
+                return true;
+            }
+            if (jphase == JPhase.RideOut && jT < 0.35f)
+            {
+                float u = Mathf.Clamp01(jT / 0.35f);
+                float rootX = Mathf.Lerp(-PoseTbl.landTip, 3f, u);
+                skier.SetPositionAndRotation(skierPos, Quaternion.LookRotation(face) * Quaternion.Euler(rootX, 0f, 0f));
                 return true;
             }
             return false;
@@ -632,6 +675,7 @@ namespace SkiView
             if (rig == null) return;
             bool j = mode == Mode.Jump;
             rig.jumpCrouch = j ? jumpCrouch : -1f; rig.jumpPitchDeg = j ? jumpPitch : 0f; rig.jumpHandleIn = j ? jumpHandleIn : 0f;
+            rig.jumpPose = !j ? 0 : jphase == JPhase.Ramp ? 1 : jphase == JPhase.Flight ? 2 : jphase == JPhase.Landing ? 3 : 0;
         }
 
         void JumpSpray(float sdt, Vector3 face)
