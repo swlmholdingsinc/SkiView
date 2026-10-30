@@ -15,13 +15,17 @@ namespace SkiView
     /// higher than 10th place. A tie with 10th place stays off the list.
     /// Scores at or below zero are not recorded. The same player can hold more than one row.
     /// Slalom records one score per set: the furthest pass that scored, not one row per pass.
+    /// A fall counts: its buoys are kept when they reached further than the passes already in the set.
     /// The holder is always <see cref="HolderName"/>: PlayerPrefs sv.player.name, or PLAYER when that is empty.
     /// Branding is not a name source. Old rows with a blank holder, or the old branding name, display as <see cref="HolderName"/>.
+    /// Per-lake bests (sv.pb.*) are copied onto the slalom board once. Ranks 1–3 are the gold podium; every top-10 rank has a banner.
     /// </summary>
     public static class SkiViewRecords
     {
         public const int Capacity = 10;
         public const string PrefPrefix = "sv.records.v1.";
+        /// <summary>Set after the one-time copy of per-lake <c>sv.pb.*</c> bests onto the slalom board.</summary>
+        public const string PbImportedKey = PrefPrefix + "pbImported";
         /// <summary>Saved on first launch by the player-name prompt. Records read it at write time.</summary>
         public const string PlayerNamePref = "sv.player.name";
         public const string FallbackHolder = "PLAYER";
@@ -140,14 +144,14 @@ namespace SkiView
             return stored;
         }
 
-        public static Place Submit(Discipline d, float score, string detail, int rope = -1, float buoys = 0f, int seq = 0, long ticks = 0)
+        public static Place Submit(Discipline d, float score, string detail, int rope = -1, float buoys = 0f, int seq = 0, long ticks = 0, bool followPlayer = false)
         {
             var board = Load(d);
             if (seq <= 0) seq = NextSeq(board);
             if (ticks <= 0) ticks = DateTime.UtcNow.Ticks;
             var entry = new Entry
             {
-                holder = HolderName(),
+                holder = followPlayer ? "" : HolderName(),
                 score = score,
                 detail = detail ?? "",
                 seq = seq,
@@ -155,20 +159,76 @@ namespace SkiView
                 rope = rope,
                 buoys = buoys
             };
-            var place = TryInsert(board, entry);
+            var place = TryInsert(board, entry, followPlayer);
             place.discipline = d;
             if (place.qualified) Save(d, board);
             return place;
         }
 
+        /// <summary>One old per-lake personal best (<c>sv.pb.&lt;lake&gt;</c> = rope index × 6 + buoys).</summary>
+        public struct LegacyBest
+        {
+            public string name;
+            public float score;
+        }
+
+        /// <summary>
+        /// Copy per-lake bests onto the one slalom board, once. A blank holder follows <see cref="HolderName"/>
+        /// when the list is shown, so the import does not freeze PLAYER before a name is saved.
+        /// A score already stored with the same detail is not added again.
+        /// </summary>
+        public static int ImportLegacyPersonalBestsOnce(LegacyBest[] rows)
+        {
+            if (Read(PbImportedKey) == "1") return 0;
+            int added = 0;
+            if (rows != null)
+            {
+                for (int i = 0; i < rows.Length; i++)
+                {
+                    float sc = rows[i].score;
+                    if (float.IsNaN(sc) || float.IsInfinity(sc) || sc <= 0f) continue;
+                    string detail = string.IsNullOrWhiteSpace(rows[i].name) ? "imported best" : rows[i].name.Trim() + " · imported best";
+                    var board = Load(Discipline.Slalom);
+                    if (HasDetailScore(board, sc, detail)) continue;
+                    DecodeSlalomScore(sc, out int rope, out float buoys);
+                    var place = Submit(Discipline.Slalom, sc, detail, rope, buoys, followPlayer: true);
+                    if (place.qualified) added++;
+                }
+            }
+            Write(PbImportedKey, "1");
+            return added;
+        }
+
+        /// <summary>rope index × 6 + buoys, the same packing as the old per-lake best.</summary>
+        public static void DecodeSlalomScore(float score, out int rope, out float buoys)
+        {
+            int max = SkierSim.ROPE_LABEL.Length - 1;
+            rope = Mathf.Clamp(Mathf.FloorToInt((score - 0.01f) / 6f), 0, max);
+            buoys = score - rope * 6f;
+            if (buoys < 0.05f && score > 0.5f) buoys = 6f;
+        }
+
+        /// <summary>Results banner. Rank 1 is the world record. Every other top-10 rank is named. Gold is ranks 1–3 (<see cref="Podium"/>).</summary>
+        public static string BannerText(Place p)
+        {
+            if (!p.attempted) return "";
+            if (p.score > 0f && p.qualified && p.rank == 1) return "NEW WORLD RECORD";
+            if (p.score > 0f && p.qualified && p.rank > 1) return "WORLD RECORDS · RANK " + p.rank;
+            if (p.score > 0f) return "OUTSIDE THE TOP 10";
+            return "";
+        }
+
+        /// <summary>Ranks 1, 2 and 3 use the gold treatment.</summary>
+        public static bool Podium(Place p) => p.qualified && p.rank >= 1 && p.rank <= 3;
+
         /// <summary>Insert into an already-ranked board. Does not touch PlayerPrefs. The board must be best-first.</summary>
-        public static Place TryInsert(List<Entry> board, Entry entry)
+        public static Place TryInsert(List<Entry> board, Entry entry, bool followPlayer = false)
         {
             if (board == null) board = new List<Entry>();
             if (entry == null || float.IsNaN(entry.score) || float.IsInfinity(entry.score) || entry.score <= 0f)
                 return new Place { attempted = true, qualified = false, count = board.Count, score = entry != null && !float.IsNaN(entry.score) && !float.IsInfinity(entry.score) ? entry.score : 0f };
 
-            entry.holder = ResolveHolder(entry.holder);
+            entry.holder = followPlayer ? "" : ResolveHolder(entry.holder);
             if (entry.detail == null) entry.detail = "";
             if (entry.seq <= 0) entry.seq = NextSeq(board);
             if (string.IsNullOrEmpty(entry.achieved)) entry.achieved = DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture);
@@ -267,6 +327,17 @@ namespace SkiView
             if (RanksAhead(a, b)) return -1;
             if (RanksAhead(b, a)) return 1;
             return 0;
+        }
+
+        static bool HasDetailScore(List<Entry> board, float score, string detail)
+        {
+            if (board == null) return false;
+            for (int i = 0; i < board.Count; i++)
+            {
+                var e = board[i];
+                if (e != null && Mathf.Approximately(e.score, score) && e.detail == detail) return true;
+            }
+            return false;
         }
 
         static int NextSeq(List<Entry> board)

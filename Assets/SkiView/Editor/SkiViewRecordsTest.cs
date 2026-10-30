@@ -123,6 +123,9 @@ public static class SkiViewRecordsTest
             Check(SkiViewRecords.TakeSlalomSet(ref open, out flushed) && flushed.rope == 3 && Mathf.Approximately(flushed.buoys, 4f) && !open.has, "quit or title records the furthest scored pass once");
             Check(!SkiViewRecords.TakeSlalomSet(ref open, out flushed), "a second quit or title does not record the set again");
 
+            Check(!SkiViewRecords.NoteSlalomSetPass(ref open, 0, 4f, true, "lead", out done), "a scored pass stays open");
+            Check(SkiViewRecords.NoteSlalomSetPass(ref open, 2, 3f, false, "fall", out done) && done.rope == 2 && Mathf.Approximately(done.buoys, 3f), "a fall's buoys count when they are the furthest the set reached");
+
             Check(!SkiViewRecords.AllowRecord(true, false), "clinic blocks records");
             Check(!SkiViewRecords.AllowRecord(false, true), "tutorial blocks records");
             Check(!SkiViewRecords.AllowRecord(true, true), "clinic and tutorial together block records");
@@ -168,6 +171,38 @@ public static class SkiViewRecordsTest
             Check(HolderOf(renamed, 2) == "CASEY" && HolderOf(renamed, 4) == "CASEY" && HolderOf(renamed, 3) == "CASEY", "old SCOTT rows follow the saved player name");
             Check(!BoardHasHolder(renamed, "SCOTT"), "after the name changes, loaded rows do not contain an untyped SCOTT");
             Check(HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 60) == "CASEY", "a stored SCOTT row displays as the saved player name");
+
+            var rank2 = new SkiViewRecords.Place { attempted = true, qualified = true, rank = 2, score = 4f };
+            var rank5 = new SkiViewRecords.Place { attempted = true, qualified = true, rank = 5, score = 4f };
+            var rank1 = new SkiViewRecords.Place { attempted = true, qualified = true, rank = 1, score = 9f };
+            var outside = new SkiViewRecords.Place { attempted = true, qualified = false, rank = 0, score = 1f };
+            Check(SkiViewRecords.BannerText(rank1) == "NEW WORLD RECORD", "rank 1 banner");
+            Check(SkiViewRecords.BannerText(rank2) == "WORLD RECORDS · RANK 2", "rank 2 banner");
+            Check(SkiViewRecords.BannerText(rank5) == "WORLD RECORDS · RANK 5", "rank 5 banner");
+            Check(SkiViewRecords.BannerText(outside) == "OUTSIDE THE TOP 10", "missed board banner");
+            Check(SkiViewRecords.Podium(rank1) && SkiViewRecords.Podium(rank2) && !SkiViewRecords.Podium(rank5), "gold is ranks 1 through 3");
+
+            SkiViewRecords.SetRawForTests(SkiViewRecords.Discipline.Slalom, "");
+            SkiViewRecords.DecodeSlalomScore(6f, out int rope0, out float buoys0);
+            SkiViewRecords.DecodeSlalomScore(14f, out int rope2, out float buoys2);
+            Check(rope0 == 0 && Mathf.Approximately(buoys0, 6f), "a full pass at the long rope decodes to 6 buoys");
+            Check(rope2 == 2 && Mathf.Approximately(buoys2, 2f), "14 decodes to 2 buoys at 28 off");
+            int imported = SkiViewRecords.ImportLegacyPersonalBestsOnce(new[]
+            {
+                new SkiViewRecords.LegacyBest { name = "SKI VIEW", score = 6f },
+                new SkiViewRecords.LegacyBest { name = "CEDAR BEND", score = 14f },
+                new SkiViewRecords.LegacyBest { name = "SALTWHITE", score = 0f }
+            });
+            Check(imported == 2, "two lake bests import, a zero does not");
+            var slalomBoard = SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom);
+            Check(slalomBoard.Count == 2 && Mathf.Approximately(slalomBoard[0].score, 14f), "imported bests share the one slalom board");
+            Check(SkiViewRecords.Format(SkiViewRecords.Discipline.Slalom, slalomBoard[0]) == "2 @ 28 OFF", "imported score keeps rope and buoys");
+            Check(slalomBoard[0].holder == "CASEY" && slalomBoard[1].holder == "CASEY", "an imported row shows the saved player name");
+            PlayerPrefs.SetString(SkiViewRecords.PlayerNamePref, "JORDAN");
+            PlayerPrefs.Save();
+            Check(SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom)[0].holder == "JORDAN", "an imported row follows a later name instead of staying PLAYER");
+            int again = SkiViewRecords.ImportLegacyPersonalBestsOnce(new[] { new SkiViewRecords.LegacyBest { name = "SKI VIEW", score = 40f } });
+            Check(again == 0 && SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom).Count == 2, "the lake-best import does not run twice");
         }
         finally
         {
