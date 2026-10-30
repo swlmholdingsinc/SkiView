@@ -66,6 +66,7 @@ namespace SkiView
             if (!TryNormalize(raw, out var name)) return false;
             PlayerPrefs.SetString(PrefKey, name);
             PlayerPrefs.Save();
+            SkiViewRecords.MigrateHolders(); // #119 decision B: first save of a confirmed name relabels legacy rows once
             return true;
         }
 

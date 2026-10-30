@@ -83,6 +83,7 @@ namespace SkiView.UI
             BuildHud19(safe);
             BuildSettings(); BuildCredits(); BuildLicense(); BuildPause(); BuildLakes(); BuildHelp(); BuildClinic(); BuildRecords(); BuildPlayerName(); BuildTitle();
             if (SkiViewPlayer.BlocksRun) { timeScale0 = 1f; Time.timeScale = 0f; }
+            SkiViewRecords.MigrateHolders(); // #119 decision B: at launch when a name already exists (no-op otherwise)
             // capture / review: ?ui=graphics|audio|controls|credits|license opens that screen (WebGL)
             string url = Application.absoluteURL ?? ""; int q = url.IndexOf("ui=");
             if (q >= 0)

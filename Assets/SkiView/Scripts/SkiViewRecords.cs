@@ -15,15 +15,15 @@ namespace SkiView
     /// higher than 10th place. A tie with 10th place stays off the list.
     /// Scores at or below zero are not recorded. The same player can hold more than one row.
     /// Slalom records one score per set: the furthest pass that scored, not one row per pass.
-    /// The holder is always <see cref="HolderName"/>: PlayerPrefs sv.player.name, or PLAYER when that is empty.
-    /// Branding is not a name source. Old rows with a blank holder, or the old branding name, display as <see cref="HolderName"/>.
+    /// The holder is always <see cref="HolderName"/>: <see cref="SkiViewPlayer.Name"/>, or PLAYER when no valid name is saved.
+    /// Branding is not a name source. Old blank or "SCOTT" rows are rewritten once by <see cref="MigrateHolders"/>.
     /// </summary>
     public static class SkiViewRecords
     {
         public const int Capacity = 10;
         public const string PrefPrefix = "sv.records.v1.";
         /// <summary>Saved on first launch by the player-name prompt. Records read it at write time.</summary>
-        public const string PlayerNamePref = "sv.player.name";
+        public const string PlayerNamePref = SkiViewPlayer.PrefKey;
         public const string FallbackHolder = "PLAYER";
 
         public enum Discipline { Slalom, Jump, Trick }
@@ -115,29 +115,72 @@ namespace SkiView
         }
 
         /// <summary>
-        /// Saved player name. This is the only lookup: a later change can return SkiViewPlayer.Name from here.
-        /// PlayerPrefs <see cref="PlayerNamePref"/>, trimmed. Empty or missing becomes <see cref="FallbackHolder"/>.
+        /// Holder for new rows: <see cref="SkiViewPlayer.Name"/> (PlayerPrefs sv.player.name, validated and trimmed).
+        /// No valid saved name becomes <see cref="FallbackHolder"/>. Never a branding name, never SCOTT.
         /// </summary>
         public static string HolderName()
         {
-            string n = PlayerPrefs.GetString(PlayerNamePref, "");
-            if (string.IsNullOrWhiteSpace(n)) return FallbackHolder;
-            return n.Trim();
+            string n = SkiViewPlayer.Name;
+            return string.IsNullOrWhiteSpace(n) ? FallbackHolder : n.Trim();
         }
 
         /// <summary>
-        /// Holder to write or display. Blank uses <see cref="HolderName"/>.
-        /// Older boards stored the branding skier name when no player name existed; that value is not a typed name
-        /// unless it is the saved player name now.
+        /// Holder to write or display. A blank holder uses <see cref="HolderName"/>.
+        /// Until the one-time migration (<see cref="HolderMigratedKey"/>) has run, a legacy "SCOTT" row displays as the
+        /// current holder unless SCOTT is the saved name. After the migration a stored name is never relabelled.
         /// </summary>
         public static string ResolveHolder(string stored)
         {
             string current = HolderName();
             if (string.IsNullOrWhiteSpace(stored)) return current;
             stored = stored.Trim();
-            if (stored.Equals("SCOTT", StringComparison.OrdinalIgnoreCase) && !current.Equals(stored, StringComparison.OrdinalIgnoreCase))
+            if (!HoldersMigrated && IsLegacyHolder(stored) && !current.Equals(stored, StringComparison.OrdinalIgnoreCase))
                 return current;
             return stored;
+        }
+
+        /// <summary>One-time holder migration flag (#119 decision B). "1" once every board has been migrated.</summary>
+        public const string HolderMigratedKey = PrefPrefix + "holderMigrated";
+
+        public static bool HoldersMigrated => Read(HolderMigratedKey) == "1";
+
+        static bool IsLegacyHolder(string h) => string.IsNullOrWhiteSpace(h) || h.Trim().Equals("SCOTT", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// #119 decision B. While <see cref="HolderMigratedKey"/> is unset and a valid player name is saved, rewrite every
+        /// blank or legacy "SCOTT" holder on all three boards to that name and save each board, then set the key to 1.
+        /// A corrupt board is skipped unchanged and the key stays unset so the next launch retries; boards already
+        /// rewritten stay rewritten, so the retry is idempotent. Returns true when the key is set.
+        /// </summary>
+        public static bool MigrateHolders()
+        {
+            if (HoldersMigrated) return true;
+            string name = SkiViewPlayer.Name;
+            if (string.IsNullOrWhiteSpace(name)) return false;
+            name = name.Trim();
+            bool allOk = true;
+            foreach (Discipline d in (Discipline[])Enum.GetValues(typeof(Discipline)))
+            {
+                string json = Read(Key(d));
+                if (string.IsNullOrEmpty(json)) continue;
+                SaveBag bag = null;
+                try { bag = JsonUtility.FromJson<SaveBag>(json); }
+                catch (Exception e) { Debug.LogWarning("[SkiView] records holder migration skipped " + d + ": " + e.Message); }
+                if (bag == null) { allOk = false; continue; }
+                if (bag.entries == null) continue;
+                bool changed = false;
+                for (int i = 0; i < bag.entries.Length; i++)
+                {
+                    var e = bag.entries[i];
+                    if (e == null || !IsLegacyHolder(e.holder)) continue;
+                    e.holder = name; changed = true;
+                }
+                if (changed) Write(Key(d), JsonUtility.ToJson(bag));
+            }
+            if (!allOk) return false;
+            Write(HolderMigratedKey, "1");
+            if (memory == null) PlayerPrefs.Save();
+            return true;
         }
 
         public static Place Submit(Discipline d, float score, string detail, int rope = -1, float buoys = 0f, int seq = 0, long ticks = 0)
@@ -196,6 +239,7 @@ namespace SkiView
 
         public static List<Entry> Load(Discipline d)
         {
+            MigrateHolders();
             var board = new List<Entry>();
             string json = Read(Key(d));
             if (string.IsNullOrEmpty(json)) return board;

@@ -144,30 +144,67 @@ public static class SkiViewRecordsTest
                     new SkiViewRecords.Entry { holder = "CASEY", score = 5f, seq = 3, rope = 0, buoys = 5f, detail = "kept", achieved = "1" },
                 }
             };
-            SkiViewRecords.SetRawForTests(SkiViewRecords.Discipline.Slalom, JsonUtility.ToJson(legacy));
-            var migrated = SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom);
-            Check(HolderOf(migrated, 1) == "PLAYER", "a blank old row displays as PLAYER");
-            Check(HolderOf(migrated, 2) == "PLAYER" && HolderOf(migrated, 4) == "PLAYER", "an old branding holder displays as PLAYER");
-            Check(HolderOf(migrated, 3) == "CASEY", "a real saved holder is left as written");
-            Check(!BoardHasHolder(migrated, "SCOTT"), "loading old rows does not surface SCOTT");
+            string legacyJson = JsonUtility.ToJson(legacy);
+
+            // Before any name: nothing migrates, legacy rows display as PLAYER, the key stays unset.
+            SkiViewRecords.SetRawForTests(SkiViewRecords.Discipline.Slalom, legacyJson);
+            Check(!SkiViewRecords.MigrateHolders() && !SkiViewRecords.HoldersMigrated, "no saved name: migration does not run and the key stays unset");
+            var unmigrated = SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom);
+            Check(HolderOf(unmigrated, 1) == "PLAYER" && HolderOf(unmigrated, 2) == "PLAYER" && HolderOf(unmigrated, 4) == "PLAYER", "before migration blank and SCOTT rows display as PLAYER");
+            Check(HolderOf(unmigrated, 3) == "CASEY", "a real saved holder is left as written");
+            Check(!BoardHasHolder(unmigrated, "SCOTT"), "loading old rows does not surface SCOTT");
+
+            // HolderName goes through SkiViewPlayer.Name: an invalid stored name falls back to PLAYER, never SCOTT.
+            PlayerPrefs.SetString(SkiViewRecords.PlayerNamePref, "THIS NAME IS WAY TOO LONG");
+            PlayerPrefs.Save();
+            Check(SkiViewRecords.HolderName() == "PLAYER", "an invalid saved name falls back to PLAYER");
+            Check(!SkiViewRecords.MigrateHolders(), "an invalid saved name does not trigger the migration");
+
+            // Decision B: first valid name rewrites blank and SCOTT rows on all boards, once.
+            PlayerPrefs.SetString(SkiViewRecords.PlayerNamePref, "  CASEY  ");
+            PlayerPrefs.Save();
+            Check(SkiViewRecords.HolderName() == "CASEY", "HolderName returns SkiViewPlayer.Name, trimmed");
+            var legacyJump = new SkiViewRecords.SaveBag { entries = new[] { new SkiViewRecords.Entry { holder = "SCOTT", score = 30f, seq = 1, detail = "j", achieved = "1" } } };
+            SkiViewRecords.SetRawForTests(SkiViewRecords.Discipline.Jump, JsonUtility.ToJson(legacyJump));
+            Check(SkiViewRecords.MigrateHolders() && SkiViewRecords.HoldersMigrated, "valid name: migration runs and sets sv.records.v1.holderMigrated");
+            var m1 = SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom);
+            Check(HolderOf(m1, 1) == "CASEY" && HolderOf(m1, 2) == "CASEY" && HolderOf(m1, 4) == "CASEY" && HolderOf(m1, 3) == "CASEY", "migration rewrites blank and SCOTT slalom rows to the name");
+            Check(HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Jump), 1) == "CASEY", "migration covers the jump board");
+            Check(HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 50) == "PLAYER", "a PLAYER-stamped row is not a legacy holder and is left alone");
+            var named = SkiViewRecords.Submit(SkiViewRecords.Discipline.Trick, 16f, "named", seq: 51);
+            Check(named.qualified && HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 51) == "CASEY", "a new record stamps the player name");
+
+            // Runs only once: a rename does not relabel, and a SCOTT row written later stays SCOTT.
+            PlayerPrefs.SetString(SkiViewRecords.PlayerNamePref, "Dana");
+            PlayerPrefs.Save();
+            Check(SkiViewRecords.MigrateHolders(), "second call is a no-op that reports done");
+            var m2 = SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom);
+            Check(HolderOf(m2, 2) == "CASEY" && HolderOf(m2, 3) == "CASEY", "after migration a rename does not relabel stored rows");
+            SkiViewRecords.SetRawForTests(SkiViewRecords.Discipline.Slalom, legacyJson);
+            var m3 = SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom);
+            Check(HolderOf(m3, 2) == "SCOTT" && HolderOf(m3, 4) == "Scott", "after migration a stored SCOTT is never remapped");
+            Check(HolderOf(m3, 1) == "Dana", "after migration only a truly blank holder shows the current name");
 
             PlayerPrefs.SetString(SkiViewRecords.PlayerNamePref, "SCOTT");
             PlayerPrefs.Save();
             var typed = SkiViewRecords.Submit(SkiViewRecords.Discipline.Trick, 17f, "typed", seq: 60);
-            Check(SkiViewRecords.HolderName() == "SCOTT" && typed.qualified && HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 60) == "SCOTT", "SCOTT is stored only when the player saved that name");
-            SkiViewRecords.SetRawForTests(SkiViewRecords.Discipline.Slalom, JsonUtility.ToJson(legacy));
-            Check(HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom), 2) == "SCOTT", "a SCOTT row stays when that is the saved player name");
-
-            PlayerPrefs.SetString(SkiViewRecords.PlayerNamePref, "  CASEY  ");
+            Check(typed.qualified && HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 60) == "SCOTT", "an entered SCOTT is stored as typed");
+            PlayerPrefs.SetString(SkiViewRecords.PlayerNamePref, "CASEY");
             PlayerPrefs.Save();
-            Check(SkiViewRecords.HolderName() == "CASEY", "sv.player.name is trimmed");
-            var named = SkiViewRecords.Submit(SkiViewRecords.Discipline.Trick, 16f, "named", seq: 51);
-            Check(named.qualified && HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 51) == "CASEY", "a new record stamps the trimmed player name");
-            SkiViewRecords.SetRawForTests(SkiViewRecords.Discipline.Slalom, JsonUtility.ToJson(legacy));
-            var renamed = SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom);
-            Check(HolderOf(renamed, 2) == "CASEY" && HolderOf(renamed, 4) == "CASEY" && HolderOf(renamed, 3) == "CASEY", "old SCOTT rows follow the saved player name");
-            Check(!BoardHasHolder(renamed, "SCOTT"), "after the name changes, loaded rows do not contain an untyped SCOTT");
-            Check(HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 60) == "CASEY", "a stored SCOTT row displays as the saved player name");
+            Check(HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 60) == "SCOTT", "an entered SCOTT row is never re-stamped");
+
+            // Corrupt board: skipped, key stays unset, other boards still migrate, retry is idempotent.
+            SkiViewRecords.UseMemoryStore(true);
+            PlayerPrefs.SetString(SkiViewRecords.PlayerNamePref, "Riley");
+            PlayerPrefs.Save();
+            SkiViewRecords.SetRawForTests(SkiViewRecords.Discipline.Slalom, legacyJson);
+            SkiViewRecords.SetRawForTests(SkiViewRecords.Discipline.Jump, "{not json");
+            Check(!SkiViewRecords.MigrateHolders() && !SkiViewRecords.HoldersMigrated, "a corrupt board leaves the key unset");
+            Check(HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom), 2) == "Riley", "the readable board is migrated despite the corrupt one");
+            SkiViewRecords.SetRawForTests(SkiViewRecords.Discipline.Jump, JsonUtility.ToJson(legacyJump));
+            PlayerPrefs.SetString(SkiViewRecords.PlayerNamePref, "Riley");
+            Check(SkiViewRecords.MigrateHolders() && SkiViewRecords.HoldersMigrated, "retry after repair sets the key");
+            Check(HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Jump), 1) == "Riley" && HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom), 2) == "Riley", "retry is idempotent");
         }
         finally
         {
