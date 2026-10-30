@@ -80,6 +80,19 @@ public static class SkiViewRecordsTest
             var wr = topTie; wr.rank = 1;
             Check(SkiViewRecords.PlacementHeading(wr, 10) == "NEW WORLD RECORD · RANK 1", "rank 1 heading");
             Check(SkiViewRecords.PlacementHeading(cut, 10) == "OUTSIDE THE TOP 10", "cutoff heading");
+            Check(SkiViewRecords.ResultBanner(wr) == "NEW WORLD RECORD", "rank 1 banner");
+            Check(SkiViewRecords.ResultBanner(topTie) == "WORLD RECORDS · RANK 2", "every other top-10 rank gets a banner");
+            Check(SkiViewRecords.ResultBanner(made) == "WORLD RECORDS · RANK 10", "rank 10 banner");
+            Check(SkiViewRecords.ResultBanner(cut) == "" && SkiViewRecords.ResultBanner(miss) == "", "a miss and a cutoff get no banner");
+            Check(SkiViewRecords.MedalRank(1) && SkiViewRecords.MedalRank(2) && SkiViewRecords.MedalRank(3) && !SkiViewRecords.MedalRank(4) && !SkiViewRecords.MedalRank(10), "gold is ranks 1 through 3");
+            SkiViewRecords.DecodeSlalomScore(6f, out int rope0, out float buoys0);
+            SkiViewRecords.DecodeSlalomScore(12f, out int rope1, out float buoys1);
+            SkiViewRecords.DecodeSlalomScore(14f, out int rope2, out float buoys2);
+            SkiViewRecords.DecodeSlalomScore(0f, out _, out float buoysZero);
+            Check(rope0 == 0 && Mathf.Approximately(buoys0, 6f), "a score of 6 is 6 at 15 off");
+            Check(rope1 == 1 && Mathf.Approximately(buoys1, 6f), "a score of 12 is a full pass at 22 off, not zero buoys");
+            Check(rope2 == 2 && Mathf.Approximately(buoys2, 2f), "a score of 14 is 2 at 28 off");
+            Check(buoysZero <= 0.01f, "a zero personal best does not decode to buoys");
 
             for (int n = 0; n < 15; n++)
                 SkiViewRecords.Submit(SkiViewRecords.Discipline.Jump, 40f + n, "ramp", seq: 10 + n);
@@ -168,6 +181,18 @@ public static class SkiViewRecordsTest
             Check(HolderOf(renamed, 2) == "CASEY" && HolderOf(renamed, 4) == "CASEY" && HolderOf(renamed, 3) == "CASEY", "old SCOTT rows follow the saved player name");
             Check(!BoardHasHolder(renamed, "SCOTT"), "after the name changes, loaded rows do not contain an untyped SCOTT");
             Check(HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 60) == "CASEY", "a stored SCOTT row displays as the saved player name");
+
+            PlayerPrefs.DeleteKey(SkiViewRecords.PlayerNamePref);
+            SkiViewRecords.UseMemoryStore(true);
+            SkiViewRecords.SetFloatForTests(SkiViewRecords.PbPrefPrefix + "skiview", 6f);
+            SkiViewRecords.SetFloatForTests(SkiViewRecords.PbPrefPrefix + "cedarbend", 14f);
+            SkiViewRecords.SetFloatForTests(SkiViewRecords.PbPrefPrefix + "saltwhite", 0f);
+            int imported = SkiViewRecords.ImportLegacyPersonalBests();
+            var pbBoard = SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom);
+            Check(imported == 2 && pbBoard.Count == 2, "one-time import keeps the two scored lake bests");
+            Check(pbBoard[0].detail == "Cedar Bend" && pbBoard[0].rope == 2 && Mathf.Approximately(pbBoard[0].buoys, 2f), "the higher lake best ranks first as 2 at 28 off");
+            Check(pbBoard[1].detail == "Ski View" && pbBoard[1].rope == 0 && Mathf.Approximately(pbBoard[1].buoys, 6f) && pbBoard[1].holder == "PLAYER", "the home-lake best imports under PLAYER when no name is saved");
+            Check(SkiViewRecords.ImportLegacyPersonalBests() == 0 && SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom).Count == 2, "a second import does not add the same bests again");
         }
         finally
         {

@@ -14,9 +14,11 @@ namespace SkiView
     /// A run qualifies when the board has fewer than 10 scores, or its score is strictly
     /// higher than 10th place. A tie with 10th place stays off the list.
     /// Scores at or below zero are not recorded. The same player can hold more than one row.
-    /// Slalom records one score per set: the furthest pass that scored, not one row per pass.
+    /// Slalom records one score per set: the furthest pass that scored buoys, not one row per pass.
+    /// A fall counts when that pass scored buoys. A fall with no buoys keeps the earlier pass and does not add a zero row.
     /// The holder is always <see cref="HolderName"/>: PlayerPrefs sv.player.name, or PLAYER when that is empty.
     /// Branding is not a name source. Old rows with a blank holder, or the old branding name, display as <see cref="HolderName"/>.
+    /// The first launch copies each lake's saved personal best (<c>sv.pb.&lt;lake&gt;</c>) onto the slalom board once.
     /// </summary>
     public static class SkiViewRecords
     {
@@ -25,6 +27,27 @@ namespace SkiView
         /// <summary>Saved on first launch by the player-name prompt. Records read it at write time.</summary>
         public const string PlayerNamePref = "sv.player.name";
         public const string FallbackHolder = "PLAYER";
+        /// <summary>Per-lake personal best written by the results plate. Imported once onto the slalom board.</summary>
+        public const string PbPrefPrefix = "sv.pb.";
+        /// <summary>"1" after <see cref="ImportLegacyPersonalBests"/> has run. A later lake best is not imported again.</summary>
+        public const string PbImportedKey = PrefPrefix + "pbImported";
+
+        public struct LegacyPbLake { public string id; public string name; }
+
+        /// <summary>Lakes that may already have <c>sv.pb.&lt;id&gt;</c>. Names match the in-run lake name, not the menu's all-caps title.</summary>
+        public static readonly LegacyPbLake[] LegacyPbLakes =
+        {
+            new LegacyPbLake { id = "skiview", name = "Ski View" },
+            new LegacyPbLake { id = "cedarbend", name = "Cedar Bend" },
+            new LegacyPbLake { id = "saltwhite", name = "Saltwhite" },
+            new LegacyPbLake { id = "villaserena", name = "Villa Serena" },
+            new LegacyPbLake { id = "tallpine", name = "Tall Pine" },
+            new LegacyPbLake { id = "heronmarsh", name = "Heron Marsh" },
+            new LegacyPbLake { id = "harrowpond", name = "Harrow Pond" },
+            new LegacyPbLake { id = "gulfwind", name = "Gulfwind" },
+            new LegacyPbLake { id = "saguaro", name = "Saguaro" },
+            new LegacyPbLake { id = "marrowind", name = "Marrowind" },
+        };
 
         public enum Discipline { Slalom, Jump, Trick }
 
@@ -81,8 +104,8 @@ namespace SkiView
 
         /// <summary>
         /// Fold one pass into the open set. A clean pass does not submit.
-        /// A fall or miss (not clean) ends the set: <paramref name="submit"/> is the furthest pass that scored, and the set is cleared.
-        /// A pass with no buoys is not that pass. Returns true when the set ended.
+        /// A fall or miss (not clean) ends the set: <paramref name="submit"/> is the furthest pass that scored buoys, and the set is cleared.
+        /// A fall with buoys counts. A pass with no buoys is not that pass. Returns true when the set ended.
         /// </summary>
         public static bool NoteSlalomSetPass(ref SlalomSet set, int rope, float buoys, bool clean, string detail, out SlalomSet submit)
         {
@@ -138,6 +161,52 @@ namespace SkiView
             if (stored.Equals("SCOTT", StringComparison.OrdinalIgnoreCase) && !current.Equals(stored, StringComparison.OrdinalIgnoreCase))
                 return current;
             return stored;
+        }
+
+        /// <summary>
+        /// Copy each saved lake personal best onto the slalom board, then set <see cref="PbImportedKey"/>.
+        /// A best that does not make the top 10 is still consumed: the key is set either way, so a later run is not imported twice.
+        /// Returns how many imported scores took a place.
+        /// </summary>
+        public static int ImportLegacyPersonalBests()
+        {
+            if (Read(PbImportedKey) == "1") return 0;
+            int added = 0;
+            for (int i = 0; i < LegacyPbLakes.Length; i++)
+            {
+                var lake = LegacyPbLakes[i];
+                float sc = ReadFloat(PbPrefPrefix + lake.id);
+                DecodeSlalomScore(sc, out int rope, out float buoys);
+                if (buoys <= 0.01f) continue;
+                var place = Submit(Discipline.Slalom, sc, lake.name, rope, buoys);
+                if (place.qualified) added++;
+            }
+            Write(PbImportedKey, "1");
+            return added;
+        }
+
+        /// <summary>
+        /// Split a lake personal-best score (rope index × 6 + buoys) the same way the pause plate prints it.
+        /// An exact multiple of 6 is a full pass: 6 buoys at that rope, not 0 buoys at the next rope.
+        /// </summary>
+        public static void DecodeSlalomScore(float score, out int rope, out float buoys)
+        {
+            rope = 0;
+            buoys = 0f;
+            if (float.IsNaN(score) || float.IsInfinity(score) || score <= 0f) return;
+            int max = SkierSim.ROPE_LABEL.Length - 1;
+            rope = Mathf.Clamp(Mathf.FloorToInt((score - 0.01f) / 6f), 0, max);
+            float rem = score - rope * 6f;
+            if (rem < 0.01f) rem = 6f;
+            buoys = rem;
+        }
+
+        /// <summary>Test hook. Stores a float where <see cref="ImportLegacyPersonalBests"/> will read it.</summary>
+        public static void SetFloatForTests(string key, float value)
+        {
+            if (memory != null) { memory[key] = value.ToString(CultureInfo.InvariantCulture); return; }
+            PlayerPrefs.SetFloat(key, value);
+            PlayerPrefs.Save();
         }
 
         public static Place Submit(Discipline d, float score, string detail, int rope = -1, float buoys = 0f, int seq = 0, long ticks = 0)
@@ -250,6 +319,17 @@ namespace SkiView
             return boardCount == 0 ? "WORLD RECORDS · NONE YET" : "WORLD RECORDS";
         }
 
+        /// <summary>Results-plate banner. Rank 1 is the record. Every other top-10 rank names its place. Outside the list, no banner.</summary>
+        public static string ResultBanner(Place p)
+        {
+            if (!p.attempted || p.score <= 0f || !p.qualified || p.rank <= 0) return "";
+            if (p.rank == 1) return "NEW WORLD RECORD";
+            return "WORLD RECORDS · RANK " + p.rank;
+        }
+
+        /// <summary>Ranks 1–3 use the gold treatment. Ranks 4–10 still get a banner, without gold.</summary>
+        public static bool MedalRank(int rank) => rank >= 1 && rank <= 3;
+
         public static string DisciplineName(Discipline d) => d == Discipline.Jump ? "JUMP" : d == Discipline.Trick ? "TRICKS" : "SLALOM";
 
         /// <summary>True when a should be listed above b. Equal scores: lower seq (earlier) wins.</summary>
@@ -288,6 +368,17 @@ namespace SkiView
         {
             if (memory != null) return memory.TryGetValue(key, out var v) ? v : "";
             return PlayerPrefs.GetString(key, "");
+        }
+
+        static float ReadFloat(string key)
+        {
+            if (memory != null)
+            {
+                if (memory.TryGetValue(key, out var s) && float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
+                    return v;
+                return -1f;
+            }
+            return PlayerPrefs.GetFloat(key, -1f);
         }
 
         static void Write(string key, string value)

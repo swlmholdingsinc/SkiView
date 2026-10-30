@@ -246,7 +246,7 @@ namespace SkiView.UI
             rsMain = Btn("NEXT PASS", "sv-btn sv-btn--primary", act, () => { if (game != null && game.DropPhase >= 2 && game.RopeChoicePending) game.ChooseRope(false); results.style.display = DisplayStyle.None; }, "play");   // b9.1: the boat tows him round the island to the next pass (skip pill still jumps ahead)
             rsNextCap = Lb("", "t-caption", results);
             rsAlt = Btn("RETRY PASS", "sv-btn", act, () => { results.style.display = DisplayStyle.None; game?.RetryPass(); }, "retry");
-            Btn("RECORDS", "sv-btn sv-btn--ghost", act, OpenRecordsFromResults, "trophy");
+            Btn("WORLD RECORDS", "sv-btn sv-btn--ghost", act, OpenRecordsFromResults, "trophy");
             rsTitle = Btn("TITLE", "sv-btn sv-btn--ghost", act, () => { results.style.display = DisplayStyle.None; ToTitle(); }, "back");
             results.style.display = DisplayStyle.None;
             // b9.1a: rope choice while he floats and the boat circles back (touch here; keys: left/right + Enter, S = shorten)
@@ -375,10 +375,7 @@ namespace SkiView.UI
                 rsRope.text = $"{RopeOff(rsRopeIdx)} | {SpeedMph(game != null ? game.RunMph : 34f)} | Pass {Mathf.Max(1, game.passes)}";
                 rsDetails.text = $"{sim.Breakdown(res)} · rope {SkierSim.ROPE_M[rsRopeIdx]:0.00} m · {SpeedMph(game != null ? game.RunMph : 34f)}";
                 rsPb.text = newPb ? $"PERSONAL BEST {PbFmt(sc)}" + (pb0 >= 0f ? $" · WAS {PbFmt(pb0)}" : "") : $"PERSONAL BEST {PbFmt(Mathf.Max(pb0, sc))}";
-                bool wr = game.LastRecord.attempted && game.LastRecord.discipline == SkiViewRecords.Discipline.Slalom && game.LastRecord.qualified && game.LastRecord.rank == 1;
-                rsBanner.text = wr ? "NEW WORLD RECORD" : "NEW PERSONAL BEST";
-                results.EnableInClassList("sv-results19--pb", newPb || wr); rsBanner.style.display = (newPb || wr) ? DisplayStyle.Flex : DisplayStyle.None;
-                ShowRecordList(SkiViewRecords.Discipline.Slalom);
+                ShowRecordList(SkiViewRecords.Discipline.Slalom, newPb);
                 int next = Mathf.Min(rsRopeIdx + 1, SkierSim.ROPE_M.Length - 1);
                 // NEXT PASS only after a full pass (the rope shortens only then); after a partial pass RETRY is the main action
                 rsMain.style.display = full ? DisplayStyle.Flex : DisplayStyle.None; rsNextCap.style.display = full ? DisplayStyle.Flex : DisplayStyle.None;

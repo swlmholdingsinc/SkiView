@@ -166,7 +166,11 @@ namespace SkiView
             if (rampJumpModeOnly && jumpRamp != null && !jumpMode) jumpRamp.gameObject.SetActive(false);   // T26
             for (int i = 0; i < splash.Length; i++) splash[i] = Vector4.zero;   // the game opens with a deep-water start (captures skip it)
             banner = lakeName.ToUpperInvariant() + " · " + SkiViewBranding.SkierName + " · " + SkierSim.ROPE_LABEL[sim.ropeIndex] + " · " + SkiView.UI.SkiViewUI.SpeedMph(RunMph).ToUpperInvariant(); bannerT = 4f;
-            if (Application.isPlaying) { SkiView.UI.SkiViewUI.Ensure(this)?.ShowCamToast(camMode); SkiAudio.Ensure(this); }   // pass 18: UI Toolkit overlay + run-start view toast
+            if (Application.isPlaying)
+            {
+                SkiViewRecords.ImportLegacyPersonalBests();
+                SkiView.UI.SkiViewUI.Ensure(this)?.ShowCamToast(camMode); SkiAudio.Ensure(this);   // pass 18: UI Toolkit overlay + run-start view toast
+            }
             inited = true;
             ApplyArgs();   // pass 19: URL / command-line capture params
             ApplyVisuals(true);

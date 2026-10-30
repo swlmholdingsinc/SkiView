@@ -64,7 +64,7 @@ namespace SkiView.UI
             {
                 var e = board[i];
                 var row = El("sv-rec-row", recordsBody);
-                if (i == 0) row.AddToClassList("sv-rec-row--top");
+                if (SkiViewRecords.MedalRank(i + 1)) row.AddToClassList("sv-rec-row--top");
                 bool fresh = game != null && game.LastRecord.qualified && game.LastRecord.discipline == d && game.LastRecord.seq == e.seq;
                 if (fresh) row.AddToClassList("sv-row--selected");
                 Lb((i + 1).ToString(), "sv-rec-rank", row);
@@ -94,7 +94,7 @@ namespace SkiView.UI
             OpenRecords(d, "RESULTS");
         }
 
-        void ShowRecordList(SkiViewRecords.Discipline d)
+        void ShowRecordList(SkiViewRecords.Discipline d, bool newPersonalBest = false)
         {
             if (rsRecordBox == null || game == null) return;
             var p = game.LastRecord;
@@ -103,6 +103,7 @@ namespace SkiView.UI
                 rsRecordBox.style.display = DisplayStyle.None;
                 recordListSeq = int.MinValue;
                 recordListShown = false;
+                ApplyRecordBanner(default, newPersonalBest);
                 return;
             }
             bool rebuild = !recordListShown || recordListSeq != p.seq || recordListDisc != d;
@@ -123,7 +124,8 @@ namespace SkiView.UI
                         {
                             var e = board[i];
                             var line = Lb($"{i + 1}   {SkiViewRecords.ResolveHolder(e.holder)}   {SkiViewRecords.Format(d, e)}", "t-caption sv-results19__recline", rsRecordLines);
-                            if (p.qualified && p.seq == e.seq) line.AddToClassList("t-gold");
+                            if (SkiViewRecords.MedalRank(i + 1)) line.AddToClassList("t-gold");
+                            if (p.qualified && p.seq == e.seq) line.AddToClassList("sv-row--selected");
                         }
                     }
                 }
@@ -132,12 +134,22 @@ namespace SkiView.UI
                 recordListShown = true;
                 rsRecordBox.style.display = DisplayStyle.Flex;
             }
-            if (p.qualified && p.rank == 1 && rsBanner != null && results != null)
-            {
-                rsBanner.text = "NEW WORLD RECORD";
-                rsBanner.style.display = DisplayStyle.Flex;
-                results.EnableInClassList("sv-results19--pb", true);
-            }
+            ApplyRecordBanner(p, newPersonalBest);
+        }
+
+        /// <summary>Every top-10 place gets a banner. Gold is ranks 1–3, and a lake personal best that missed the list.</summary>
+        void ApplyRecordBanner(SkiViewRecords.Place p, bool newPersonalBest)
+        {
+            if (rsBanner == null || results == null) return;
+            string wr = SkiViewRecords.ResultBanner(p);
+            bool ranked = wr.Length > 0;
+            string text = ranked ? wr : (newPersonalBest ? "NEW PERSONAL BEST" : "");
+            bool show = text.Length > 0;
+            bool gold = ranked ? SkiViewRecords.MedalRank(p.rank) : newPersonalBest;
+            if (show) rsBanner.text = text;
+            rsBanner.EnableInClassList("sv-results19__pb--plain", show && !gold);
+            rsBanner.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            results.EnableInClassList("sv-results19--pb", show && gold);
         }
     }
 }
