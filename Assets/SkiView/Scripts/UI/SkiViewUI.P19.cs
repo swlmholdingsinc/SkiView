@@ -575,7 +575,7 @@ namespace SkiView.UI
             string skier = SkiViewPlayer.Name;
             if (string.IsNullOrEmpty(banner) || string.IsNullOrEmpty(skier)) return banner == null ? "" : banner.ToUpperInvariant();
             string token = " · " + skier + " · ";
-            int at = banner.IndexOf(token, StringComparison.Ordinal);
+            int at = banner.IndexOf(token, System.StringComparison.Ordinal);
             if (at < 0) return banner.ToUpperInvariant();
             int nameAt = at + 3;
             return banner.Substring(0, nameAt).ToUpperInvariant() + skier + banner.Substring(nameAt + skier.Length).ToUpperInvariant();
