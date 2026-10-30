@@ -205,7 +205,7 @@ namespace SkiView
         public bool InDropFloat => dropPh >= 2 && mode == Mode.Sink;
 
         /// <summary>RETRY PASS / RESTART: always the plain set-up, even mid-turnaround.</summary>
-        public void RetryPass() { DropReset(); SkipToSetup(); }
+        public void RetryPass() { FlushSlalomSet(); DropReset(); SkipToSetup(); }
         void DropReset() { dropPh = 0; dwsBlendT = -1f; floatYawSet = false; }
         /// <summary>Skip pill after the rope choice: jump the boat to the pick-up (no teleport of the skier). False = not in a drop.</summary>
         bool DropSkip()

@@ -83,6 +83,7 @@ namespace SkiView
             Ensure();
             var L = Get(lessonId);
             if (L == null || game == null) return;
+            game.FlushSlalomSet();
             Active = true; ResultsOpen = false; ActiveLessonId = lessonId; ActiveCueId = cueId;
             LastFell = false; LastBuoys = 0f; LastHandleLow = -1f; LastGates = false; LastComplete = false;
             if (game.jumpMode) game.ToggleJumpMode();

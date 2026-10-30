@@ -67,6 +67,8 @@ namespace SkiView.UI
             title.Q<Button>("sec-beat").clicked += () => SoonToast("CHALLENGE · COMING SOON", title.Q("sec-row"));
             title.Q<Button>("sec-settings").clicked += () => { titleReturn = true; Open(settings); };
             title.Q<Button>("sec-credits").clicked += () => { titleReturn = true; Open(credits); };
+            var recordsBtn = title.Q<Button>("sec-records");
+            if (recordsBtn != null) recordsBtn.clicked += () => { titleReturn = true; pauseReturn = false; OpenRecords(SkiViewRecords.Discipline.Slalom, "TITLE"); };
             title.Q<Button>("quick-start").clicked += QuickStart;
             title.Q<Button>("setup").clicked += () => { StartEvent(); OpenRunSetup(); };   // b9: ski / rope / speed first
             if (game != null && game.jumpRamp == null) title.Q("ev-jump").SetEnabled(false);
@@ -91,6 +93,7 @@ namespace SkiView.UI
 
         public void OpenTitle()
         {
+            game?.FlushSlalomSet();
             if (title == null) return;
             titleReturn = false; Open(title); titlePanel.RemoveFromClassList("sv-event-panel--open");
             var tr = title.Q("title-root"); tr.RemoveFromClassList("sv-title--in");
