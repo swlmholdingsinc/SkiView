@@ -97,6 +97,12 @@ namespace SkiView
         Vector3 jPos, jVel, jSide, jLip, jAxis, jRight, jToe, jFwd;
         float boatLatOff, boatLatTarget, jT0Along;
         float jumpCrouch = -1f, jumpPitch = 0f, jumpHandleIn = 0f, jumpTip = 4f, jumpVYaw = 0f, jumpSink = 0.03f;
+        // feel/skier-pose: jump pose smoothing + landing absorption tuning
+        [Header("Jump pose feel")] public float jumpPoseTau = 0.06f, jumpPoseTauTouchdown = 0.03f;
+        public float jumpPreLandCrouch = 0.90f, jumpPreLandPitch = 15f;
+        public float jumpAbsorbAttack = 0.10f, jumpAbsorbRecover = 0.45f, jumpAbsorbMin = 0.15f, jumpAbsorbMax = 0.32f, jumpAbsorbVzFull = 9f, jumpAbsorbPitch = 8f, jumpLandingDur = 0.7f;
+        [Header("Roll rate")] public float rollRateLongDegS = 240f, rollRateShortDegS = 300f;
+        float jcS, jpS, jhS, landVz; bool jPoseSet;
 
         Vector3 SideOfBoat() { Vector3 r = Vector3.Cross(Vector3.up, boatFwd).normalized; return Vector3.Dot(r, jSide) >= 0f ? r : -r; }
         float RampSinA => Mathf.Clamp(RampRatio, 0.05f, 0.5f);
@@ -413,7 +419,7 @@ namespace SkiView
                     float pitchWant = Mathf.Lerp(Mathf.Max(18f, landPitchWant + 4f), landPitchWant, fall);
                     skiPitchFly = Mathf.MoveTowards(skiPitchFly, pitchWant, 30f * dt);
                     float land = Mathf.Clamp01((0.9f - jPos.y) / 0.9f) * (jVel.y < 0 ? 1f : 0f);   // close the V and get ready to absorb
-                    jumpCrouch = Mathf.Lerp(Mathf.Lerp(0.93f, 0.74f, jPost), 0.78f, land); jumpPitch = Mathf.Lerp(6f, landPitchWant < 2f ? 34f : 28f, jPost) * (1f - 0.6f * land);   // b9.1e: upright, forward-leaning flight (was 68-74 deg: flew flat)
+                    jumpCrouch = Mathf.Lerp(Mathf.Lerp(0.93f, 0.74f, jPost), jumpPreLandCrouch, land); jumpPitch = Mathf.Lerp(Mathf.Lerp(6f, landPitchWant < 2f ? 34f : 28f, jPost), jumpPreLandPitch, land);   // feel/skier-pose: legs reach for the water before touchdown   // b9.1e: upright, forward-leaning flight (was 68-74 deg: flew flat)
                     jumpHandleIn = 1f; jumpTip = 0f; jumpVYaw = 7f * jPost * (1f - land); jumpSink = 0f;
                     if (jPos.y <= 0f && jVel.y < 0f)
                     {
@@ -440,7 +446,7 @@ namespace SkiView
                         }
                         // James: set sink speed before Landing so HeavyLanding can use TouchdownVz
                         if (SkiAudio.Instance != null) SkiAudio.Instance.TouchdownVz = -jVel.y;
-                        jphase = JPhase.Landing; jT = 0f; jVel = hv; JumpResult = "RIDE OUT";
+                        landVz = -jVel.y; jphase = JPhase.Landing; jT = 0f; jVel = hv; JumpResult = "RIDE OUT";
                         splash[5] = new Vector4(jPos.x, jPos.z, simTime, 0.75f);
                         EmitBurst(crashSheet, jPos + hv.normalized * 0.6f, 85, hv * 0.45f, 1.8f, 1.2f, 3.0f, 0.9f, fxRnd);   // pass 15: 150 -> 85, mist 55 -> 32 (softer core)
                         EmitBurst(crashDrops, jPos + hv.normalized * 0.4f, 260, hv * 0.55f, 2.4f, 1.5f, 4.0f, 0.9f, fxRnd);
@@ -460,9 +466,11 @@ namespace SkiView
                     { Vector3 sdb = SideOfBoat(); float vs = Vector3.Dot(jVel, sdb); jVel -= sdb * (vs * (1f - Mathf.Exp(-dt / 0.6f))); jVel -= sdb * (Mathf.Clamp(Vector3.Dot(jPos - Pylon(), sdb), -1f, 1f) * 1.2f * dt); }
                     jPos += jVel * dt; jPos.y = 0f;
                     skierPos = jPos; skierVel = jVel; UpdateHeadRate(dt);
-                    float absorb = jphase == JPhase.Landing ? Mathf.Sin(Mathf.Clamp01(jT / 0.5f) * Mathf.PI) : 0f;
-                    jumpCrouch = Mathf.Lerp(0.80f, 0.56f, absorb); jumpPitch = 10f * absorb; jumpHandleIn = 0.5f * (1f - Mathf.Clamp01(jT)); jumpTip = 6f; jumpVYaw = 0f; jumpSink = 0.03f;
-                    if (jphase == JPhase.Landing && jT > 0.6f) { jphase = JPhase.RideOut; jT = 0f; }
+                    // feel/skier-pose: fast compression (peak at jumpAbsorbAttack), slower rise, depth by sink speed; handle-in fades once (0 in ride-out)
+                    float absorb = jphase != JPhase.Landing ? 0f : jT < jumpAbsorbAttack ? Mathf.SmoothStep(0f, 1f, jT / Mathf.Max(0.01f, jumpAbsorbAttack)) : 1f - Mathf.SmoothStep(0f, 1f, (jT - jumpAbsorbAttack) / Mathf.Max(0.01f, jumpAbsorbRecover));
+                    float absorbDepth = Mathf.Clamp(landVz / Mathf.Max(0.1f, jumpAbsorbVzFull), jumpAbsorbMin, jumpAbsorbMax);
+                    jumpCrouch = 0.80f - absorbDepth * absorb; jumpPitch = jumpAbsorbPitch * absorb; jumpHandleIn = jphase == JPhase.Landing ? 0.5f * (1f - Mathf.Clamp01(jT / jumpLandingDur)) : 0f; jumpTip = 6f; jumpVYaw = 0f; jumpSink = 0.03f;
+                    if (jphase == JPhase.Landing && jT > jumpLandingDur) { jphase = JPhase.RideOut; jT = 0f; }
                     if (jphase == JPhase.RideOut && Mathf.Abs(jT - 2.0f) < dt * 0.5f)
                     {
                         JumpResult = "SCORED";
@@ -631,7 +639,14 @@ namespace SkiView
         {
             if (rig == null) return;
             bool j = mode == Mode.Jump;
-            rig.jumpCrouch = j ? jumpCrouch : -1f; rig.jumpPitchDeg = j ? jumpPitch : 0f; rig.jumpHandleIn = j ? jumpHandleIn : 0f;
+            // feel/skier-pose: smooth the per-phase targets so phase changes don't snap the pose (tighter right at touchdown)
+            if (!j) { jPoseSet = false; rig.jumpCrouch = -1f; rig.jumpPitchDeg = 0f; rig.jumpHandleIn = 0f; rig.jumpOnWater = false; return; }
+            float tau = jphase == JPhase.Landing && jT < 0.15f ? jumpPoseTauTouchdown : jumpPoseTau;
+            float k = !jPoseSet ? 1f : 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(0.005f, tau));
+            float jcT = jumpCrouch < 0f ? 0.80f : jumpCrouch;
+            jcS = Mathf.Lerp(jcS, jcT, k); jpS = Mathf.Lerp(jpS, jumpPitch, k); jhS = Mathf.Lerp(jhS, jumpHandleIn, k); jPoseSet = true;
+            rig.jumpCrouch = jcS; rig.jumpPitchDeg = jpS; rig.jumpHandleIn = jhS;
+            rig.jumpOnWater = jphase == JPhase.Approach || jphase == JPhase.Landing || jphase == JPhase.RideOut;
         }
 
         void JumpSpray(float sdt, Vector3 face)

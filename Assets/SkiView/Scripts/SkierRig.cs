@@ -39,7 +39,13 @@ namespace SkiView
         public float Stretch01 { get; private set; }
         float reachS;
         public float LeanTotalDeg { get; private set; }
-        public float leanFwdShare = 0.08f, leanSideRate = 3.5f; float leanSide, leanSideT;   // b10.8: lean sideways not forward; b10.3: max forward component of the lean direction
+        public float leanFwdShare = 0.08f, leanSideRate = 3.5f; float leanSide, leanSideT;   // feel/skier-pose: superseded by leanEdgeChangeRate (the scenes serialize 3.5)
+        [Tooltip("Edge-change lean side rate (1/s): full side switch in 2/rate s.")] public float leanEdgeChangeRate = 6.5f;
+        [Tooltip("Edge-change flip threshold: dot(root up, horizontal right) past which the lean side switches (0.09 = ~5 deg).")] public float leanFlipDot = 0.03f;
+        [Tooltip("Counter-rotation toward the boat: smoothing rate (1/s) and clamp (deg).")] public float yawSmoothRate = 6f, yawMaxDeg = 60f;
+        [Tooltip("Jump gear on the water (approach / landing / ride-out): max body lean against the line (deg).")] public float jumpWaterLeanMaxDeg = 25f;
+        [System.NonSerialized] public bool jumpOnWater;   // set by SkiViewGame each frame
+        float yawS; bool yawSet;   // b10.8: lean sideways not forward; b10.3: max forward component of the lean direction
         public float leanGlideDeg = 0f, leanPullDeg = 0f, chestExtraLeanDeg = 0f;   // stacked lean away from the pull (refs: 40-50 deg total with the ski edge)
         public float shoulderBackDeg = 8f, upperYawShare = 0.55f, hipYawShare = 0.25f;
         public float handleFwd = 0.36f, handleDrop = 0.12f, handHalf = 0.075f;
@@ -126,8 +132,9 @@ namespace SkiView
                 if (leanL != null && leanR != null && root0 != null)
                 {
                     // lean poses on the turn side: leaning away from the boat, more of it as the load builds
-                    Vector3 tb = pylon - root0.position; float side = -Vector3.Dot(tb, root0.right);   // >0 = leaning right
-                    float lw = Mathf.Clamp01(load) * Mathf.Clamp01(Mathf.Abs(side) / 3f) * 0.85f;
+                    Vector3 tb = pylon - root0.position; float side = leanSide;   // feel/skier-pose: same side signal as the procedural lean (was the boat side, which disagreed through the edge change)
+                    if (Mathf.Abs(side) < 1e-3f) side = -Vector3.Dot(tb, root0.right);   // first frame only
+                    float lw = Mathf.Clamp01(load) * Mathf.Clamp01(Mathf.Abs(leanSide)) * 0.85f;
                     target[side > 0 ? 8 : 7] = lw; target[1] *= 1f - lw; target[0] *= 1f - lw;
                 }
                 if (action == RiderAction.DeepStart && start != null)
@@ -152,7 +159,8 @@ namespace SkiView
             Vector3 up = root.up, fwd = root.forward, right = root.right;
             Vector3 toBoat = pylon - root.position; toBoat -= Vector3.Dot(toBoat, up) * up;
             float yawToBoat = Vector3.SignedAngle(fwd, toBoat, up);
-            yawToBoat = Mathf.Clamp(yawToBoat, -75f, 75f);
+            yawToBoat = Mathf.Clamp(yawToBoat, -yawMaxDeg, yawMaxDeg);
+            yawS = dt <= 0f || !yawSet ? yawToBoat : Mathf.LerpAngle(yawS, yawToBoat, 1f - Mathf.Exp(-yawSmoothRate * dt)); yawSet = true; yawToBoat = yawS;   // feel/skier-pose: no shoulder whip behind the boat
 
             bool J = jumpOn && jumpBootL != null && jumpBootR != null;
             Transform fb = J ? jumpBootL : frontBoot, rb = J ? jumpBootR : rearBoot;
@@ -174,14 +182,14 @@ namespace SkiView
             // not toward the tips or the boat; only a small natural forward share (leanFwdShare) is kept
             Vector3 rightH = new Vector3(right.x, 0f, right.z); rightH = rightH.sqrMagnitude > 1e-4f ? rightH.normalized : right;
             Vector3 fwdH = Vector3.Cross(rightH, Vector3.up);
-            float edgeD = Vector3.Dot(up, rightH); if (Mathf.Abs(edgeD) > 0.09f || leanSideT == 0f) leanSideT = edgeD >= 0f ? 1f : -1f; float sideT = leanSideT;   // full side once the ski is edged >5 deg; holds through a flat moment
-            leanSide = dt <= 0f ? sideT : Mathf.MoveTowards(leanSide, sideT, leanSideRate * dt); float sideS = leanSide;   // eased so the edge change can't snap the lean across   // the side the ski is edged toward (inside of the turn, toward the ball at the apex); continuous through the edge change
+            float edgeD = Vector3.Dot(up, rightH); if (Mathf.Abs(edgeD) > leanFlipDot || leanSideT == 0f) leanSideT = edgeD >= 0f ? 1f : -1f; float sideT = leanSideT;   // full side once the ski is edged >5 deg; holds through a flat moment
+            leanSide = dt <= 0f ? sideT : Mathf.MoveTowards(leanSide, sideT, leanEdgeChangeRate * dt); float sideS = leanSide;   // eased so the edge change can't snap the lean across   // the side the ski is edged toward (inside of the turn, toward the ball at the apex); continuous through the edge change
             Vector3 Lat(Vector3 d) { float fd = Mathf.Clamp(Vector3.Dot(d, fwdH) / Mathf.Max(0.2f, Mathf.Abs(Vector3.Dot(d, rightH))), -1f, 1f); return rightH * sideS + fwdH * (fd * leanFwdShare * Mathf.Abs(sideS)); }   // not normalised: a flat ski fades the lean out instead of flipping it
             Vector3 away = Lat(toBoat.sqrMagnitude > 1e-4f ? -toBoat.normalized : -right);
             away -= Vector3.Dot(away, up) * up;
             float leanWant = sw * stretchLeanExtraDeg + Mathf.Lerp(leanTotalPullDeg, Mathf.Lerp(leanTotalApexShortDeg, leanTotalApexDeg, Mathf.Clamp01(rope01)), Mathf.Clamp01(turnReach)) * s;   // Holly: 40-50 deg on the pull, 50-65 at the apex (ski edge + body)
             float rootRoll = Vector3.Angle(up, Vector3.up);
-            float lean = (Mathf.Lerp(leanGlideDeg, leanPullDeg, s) + (J ? 0f : Mathf.Clamp(leanWant - rootRoll, 0f, Mathf.Lerp(leanBodyMaxDeg, stretchBodyMaxDeg, sw)))) * Mathf.Deg2Rad;
+            float lean = (Mathf.Lerp(leanGlideDeg, leanPullDeg, s) + (J ? (jumpOnWater ? Mathf.Clamp(leanWant - rootRoll, 0f, jumpWaterLeanMaxDeg) : 0f) : Mathf.Clamp(leanWant - rootRoll, 0f, Mathf.Lerp(leanBodyMaxDeg, stretchBodyMaxDeg, sw))) * Mathf.Abs(sideS)) * Mathf.Deg2Rad;   // feel/skier-pose: fades to ~0 mid edge change; some lean on the water with jump gear
             LeanTotalDeg = rootRoll + lean * Mathf.Rad2Deg;
             Vector3 leanUp = (up * Mathf.Cos(lean) + away * Mathf.Sin(lean)).normalized;
             if (sw > 0f)
