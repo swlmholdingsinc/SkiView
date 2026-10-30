@@ -30,7 +30,7 @@ public static class SkiViewBuilderAudio
         "skier_trick_spin_360_01", "skier_trick_spin_360_02", "skier_trick_wake_pop_01", "skier_trick_wake_pop_02", "skier_trick_wake_land_01", "skier_trick_wake_land_02",
         "skier_trick_toestrap_on", "skier_trick_toehold_rope_01", "skier_trick_toehold_rope_02", "skier_trick_flip_whoosh_01", "skier_trick_flip_whoosh_02",
         "skier_trick_flip_land_splash", "skier_trick_fall_splash_01", "skier_trick_fall_splash_02",
-        "ui_clinic_lesson_start", "ui_clinic_pass", "ui_clinic_fail", "ui_clinic_tip_chime", "ui_beatwade_rung_unlock", "ui_beatwade_near_miss", "ui_beatwade_win",
+        "ui_clinic_lesson_start", "ui_clinic_pass", "ui_clinic_fail", "ui_clinic_tip_chime", "ui_beatscott_rung_unlock", "ui_beatscott_near_miss", "ui_beatscott_win",
         "ui_ski_unlock", "ui_personal_best", "ui_results_sting_alt",
         "ui_trick_tally_tick", "ui_trick_timer_beep", "ui_trick_timer_final", "ui_trick_score_chime", "ui_trick_score_chime_big", "ui_trick_result_sting",
         "music_title_loop",
