@@ -7,7 +7,8 @@ namespace SkiView
     /// One tuner for skier poses. Footage estimates (±5–10°), not locked constants in the IK:
     /// slalom Will Asher (Hb3kTRenFAA, 154–192 s); jumps Freddy Krueger, Ryan Dodd, Jacinta Carroll.
     /// Knee angles are included degrees (180 = straight). Lean is degrees from vertical.
-    /// Scott: buoys 1, 3, 5 reach toward the boat; 2, 4, 6 reach away. Hookup uses the buoy just taken.
+    /// #125 rule: at EVERY buoy the reach goes toward the boat and down the course. Odd and even buoys alternate only the
+    /// course side and the handle hand (outside hand releases). Hookup uses the buoy just taken.
     /// </summary>
     [Serializable]
     public class SkierPoses

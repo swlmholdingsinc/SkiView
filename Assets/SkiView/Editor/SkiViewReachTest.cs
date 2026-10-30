@@ -50,4 +50,29 @@ public static class SkiViewReachTest
         Debug.Log($"[ReachTest] {fails} failure(s)");
         if (Application.isBatchMode) EditorApplication.Exit(fails == 0 ? 0 : 3);
     }
+
+    /// <summary>PR #8 only (not in skier-realism-125): the reach also goes DOWN the course at every buoy, odd and even.
+    /// Course-forward is -Z (SkierSim.BuoyZ decreases). Skier at each ball (BuoyX, BuoyZ); boat ahead on the centreline.
+    /// Run: unity_run.sh SkiViewReachTest.RunDownCourse</summary>
+    public static void RunDownCourse()
+    {
+        int fails = 0;
+        void Check(bool ok, string what)
+        {
+            Debug.Log($"[ReachDownCourse] {(ok ? "PASS" : "FAIL")} {what}");
+            if (!ok) fails++;
+        }
+        Vector3 courseFwd = Vector3.back;
+        foreach (float ahead in new[] { 8f, 15f, 22f })
+            for (int b = 1; b <= 6; b++)
+            {
+                Vector3 skier = new Vector3(SkierSim.BuoyX(b - 1), 0f, SkierSim.BuoyZ(b - 1));
+                Vector3 boat = new Vector3(0f, 0f, SkierSim.BuoyZ(b - 1)) + courseFwd * ahead;
+                Vector3 dir = SkierPoses.FreeArmDir(boat - skier, b);
+                Check(Vector3.Dot(dir, courseFwd) > 0f, $"buoy {b} ({((b & 1) == 1 ? "odd" : "even")}), boat {ahead} m ahead: reach has a down-course component ({Vector3.Dot(dir, courseFwd):0.00})");
+                Check(Mathf.Sign(dir.x) == -Mathf.Sign(skier.x), $"buoy {b}: reach crosses toward the centreline (boat side)");
+            }
+        Debug.Log($"[ReachDownCourse] {fails} failure(s)");
+        if (Application.isBatchMode) EditorApplication.Exit(fails == 0 ? 0 : 3);
+    }
 }

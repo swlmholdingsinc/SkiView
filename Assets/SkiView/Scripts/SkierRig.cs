@@ -8,7 +8,8 @@ namespace SkiView
     /// 1. A manual PlayableGraph of upper-body clips (idle breathing, a bit of "Pulling A Rope"), or "Treading Water" after a fall.
     /// 2. Stance from SkierPoses (footage targets): a straight sideways board on the pull, knees and handle per phase.
     ///    Feet IK to the FrontBoot / RearBoot attaches, so the rear boot's 12° yaw is the rear foot's aim.
-    /// 3. Arms to a handle at the hip. On the reach, buoys 1/3/5 send the free arm toward the boat and 2/4/6 send it away.
+    /// 3. Arms to a handle at the hip. On the reach, every buoy reaches toward the boat and down the course; odd/even buoys
+    ///    alternate only the course side and which hand holds the handle (the outside hand releases).
     /// Manual time, so it also evaluates in the headless editor capture.</summary>
     [ExecuteAlways]
     public class SkierRig : MonoBehaviour
@@ -211,7 +212,7 @@ namespace SkiView
             LeanTotalDeg = rootRoll + extra;
             Vector3 leanUp = (up * Mathf.Cos(lean) + away * Mathf.Sin(lean)).normalized;
             if (J && jumpPitchDeg != 0f) leanUp = Quaternion.AngleAxis(jumpPitchDeg, right) * leanUp;
-            // shoulders open toward the boat on the pull; on the reach they follow the buoy (odd toward, even away) and finish last
+            // shoulders open toward the boat on the pull; on the reach they open toward the boat and down the course at every buoy (odd/even only flips the side) and finish last
             float open = Mathf.Clamp(ph.shoulderToBoat, -1f, 1f);
             float yawWant = (open >= 0f ? yawToBoat : -yawToBoat) * Mathf.Abs(open);
             shoulderYaw = dt <= 0f ? yawWant : Mathf.MoveTowards(shoulderYaw, yawWant, poses.shoulderYawRate * dt);
