@@ -41,6 +41,12 @@ namespace SkiView.UI
         public void OpenRecords(SkiViewRecords.Discipline d, string crumb = null)
         {
             if (recordsMenu == null) return;
+            if (SkiViewPlayer.BlocksRun)
+            {
+                nameThen = () => OpenRecords(d, crumb);
+                OpenPlayerName(true);
+                return;
+            }
             recordsTab = (int)d;
             if (recordsCrumb != null && !string.IsNullOrEmpty(crumb)) recordsCrumb.text = crumb;
             Open(recordsMenu);

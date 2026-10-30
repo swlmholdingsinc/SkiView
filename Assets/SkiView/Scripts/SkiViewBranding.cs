@@ -35,15 +35,18 @@ namespace SkiView
         public static Flags Flag => F.flags;
         /// <summary>Likeness mesh/path gate (Wade look). Logos/title branding use Flag.wadeBrandingEnabled separately.</summary>
         public static bool Wade => Flag.wadeLikenessEnabled;
-        static readonly Block DEF = new Block { title = "SKI VIEW", skierDisplayName = "SCOTT", subtitle = "SLALOM / JUMP / FREE RIDE", badge = "SV", productName = "SKI VIEW", storeName = "Ski View", greyboxTag = "", colors = new Colors { accent = "#2F7DF6" } };
+        static readonly Block DEF = new Block { title = "SKI VIEW", skierDisplayName = "", subtitle = "SLALOM / JUMP / FREE RIDE", badge = "SV", productName = "SKI VIEW", storeName = "Ski View", greyboxTag = "", colors = new Colors { accent = "#2F7DF6" } };
         static string Pick(Func<Block, string> g) { string s = g(F.wade); return string.IsNullOrEmpty(s) ? (g(DEF) ?? "") : s; }
 
-        public static string Title => Pick(b => b.title);
-        public static string SkierName => Pick(b => b.skierDisplayName);
+        /// <summary>This Unity product always shows SKI VIEW. Branding flags and branding.json cannot rename it.</summary>
+        public const string LockedProductName = "SKI VIEW";
+        public static string Title => LockedProductName;
+        /// <summary>On-screen skier name is the saved player name. Empty until they enter one. Never a Wade or Felderpuss fallback.</summary>
+        public static string SkierName => SkiViewPlayer.Name ?? "";
         public static string Subtitle => Pick(b => b.subtitle);
         public static string Badge => Pick(b => b.badge);
-        public static string ProductName => Pick(b => b.productName);
-        public static string StoreName => Pick(b => b.storeName);
+        public static string ProductName => LockedProductName;
+        public static string StoreName => "Ski View";
         public static string GreyboxTag => Pick(b => b.greyboxTag);
         public static string Accent => Pick(b => b.colors?.accent);
         public static string LogoPath(string slot)

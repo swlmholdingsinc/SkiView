@@ -36,7 +36,7 @@ namespace SkiView
                 LastRecord = SkiViewRecords.Miss(SkiViewRecords.Discipline.Slalom);
                 return;
             }
-            LastRecord = SkiViewRecords.Submit(SkiViewRecords.Discipline.Slalom, final.score, final.detail, final.rope, final.buoys);
+            PublishRecord(SkiViewRecords.Submit(SkiViewRecords.Discipline.Slalom, final.score, final.detail, final.rope, final.buoys));
         }
 
         void NoteJumpRecord()
@@ -44,14 +44,30 @@ namespace SkiView
             if (!RecordsAllowed()) return;
             float mph = jumpBoatKmh / 1.609344f;
             string detail = $"{jumpBoatKmh:0} km/h · {mph:0.0} mph · {rampHeight:0.00} m ramp · 23 m rope";
-            LastRecord = SkiViewRecords.Submit(SkiViewRecords.Discipline.Jump, JumpBest, detail);
+            PublishRecord(SkiViewRecords.Submit(SkiViewRecords.Discipline.Jump, JumpBest, detail));
         }
 
         void NoteTrickRecord()
         {
             if (!RecordsAllowed()) return;
             string detail = $"{trickBoatKmh:0} km/h · {trickRopeM:0.0} m" + (TrickRoundOver ? " · round over" : " · 2 passes");
-            LastRecord = SkiViewRecords.Submit(SkiViewRecords.Discipline.Trick, TrickScore, detail);
+            PublishRecord(SkiViewRecords.Submit(SkiViewRecords.Discipline.Trick, TrickScore, detail));
+        }
+
+        /// <summary>A row held for a missing name opens the name screen. The board is written after that name is saved.</summary>
+        void PublishRecord(SkiViewRecords.Place place)
+        {
+            LastRecord = place;
+            if (!place.pending) return;
+            var ui = UI.SkiViewUI.Instance;
+            if (ui != null && !ui.PlayerNameOpen) ui.OpenPlayerName(true);
+        }
+
+        /// <summary>Write rows that waited for the name screen. LastRecord becomes the last row that landed.</summary>
+        public void CommitPendingRecord()
+        {
+            if (!SkiViewRecords.HasPending) return;
+            LastRecord = SkiViewRecords.CommitPending();
         }
 
         static bool RecordsAllowed() => SkiViewRecords.AllowRecord(SkiViewClinic.Active, TutorialBlocksRecords());

@@ -24,6 +24,12 @@
 
 /* ---- pass 19: 16:9 overflow fix - menu bodies shrink to the safe box and scroll inside it (Controls / Credits ran off the bottom) ---- */
 .sv-menu > .sv-safe { flex-direction: column; }
+.sv-menu .sv-name { width: 100%; max-width: 920px; align-self: center; margin-top: 48px; padding: 8px 8px 28px 28px; flex-shrink: 0; }
+.sv-name__field { min-height: 88px; height: 88px; margin-top: 8px; margin-bottom: 8px; font-size: 40px;
+    background-color: rgba(7, 13, 21, 0.55); color: var(--sv-text); border-width: 2px; border-color: var(--sv-line-strong);
+    border-radius: var(--sv-r-btn); -unity-font-definition: var(--sv-font-cond-700); }
+.sv-name__field .unity-base-text-field__input { min-height: 72px; font-size: 40px; color: var(--sv-text); padding: 0 16px; }
+.sv-name__go { min-height: 88px; height: 88px; margin-top: 16px; }
 .sv-body { flex-shrink: 1; min-height: 0; }
 .sv-panel { flex-shrink: 1; min-height: 0; }
 .sv-menu .sv-plate--card { min-height: 0; flex-shrink: 1; }
@@ -94,6 +100,7 @@
 .sv-tut19__dot--done { background-color: var(--sv-text-2); }
 .sv-tut19__dot--on { background-color: var(--sv-accent); }
 .sv-tut19__text { white-space: normal; margin: 6px 0 12px; }
+.sv-tut19__name { -unity-font-definition: var(--sv-font-body); }
 .sv-tut19__keys { flex-direction: row; align-items: center; flex-wrap: wrap; }
 .sv-tut19__kl { margin: 0 22px 0 6px; color: var(--sv-text-2); }
 .sv-tut19__prog { margin-top: 10px; color: var(--sv-text-2); }
