@@ -11,7 +11,7 @@ namespace SkiView.UI
         public static bool Ready { get; private set; }
         UIDocument doc; VisualElement root, screen, art, bar, fill; Label crumb, name, region, blurb, stat, tip, sub; VisualElement acts;
         string shownKey, mode; float tipAt; int tipIdx = -1; readonly System.Collections.Generic.List<int> bag = new System.Collections.Generic.List<int>();
-        long lastGot; float lastT, speed; string preview;
+        long lastGot; float lastT, speed; string preview; float shownPct;   // perf/webgl-load: eased real progress (never runs backwards within a load)
 
         static readonly string[,] TIPS =
         {
@@ -81,8 +81,11 @@ namespace SkiView.UI
                 if (m == "pack") { B("SKI AT SKI VIEW INSTEAD", false, () => { SkiViewBoot.CancelLoad(); }); B("CANCEL", false, () => SkiViewBoot.CancelLoad()); }
                 if (m == "failed") { B("RETRY", true, () => { SkiViewBoot.ClearFailed(); SkiViewBoot.Load(key); }); B("BACK TO LAKES", false, () => { SkiViewBoot.ClearFailed(); SkiViewUI.Instance?.OpenLakes(); }); }
                 if (m == "offline") { B("SKI AT SKI VIEW", true, () => { SkiViewBoot.ClearFailed(); SkiViewBoot.Load(SkiViewBoot.SceneKey("skiview")); }); B("BACK TO LAKES", false, () => { SkiViewBoot.ClearFailed(); SkiViewUI.Instance?.OpenLakes(); }); }
-                tipAt = 0f; lastGot = got; lastT = Time.unscaledTime;
+                tipAt = 0f; lastGot = got; lastT = Time.unscaledTime; shownPct = 0f;
             }
+            // real progress from SkiViewBoot (Addressables init / download / LoadSceneAsync PercentComplete), eased so it doesn't jump
+            shownPct = preview != null ? pct : Mathf.Max(shownPct, Mathf.MoveTowards(shownPct, Mathf.Clamp01(pct), Time.unscaledDeltaTime * 1.5f));
+            pct = shownPct;
             float dt = Time.unscaledTime - lastT; if (preview == null && dt > 0.5f) { speed = Mathf.Lerp(speed, (got - lastGot) / dt, 0.5f); lastGot = got; lastT = Time.unscaledTime; }
             fill.style.width = Length.Percent(Mathf.Clamp01(pct) * 100f);
             if (m == "loading") { stat.text = "LOADING " + (lc.name ?? "") + " · " + Mathf.RoundToInt(pct * 100f) + "%"; sub.text = ""; }
