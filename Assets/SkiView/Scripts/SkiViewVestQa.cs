@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace SkiView
 {
@@ -21,17 +23,60 @@ namespace SkiView
         string appliedKey = "";
         float nextScan;
         bool framed;
+        string state = "init";
+        string scanError = "";
         readonly List<Material> spawned = new List<Material>();
+        static SkiViewVestQa inst;
+        static string loadedScene = "";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            var active = SceneManager.GetActiveScene();
+            if (active.IsValid()) loadedScene = active.name;
+            Ensure();
+        }
+
+        static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            loadedScene = scene.name;
+            if (inst != null) inst.Rebind(scene.name);
+            Ensure();
+        }
+
+        static void Ensure()
         {
             if (!Application.isPlaying) return;
             var args = ReadArgs();
             if (!SkiViewVestQaLogic.Requested(Arg(args, "vestqa"), Arg(args, "vestshade"), Arg(args, "pose"), Arg(args, "vestid"), Arg(args, "vestsub")))
                 return;
+            if (inst != null) return;
             var go = new GameObject("SkiViewVestQa");
-            go.AddComponent<SkiViewVestQa>();
+            DontDestroyOnLoad(go);
+            inst = go.AddComponent<SkiViewVestQa>();
+            Debug.Log("[VESTQA] persistent host scene=" + loadedScene);
+        }
+
+        void Awake()
+        {
+            if (inst != null && inst != this) { Destroy(gameObject); return; }
+            inst = this;
+            state = "awake";
+        }
+
+        void Rebind(string sceneName)
+        {
+            live.Clear();
+            signature = "";
+            appliedKey = "";
+            nextScan = 0f;
+            framed = false;
+            scanError = "";
+            state = "rebind " + sceneName;
+            for (int i = 0; i < spawned.Count; i++) if (spawned[i] != null) Destroy(spawned[i]);
+            spawned.Clear();
         }
 
         static Dictionary<string, string> ReadArgs()
@@ -54,19 +99,37 @@ namespace SkiView
         {
             for (int i = 0; i < spawned.Count; i++) if (spawned[i] != null) Destroy(spawned[i]);
             spawned.Clear();
+            if (inst == this) inst = null;
         }
 
         void LateUpdate()
         {
             var args = ReadArgs();
             var game = FindFirstObjectByType<SkiViewGame>();
-            if (game == null || game.skier == null) return;
+            if (game == null) { state = "waiting for game"; return; }
+            if (game.skier == null) { state = "waiting for skier"; return; }
             if (Time.unscaledTime >= nextScan) { nextScan = Time.unscaledTime + 0.5f; Scan(game, args); }
             ApplyPose(game, args);
             ApplyShade(args);
         }
 
         void Scan(SkiViewGame game, Dictionary<string, string> args)
+        {
+            try
+            {
+                ScanBody(game, args);
+                scanError = "";
+                state = "scanned";
+            }
+            catch (Exception ex)
+            {
+                scanError = ex.GetType().Name + ": " + ex.Message;
+                state = "scan error";
+                Debug.LogError("[VESTQA] " + scanError);
+            }
+        }
+
+        void ScanBody(SkiViewGame game, Dictionary<string, string> args)
         {
             var found = new List<Renderer>();
             var seen = new HashSet<int>();
@@ -253,13 +316,14 @@ namespace SkiView
 
         void OnGUI()
         {
-            if (live.Count == 0) return;
             var args = ReadArgs();
             float roll = SkiViewVestQaLogic.PoseRollDegrees(Arg(args, "pose"));
             var sb = new StringBuilder();
-            sb.Append("VEST QA  shade=").Append(SkiViewVestQaLogic.Shade(Arg(args, "vestshade")));
-            if (!float.IsNaN(roll)) sb.Append("  poseRoll=").Append(roll.ToString("0"));
+            sb.Append(SkiViewVestQaLogic.Heartbeat(live.Count, loadedScene, state, scanError));
+            sb.Append(" shade=").Append(SkiViewVestQaLogic.Shade(Arg(args, "vestshade")));
+            if (!float.IsNaN(roll)) sb.Append(" poseRoll=").Append(roll.ToString("0"));
             sb.Append('\n');
+            if (live.Count == 0) sb.Append("renderers=0\n");
             for (int i = 0; i < live.Count; i++) sb.Append(SkiViewVestQaLogic.LegendLine(live[i].entry)).Append('\n');
             var style = new GUIStyle(GUI.skin.label) { fontSize = 13, wordWrap = true, normal = { textColor = Color.white } };
             const float w = 460f;

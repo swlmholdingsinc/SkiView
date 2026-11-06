@@ -60,6 +60,11 @@ public static class SkiViewVestQaTest
         string line = SkiViewVestQaLogic.LegendLine(rows[1]);
         Check(line.Contains("id=1") && line.Contains("role=vest") && line.Contains("sub=1") && line.Contains("tris=1791") && line.Contains("M_125_Vest") && line.Contains("Vest_LOD0"), "legend names mesh and material");
 
+        string beat = SkiViewVestQaLogic.Heartbeat(0, "skiview", "waiting for skier", null);
+        Check(beat.Length > 0 && beat.Contains("renderers=0") && beat.Contains("scene=skiview") && beat.Contains("waiting for skier"), "zero renderers still produce a heartbeat");
+        string err = SkiViewVestQaLogic.Heartbeat(0, "", "scan error", "NullReferenceException: skier");
+        Check(err.Contains("renderers=0") && err.Contains("scene=(none)") && err.Contains("error=NullReferenceException"), "init and error stay visible");
+
         Debug.Log("[VestQaTest] " + fails + " failure(s)");
         if (Application.isBatchMode) EditorApplication.Exit(fails == 0 ? 0 : 3);
     }

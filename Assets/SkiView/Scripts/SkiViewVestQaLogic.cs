@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 
 namespace SkiView
 {
@@ -121,6 +122,17 @@ namespace SkiView
                     map[k] = v;
             }
             return map;
+        }
+
+        /// <summary>Always non-empty. A count of zero still says renderers=0.</summary>
+        public static string Heartbeat(int rendererCount, string loadedScene, string state, string error)
+        {
+            var sb = new StringBuilder();
+            sb.Append("VEST QA active renderers=").Append(rendererCount.ToString(CultureInfo.InvariantCulture));
+            sb.Append(" scene=").Append(string.IsNullOrEmpty(loadedScene) ? "(none)" : loadedScene);
+            sb.Append(" state=").Append(string.IsNullOrEmpty(state) ? "init" : state);
+            if (!string.IsNullOrEmpty(error)) sb.Append(" error=").Append(error);
+            return sb.ToString();
         }
 
         public static string LegendLine(Entry e)
