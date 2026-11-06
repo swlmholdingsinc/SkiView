@@ -82,12 +82,31 @@ public static class SkiViewBuild
         var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = SkiViewBuilder.BuildScenes(), locationPathName = outp, target = BuildTarget.Android, options = BuildOptions.None });
         Report(release ? "Android APK (IL2CPP arm64, cutline upload key, all content inside)" : "Android APK (IL2CPP arm64, debug keystore, all content inside)", r, outp);
         SkiViewContent.BundleReport();
-        // 2) Play Store AAB: split binary + Play Asset Delivery (core install-time, each other lake an on-demand pack)
+        // 2) Play Store AAB. r6b10_rel (555 MB, packs present) built Addressables inside BuildPlayer
+        // (AddressablesPlayerBuildProcessor.DefaultBuild) and the log then has
+        // "Copying user files .../AddressablesAssetPack" plus "Modifying property: assetPacks".
+        // r6b16 called BuildPlayerContent first and set DoNotBuildWithPlayer; BuildPlayer did not enter
+        // DefaultBuild, those Gradle lines were absent, and the AAB kept only UnityDataAssetPack.
         EditorUserBuildSettings.buildAppBundle = true; PlayerSettings.Android.splitApplicationBinary = true;
+        SkiViewContent.SelectBuilder(true);
         string aab = Path.Combine(Root, "Builds/Android", release ? "SkiView-release.aab" : "SkiView-N1-greybox.aab");
         try
         {
             var r2 = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = SkiViewBuilder.BuildScenes(), locationPathName = aab, target = BuildTarget.Android, options = BuildOptions.None });
+            if (r2.summary.result == BuildResult.Succeeded)
+            {
+                string gradle = Path.Combine(Root, "Library/Bee/Android/Prj/IL2CPP/Gradle/settings.gradle");
+                var missing = SkiViewAndroidPadGate.MissingEntries(SkiViewAndroidPadGate.ReadZipEntryNames(aab));
+                if (File.Exists(gradle))
+                    foreach (var g in SkiViewAndroidPadGate.MissingGradleIncludes(File.ReadAllText(gradle)))
+                        missing.Add("settings.gradle include " + g);
+                if (missing.Count > 0)
+                {
+                    Debug.LogError("[SkiView] AAB is missing Play Asset Delivery payload (" + missing.Count + "):\n  " + string.Join("\n  ", missing.ToArray()));
+                    if (Application.isBatchMode) EditorApplication.Exit(4);
+                    throw new System.InvalidOperationException("AAB PAD payload missing");
+                }
+            }
             Report(release ? "Android AAB release (PAD + cutline upload key, com.swlm.cutline)" : "Android AAB (PAD: core install-time, lakes on-demand)", r2, aab);
         }
         finally { EditorUserBuildSettings.buildAppBundle = false; PlayerSettings.Android.splitApplicationBinary = false; SkiViewContent.SelectBuilder(false); }
