@@ -1,0 +1,307 @@
+--- SkiViewBuild.cs	2026-11-06 21:54:33.961777940 +0000
++++ SkiViewBuild.cs	2026-11-06 21:55:30.533896882 +0000
+@@ -135,24 +135,34 @@
+         Report(release ? "Android APK (IL2CPP arm64, cutline upload key, all content inside)" : "Android APK (IL2CPP arm64, debug keystore, all content inside)", r, outp);
+         SkiViewContent.BundleReport();
+         }
+-        // 2) Play Store AAB: split binary + Play Asset Delivery (core install-time, each other lake an on-demand pack)
++        // 2) Play Store AAB. r6b10_rel (555 MB, packs present) built Addressables inside BuildPlayer
++        // (AddressablesPlayerBuildProcessor.DefaultBuild) and the log then has
++        // "Copying user files .../AddressablesAssetPack" plus "Modifying property: assetPacks".
++        // r6b16 called BuildPlayerContent first and set DoNotBuildWithPlayer; BuildPlayer did not enter
++        // DefaultBuild, those Gradle lines were absent, and the AAB kept only UnityDataAssetPack.
+         EditorUserBuildSettings.buildAppBundle = true; PlayerSettings.Android.splitApplicationBinary = true;
+-        SkiViewContent.SelectBuilder(true);   // r6b16: pre-generate CustomAssetPacksData.json via BuildPlayerContent() BEFORE PlayAssetDeliveryModifyProjectScript.Setup() runs!
+-        var aaSettings = UnityEditor.AddressableAssets.AddressableAssetSettingsDefaultObject.Settings;
+-        UnityEditor.AddressableAssets.Settings.AddressableAssetSettings.BuildPlayerContent(out var padRes);
+-        if (!string.IsNullOrEmpty(padRes?.Error)) throw new Exception("PAD Addressables BuildPlayerContent failed: " + padRes.Error);
+-        if (aaSettings != null) { aaSettings.BuildAddressablesWithPlayerBuild = UnityEditor.AddressableAssets.Settings.AddressableAssetSettings.PlayerBuildOption.DoNotBuildWithPlayer; EditorUtility.SetDirty(aaSettings); AssetDatabase.SaveAssets(); }
++        SkiViewContent.SelectBuilder(true);
+         string aab = Path.Combine(Root, "Builds/Android", release ? "SkiView-release.aab" : "SkiView-N1-greybox.aab");
+         try
+         {
+             var r2 = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = SkiViewBuilder.BuildScenes(), locationPathName = aab, target = BuildTarget.Android, options = BuildOptions.None });
++            if (r2.summary.result == BuildResult.Succeeded)
++            {
++                string gradle = Path.Combine(Root, "Library/Bee/Android/Prj/IL2CPP/Gradle/settings.gradle");
++                var missing = SkiViewAndroidPadGate.MissingEntries(SkiViewAndroidPadGate.ReadZipEntryNames(aab));
++                if (File.Exists(gradle))
++                    foreach (var g in SkiViewAndroidPadGate.MissingGradleIncludes(File.ReadAllText(gradle)))
++                        missing.Add("settings.gradle include " + g);
++                if (missing.Count > 0)
++                {
++                    Debug.LogError("[SkiView] AAB is missing Play Asset Delivery payload (" + missing.Count + "):\n  " + string.Join("\n  ", missing.ToArray()));
++                    if (Application.isBatchMode) EditorApplication.Exit(4);
++                    throw new System.InvalidOperationException("AAB PAD payload missing");
++                }
++            }
+             Report(release ? "Android AAB release (PAD + cutline upload key, com.swlm.cutline)" : "Android AAB (PAD: core install-time, lakes on-demand)", r2, aab);
+         }
+-        finally
+-        {
+-            if (aaSettings != null) { aaSettings.BuildAddressablesWithPlayerBuild = UnityEditor.AddressableAssets.Settings.AddressableAssetSettings.PlayerBuildOption.BuildWithPlayer; EditorUtility.SetDirty(aaSettings); AssetDatabase.SaveAssets(); }
+-            EditorUserBuildSettings.buildAppBundle = false; PlayerSettings.Android.splitApplicationBinary = false; SkiViewContent.SelectBuilder(false);
+-        }
++        finally { EditorUserBuildSettings.buildAppBundle = false; PlayerSettings.Android.splitApplicationBinary = false; SkiViewContent.SelectBuilder(false); }
+     }
+ 
+     public static void WebGL()
+--- SkiViewAndroidPadGate.cs	2026-11-06 21:54:33.969777955 +0000
++++ SkiViewAndroidPadGate.cs	2026-11-06 21:54:33.969777955 +0000
+@@ -0,0 +1,144 @@
++using System;
++using System.Collections.Generic;
++using System.IO;
++using System.Text;
++
++/// <summary>
++/// Fail-fast check for the Play Asset Delivery payload that r6b10 packed and r6b16 omitted.
++/// No signing, no upload. Entry names only.
++/// </summary>
++public static class SkiViewAndroidPadGate
++{
++    public static readonly string[] LakeIds =
++    {
++        "harrowpond", "gulfwind", "saltwhite", "saguaro", "tallpine",
++        "heronmarsh", "villaserena", "cedarbend", "marrowind"
++    };
++
++    public static readonly string[] RequiredFragments =
++    {
++        "AddressablesAssetPack/assets/aa/catalog.bin",
++        "AddressablesAssetPack/assets/aa/settings.json",
++        "AddressablesAssetPack/assets/aa/CustomAssetPacksData.json",
++        "AddressablesAssetPack/assets/aa/Android/core_home_scenes_all.bundle",
++        "AddressablesAssetPack/assets/aa/Android/core_shared_assets_all.bundle"
++    };
++
++    public static List<string> MissingEntries(IEnumerable<string> zipEntries)
++    {
++        var names = new List<string>();
++        if (zipEntries != null)
++            foreach (var e in zipEntries)
++                if (!string.IsNullOrEmpty(e)) names.Add(e.Replace('\\', '/'));
++        var missing = new List<string>();
++        foreach (var frag in RequiredFragments)
++            if (!Contains(names, frag)) missing.Add(frag);
++        foreach (var id in LakeIds)
++        {
++            string frag = "Lake_" + id + "/assets/aa/Android/lake_" + id + "_scenes_all.bundle";
++            if (!Contains(names, frag)) missing.Add(frag);
++        }
++        return missing;
++    }
++
++    public static List<string> MissingGradleIncludes(string settingsGradle)
++    {
++        var missing = new List<string>();
++        string text = settingsGradle ?? "";
++        if (text.IndexOf("AddressablesAssetPack", StringComparison.Ordinal) < 0) missing.Add("AddressablesAssetPack");
++        foreach (var id in LakeIds)
++            if (text.IndexOf("Lake_" + id, StringComparison.Ordinal) < 0) missing.Add("Lake_" + id);
++        return missing;
++    }
++
++    static bool Contains(List<string> names, string frag)
++    {
++        for (int i = 0; i < names.Count; i++)
++            if (names[i].IndexOf(frag, StringComparison.OrdinalIgnoreCase) >= 0) return true;
++        return false;
++    }
++
++    public static List<string> ReadZipEntryNames(string path)
++    {
++        using (var fs = File.OpenRead(path))
++        {
++            if (fs.Length < 22) throw new InvalidDataException("zip too small: " + path);
++            int window = (int)Math.Min(fs.Length, 22 + 65535);
++            var tail = new byte[window];
++            fs.Seek(-window, SeekOrigin.End);
++            ReadExact(fs, tail, window);
++            int eocd = -1;
++            for (int i = tail.Length - 22; i >= 0; i--)
++            {
++                if (tail[i] == 0x50 && tail[i + 1] == 0x4b && tail[i + 2] == 0x05 && tail[i + 3] == 0x06) { eocd = i; break; }
++            }
++            if (eocd < 0) throw new InvalidDataException("zip EOCD not found: " + path);
++            int cdSize = BitConverter.ToInt32(tail, eocd + 12);
++            int cdOff = BitConverter.ToInt32(tail, eocd + 16);
++            if (cdSize < 0 || cdOff < 0 || cdOff + cdSize > fs.Length) throw new InvalidDataException("zip central directory out of range: " + path);
++            var cd = new byte[cdSize];
++            fs.Seek(cdOff, SeekOrigin.Begin);
++            ReadExact(fs, cd, cdSize);
++            var names = new List<string>();
++            int p = 0;
++            while (p + 46 <= cd.Length)
++            {
++                if (cd[p] != 0x50 || cd[p + 1] != 0x4b || cd[p + 2] != 0x01 || cd[p + 3] != 0x02) break;
++                int nameLen = BitConverter.ToUInt16(cd, p + 28);
++                int extra = BitConverter.ToUInt16(cd, p + 30);
++                int comment = BitConverter.ToUInt16(cd, p + 32);
++                if (p + 46 + nameLen > cd.Length) break;
++                names.Add(Encoding.UTF8.GetString(cd, p + 46, nameLen));
++                p += 46 + nameLen + extra + comment;
++            }
++            return names;
++        }
++    }
++
++    static void ReadExact(Stream s, byte[] buf, int n)
++    {
++        int o = 0;
++        while (o < n)
++        {
++            int r = s.Read(buf, o, n - o);
++            if (r <= 0) throw new EndOfStreamException();
++            o += r;
++        }
++    }
++
++    /// <summary>r6b16 inventory must fail. r6b10 pack paths must pass. Returns the failure count.</summary>
++    public static int CheckFixtures()
++    {
++        int fails = 0;
++        var bad = new[]
++        {
++            "BUNDLE-METADATA/", "BundleConfig.pb", "META-INF/", "UnityDataAssetPack/", "base/",
++            "UnityDataAssetPack/assets/aa/catalog.hash"
++        };
++        var badMissing = MissingEntries(bad);
++        if (badMissing.Count < RequiredFragments.Length + LakeIds.Length) fails++;
++        if (MissingEntries(bad).Count != badMissing.Count) fails++;
++
++        var good = new List<string>
++        {
++            "base/", "UnityDataAssetPack/",
++            "AddressablesAssetPack/assets/aa/catalog.bin",
++            "AddressablesAssetPack/assets/aa/settings.json",
++            "AddressablesAssetPack/assets/aa/CustomAssetPacksData.json",
++            "AddressablesAssetPack/assets/aa/Android/core_home_scenes_all.bundle",
++            "AddressablesAssetPack/assets/aa/Android/core_shared_assets_all.bundle"
++        };
++        foreach (var id in LakeIds)
++            good.Add("Lake_" + id + "/assets/aa/Android/lake_" + id + "_scenes_all.bundle");
++        if (MissingEntries(good).Count != 0) fails++;
++        if (MissingEntries(good).Count != MissingEntries(good).Count) fails++;
++
++        string gradleBad = "include ':launcher'\ninclude ':unityLibrary'\ninclude ':UnityDataAssetPack'\n";
++        if (MissingGradleIncludes(gradleBad).Count != 1 + LakeIds.Length) fails++;
++        var gradleGood = new StringBuilder(gradleBad);
++        gradleGood.Append("include ':AddressablesAssetPack'\n");
++        foreach (var id in LakeIds) gradleGood.Append("include ':Lake_").Append(id).Append("'\n");
++        if (MissingGradleIncludes(gradleGood.ToString()).Count != 0) fails++;
++        return fails;
++    }
++}
+--- SkiViewAndroidPadGateTest.cs	2026-11-06 21:54:33.969777955 +0000
++++ SkiViewAndroidPadGateTest.cs	2026-11-06 21:54:33.969777955 +0000
+@@ -0,0 +1,109 @@
++using System.IO;
++using System.Text;
++using UnityEditor;
++using UnityEngine;
++
++/// <summary>
++/// Gate regression: the r6b16 AAB shape (base + UnityDataAssetPack + catalog.hash only) fails,
++/// and the r6b10 pack paths pass. Also round-trips those names through a zip central directory.
++/// Run: unity_run.sh SkiViewAndroidPadGateTest.Run
++/// </summary>
++public static class SkiViewAndroidPadGateTest
++{
++    public static void Run()
++    {
++        int fails = SkiViewAndroidPadGate.CheckFixtures();
++        Debug.Log($"[PadGate] fixture failures {fails}");
++        string zip = Path.Combine(Path.GetTempPath(), "skiview-pad-gate.zip");
++        try
++        {
++            WriteStoreZip(zip, new[]
++            {
++                "AddressablesAssetPack/assets/aa/catalog.bin",
++                "AddressablesAssetPack/assets/aa/settings.json",
++                "AddressablesAssetPack/assets/aa/CustomAssetPacksData.json",
++                "AddressablesAssetPack/assets/aa/Android/core_home_scenes_all.bundle",
++                "AddressablesAssetPack/assets/aa/Android/core_shared_assets_all.bundle",
++                "UnityDataAssetPack/assets/aa/catalog.hash"
++            });
++            var names = SkiViewAndroidPadGate.ReadZipEntryNames(zip);
++            var missing = SkiViewAndroidPadGate.MissingEntries(names);
++            int lakes = 0;
++            for (int i = 0; i < missing.Count; i++) if (missing[i].StartsWith("Lake_")) lakes++;
++            if (lakes != SkiViewAndroidPadGate.LakeIds.Length || missing.Count != lakes)
++            {
++                Debug.LogError("[PadGate] FAIL zip round-trip missing=" + string.Join(", ", missing.ToArray()));
++                fails++;
++            }
++            else Debug.Log("[PadGate] PASS zip round-trip kept catalog.bin and still requires the nine lake packs");
++
++            WriteStoreZip(zip, new[] { "UnityDataAssetPack/assets/aa/catalog.hash", "base/AndroidManifest.xml" });
++            names = SkiViewAndroidPadGate.ReadZipEntryNames(zip);
++            missing = SkiViewAndroidPadGate.MissingEntries(names);
++            if (missing.Count < 5)
++            {
++                Debug.LogError("[PadGate] FAIL r6b16-shaped zip was accepted");
++                fails++;
++            }
++            else Debug.Log("[PadGate] PASS r6b16-shaped zip rejected (" + missing.Count + " missing)");
++        }
++        finally
++        {
++            if (File.Exists(zip)) File.Delete(zip);
++        }
++        Debug.Log($"[PadGate] {fails} failure(s)");
++        if (Application.isBatchMode) EditorApplication.Exit(fails == 0 ? 0 : 3);
++    }
++
++    static void WriteStoreZip(string path, string[] names)
++    {
++        var ms = new MemoryStream();
++        var locals = new System.Collections.Generic.List<byte[]>();
++        var cds = new System.Collections.Generic.List<byte[]>();
++        int offset = 0;
++        foreach (var name in names)
++        {
++            byte[] nb = Encoding.UTF8.GetBytes(name);
++            using (var w = new BinaryWriter(new MemoryStream()))
++            {
++                w.Write(0x04034b50);
++                w.Write((ushort)20); w.Write((ushort)0); w.Write((ushort)0);
++                w.Write((ushort)0); w.Write((ushort)0);
++                w.Write(0); w.Write(0); w.Write(0);
++                w.Write((ushort)nb.Length); w.Write((ushort)0);
++                w.Write(nb);
++                w.Flush();
++                locals.Add(((MemoryStream)w.BaseStream).ToArray());
++            }
++            using (var w = new BinaryWriter(new MemoryStream()))
++            {
++                w.Write(0x02014b50);
++                w.Write((ushort)20); w.Write((ushort)20);
++                w.Write((ushort)0); w.Write((ushort)0);
++                w.Write((ushort)0); w.Write((ushort)0);
++                w.Write(0); w.Write(0); w.Write(0);
++                w.Write((ushort)nb.Length); w.Write((ushort)0); w.Write((ushort)0);
++                w.Write((ushort)0); w.Write((ushort)0); w.Write(0); w.Write(offset);
++                w.Write(nb);
++                w.Flush();
++                cds.Add(((MemoryStream)w.BaseStream).ToArray());
++            }
++            offset += locals[locals.Count - 1].Length;
++        }
++        using (var fs = File.Create(path))
++        {
++            foreach (var b in locals) fs.Write(b, 0, b.Length);
++            int cdStart = (int)fs.Position;
++            int cdSize = 0;
++            foreach (var b in cds) { fs.Write(b, 0, b.Length); cdSize += b.Length; }
++            using (var w = new BinaryWriter(fs, Encoding.UTF8, true))
++            {
++                w.Write(0x06054b50);
++                w.Write((ushort)0); w.Write((ushort)0);
++                w.Write((ushort)names.Length); w.Write((ushort)names.Length);
++                w.Write(cdSize); w.Write(cdStart);
++                w.Write((ushort)0);
++            }
++        }
++    }
++}
