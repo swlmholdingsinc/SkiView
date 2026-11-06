@@ -1,0 +1,173 @@
+--- Assets/SkiView/Editor/SkiViewBuild.cs	2026-11-06 22:33:20.980780609 +0000
++++ Assets/SkiView/Editor/SkiViewBuild.cs	2026-11-06 22:33:40.131956817 +0000
+@@ -143,6 +143,7 @@
+         EditorUserBuildSettings.buildAppBundle = true; PlayerSettings.Android.splitApplicationBinary = true;
+         SkiViewContent.SelectBuilder(true);
+         string aab = Path.Combine(Root, "Builds/Android", release ? "SkiView-release.aab" : "SkiView-N1-greybox.aab");
++        UnityEditor.AddressableAssets.Android.PlayAssetDeliveryModifyProjectScript.LogGate("SkiViewBuild.Android before AAB BuildPlayer");
+         try
+         {
+             var r2 = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = SkiViewBuilder.BuildScenes(), locationPathName = aab, target = BuildTarget.Android, options = BuildOptions.None });
+--- Library/PackageCache/com.unity.addressables.android@8673fde27be7/Editor/PlayAssetDeliveryBuildProcessor.cs	2026-11-06 22:33:20.980780609 +0000
++++ Library/PackageCache/com.unity.addressables.android@8673fde27be7/Editor/PlayAssetDeliveryBuildProcessor.cs	2026-11-06 22:33:40.131956817 +0000
+@@ -35,17 +35,21 @@
+         /// <param name="buildPlayerContext">Contains data related to the player.</param>
+         public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
+         {
++            PlayAssetDeliveryModifyProjectScript.LogGate("PlayAssetDeliveryBuildProcessor.PrepareForBuild");
+             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
+             {
++                Debug.Log("[PADTRACE] phase=PlayAssetDeliveryBuildProcessor.PrepareForBuild taken=return-not-android utc=" + DateTime.UtcNow.ToString("o"));
+                 return;
+             }
+             if (TextureCompressionTargetingHelper.UseAssetPacks)
+             {
+                 if (PlayAssetDeliverySetup.PlayAssetDeliveryNotInitialized())
+                 {
++                    Debug.Log("[PADTRACE] phase=PlayAssetDeliveryBuildProcessor.PrepareForBuild taken=return-not-initialized utc=" + DateTime.UtcNow.ToString("o"));
+                     Addressables.LogWarning($"Addressables are not initialized to use with Play Asset Delivery. Open '{PlayAssetDeliverySetup.kInitPlayAssetDeliveryMenuItem}'.");
+                     return;
+                 }
++                Debug.Log("[PADTRACE] phase=PlayAssetDeliveryBuildProcessor.PrepareForBuild taken=set-pad-builder utc=" + DateTime.UtcNow.ToString("o"));
+                 var settings = AddressableAssetSettingsDefaultObject.Settings;
+                 var padBuildScriptIndex = settings.DataBuilders.FindIndex(b => b is BuildScriptPlayAssetDelivery);
+                 DataBuilderIndex = settings.ActivePlayerDataBuilderIndex;
+@@ -53,6 +57,10 @@
+                 AddressablesPlayerBuildProcessor.AddPathToStreamingAssets = (string path) => false;
+                 BuildingPlayer = true;
+             }
++            else
++            {
++                Debug.Log("[PADTRACE] phase=PlayAssetDeliveryBuildProcessor.PrepareForBuild taken=skip-useAssetPacks-false utc=" + DateTime.UtcNow.ToString("o"));
++            }
+         }
+     }
+ 
+@@ -127,12 +135,15 @@
+         /// <param name="buildPlayerContext">Contains data related to the player.</param>
+         public override void PrepareForBuild(BuildPlayerContext buildPlayerContext)
+         {
++            PlayAssetDeliveryModifyProjectScript.LogGate("PlayAssetDeliverySecondBuildProcessor.PrepareForBuild");
+             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android ||
+                 !TextureCompressionTargetingHelper.UseAssetPacks ||
+                 PlayAssetDeliverySetup.PlayAssetDeliveryNotInitialized())
+             {
++                Debug.Log("[PADTRACE] phase=PlayAssetDeliverySecondBuildProcessor.PrepareForBuild taken=return utc=" + DateTime.UtcNow.ToString("o"));
+                 return;
+             }
++            Debug.Log("[PADTRACE] phase=PlayAssetDeliverySecondBuildProcessor.PrepareForBuild taken=continue utc=" + DateTime.UtcNow.ToString("o"));
+ 
+             AddressablesPlayerBuildProcessor.AddPathToStreamingAssets = null;
+             var settings = AddressableAssetSettingsDefaultObject.Settings;
+--- Library/PackageCache/com.unity.addressables.android@8673fde27be7/Editor/PlayAssetDeliveryModifyProjectScript.cs	2026-11-06 22:33:20.980780609 +0000
++++ Library/PackageCache/com.unity.addressables.android@8673fde27be7/Editor/PlayAssetDeliveryModifyProjectScript.cs	2026-11-06 22:33:58.195180070 +0000
+@@ -65,11 +65,64 @@
+         }
+ 
+         /// <summary>
++        /// Logs the Setup() predicates. Does not change which branch runs.
++        /// </summary>
++        public static void LogGate(string phase)
++        {
++            try
++            {
++                var target = EditorUserBuildSettings.activeBuildTarget;
++                bool appBundle = EditorUserBuildSettings.buildAppBundle;
++                bool split = PlayerSettings.Android.splitApplicationBinary;
++                bool tcft = TextureCompressionTargetingHelper.EnabledTextureCompressionTargeting;
++                bool use = TextureCompressionTargetingHelper.UseAssetPacks;
++                bool tcftBlock = tcft && !TextureCompressionTargetingHelper.IsCurrentTextureCompressionDefault;
++                var settings = UnityEditor.AddressableAssets.AddressableAssetSettingsDefaultObject.Settings;
++                bool settingsNull = settings == null;
++                bool missingInit = settingsNull || settings.InitializationObjects.FindIndex(i => i is PlayAssetDeliveryInitializationSettings) == -1;
++                bool missingBuilder = settingsNull || settings.DataBuilders.FindIndex(b => b is BuildScriptPlayAssetDelivery) == -1;
++                bool notInit = PlayAssetDeliverySetup.PlayAssetDeliveryNotInitialized();
++                string dataPath = CustomAssetPackUtility.CustomAssetPacksDataEditorPath;
++                bool dataExists = File.Exists(dataPath);
++                long dataBytes = dataExists ? new FileInfo(dataPath).Length : -1;
++                bool early = target != BuildTarget.Android || !use || notInit || !dataExists || tcftBlock;
++                string first = "none";
++                if (target != BuildTarget.Android) first = "activeBuildTarget";
++                else if (!use) first = "UseAssetPacks";
++                else if (notInit) first = "PlayAssetDeliveryNotInitialized";
++                else if (!dataExists) first = "CustomAssetPacksDataMissing";
++                else if (tcftBlock) first = "TextureCompressionNotDefault";
++                Debug.Log("[PADTRACE] phase=" + phase
++                    + " utc=" + DateTime.UtcNow.ToString("o")
++                    + " activeTarget=" + target
++                    + " buildAppBundle=" + appBundle
++                    + " splitApplicationBinary=" + split
++                    + " enabledTcft=" + tcft
++                    + " useAssetPacks=" + use
++                    + " notInitialized=" + notInit
++                    + " settingsNull=" + settingsNull
++                    + " missingInitObject=" + missingInit
++                    + " missingPadBuilder=" + missingBuilder
++                    + " customDataExists=" + dataExists
++                    + " customDataBytes=" + dataBytes
++                    + " customDataPath=" + dataPath
++                    + " tcftBlocks=" + tcftBlock
++                    + " earlyExit=" + early
++                    + " firstPredicateFalse=" + first);
++            }
++            catch (Exception ex)
++            {
++                Debug.LogError("[PADTRACE] phase=" + phase + " logger failed: " + ex.GetType().Name + " " + ex.Message);
++            }
++        }
++
++        /// <summary>
+         /// Setup copy operations for addressables asset bundles to the asset packs inside gradle project.
+         /// Stores information required for new build.gradle files and for modifying existing gradle files.
+         /// </summary>
+         public override AndroidProjectFilesModifierContext Setup()
+         {
++            LogGate("PlayAssetDeliveryModifyProjectScript.Setup");
+             var projectFilesContext = new AndroidProjectFilesModifierContext();
+             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android ||
+                 !TextureCompressionTargetingHelper.UseAssetPacks ||
+@@ -77,6 +130,7 @@
+                 !File.Exists(CustomAssetPackUtility.CustomAssetPacksDataEditorPath) ||
+                 (TextureCompressionTargetingHelper.EnabledTextureCompressionTargeting && !TextureCompressionTargetingHelper.IsCurrentTextureCompressionDefault))
+             {
++                Debug.Log("[PADTRACE] phase=PlayAssetDeliveryModifyProjectScript.Setup taken=early-return utc=" + DateTime.UtcNow.ToString("o"));
+                 // gradle project must be modified only when using asset packs, play asset delivery is supported and addressables are generated for PAD,
+                 // this should be done during the last (or the only) texture compression related iteration
+                 projectFilesContext.SetData("UseAssetPacks", false);
+@@ -84,6 +138,7 @@
+                 return projectFilesContext;
+             }
+ 
++            Debug.Log("[PADTRACE] phase=PlayAssetDeliveryModifyProjectScript.Setup taken=register-packs utc=" + DateTime.UtcNow.ToString("o"));
+             var contents = File.ReadAllText(CustomAssetPackUtility.CustomAssetPacksDataEditorPath);
+             var customPackData = JsonUtility.FromJson<CustomAssetPackData>(contents);
+             foreach (CustomAssetPackDataEntry entry in customPackData.Entries)
+@@ -141,8 +196,10 @@
+         {
+             if (!projectFiles.GetData<bool>("UseAssetPacks"))
+             {
++                Debug.Log("[PADTRACE] phase=OnModifyAndroidProjectFiles taken=return-useAssetPacks-data-false utc=" + DateTime.UtcNow.ToString("o"));
+                 return;
+             }
++            Debug.Log("[PADTRACE] phase=OnModifyAndroidProjectFiles taken=modify-gradle utc=" + DateTime.UtcNow.ToString("o"));
+ 
+             var customPackData = projectFiles.GetData<CustomAssetPackData>("AssetPacks");
+ 
+@@ -206,10 +263,17 @@
+ 
+         public void OnPostGenerateGradleAndroidProject(string projectPath)
+         {
++            Debug.Log("[PADTRACE] phase=OnPostGenerateGradleAndroidProject customPackDataNull=" + (CustomPackData == null)
++                + " updateSettings=" + UpdateSettingsGradle
++                + " updateLauncher=" + UpdateLauncherBuildGradle
++                + " projectPath=" + projectPath
++                + " utc=" + DateTime.UtcNow.ToString("o"));
+             if (CustomPackData == null)
+             {
++                Debug.Log("[PADTRACE] phase=OnPostGenerateGradleAndroidProject taken=return-customPackData-null utc=" + DateTime.UtcNow.ToString("o"));
+                 return;
+             }
++            Debug.Log("[PADTRACE] phase=OnPostGenerateGradleAndroidProject taken=write-gradle utc=" + DateTime.UtcNow.ToString("o"));
+ 
+             if (UpdateSettingsGradle)
+             {
