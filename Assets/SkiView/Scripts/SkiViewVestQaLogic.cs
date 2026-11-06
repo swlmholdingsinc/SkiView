@@ -23,7 +23,13 @@ namespace SkiView
             public string materials;
             public int triangles;
             public bool enabled;
+            public bool active;
+            public bool visible;
             public bool readable;
+            public bool haveBaseline;
+            public bool baselineEnabled;
+            public string lod;
+            public int pathShared;
         }
 
         public static bool IsOn(string value)
@@ -75,10 +81,33 @@ namespace SkiView
             return 0;
         }
 
-        /// <summary>vest if the name, mesh, or material says so. otherwise other.</summary>
+        public static bool IsQaMaterialName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return false;
+            int slash = name.IndexOf('/');
+            if (slash >= 0) name = name.Substring(0, slash);
+            name = name.Trim();
+            return name.StartsWith("VestQa", StringComparison.OrdinalIgnoreCase)
+                || name.StartsWith("QaShade", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>Drops QA replacement materials so a debug name cannot become a vest.</summary>
+        public static string MaterialsForRole(string materialNames)
+        {
+            if (string.IsNullOrEmpty(materialNames)) return "";
+            var kept = new List<string>();
+            foreach (var part in materialNames.Split('|'))
+            {
+                if (part.Length == 0 || IsQaMaterialName(part)) continue;
+                kept.Add(part);
+            }
+            return string.Join("|", kept.ToArray());
+        }
+
+        /// <summary>Vest comes from the renderer, mesh, or a gameplay material. QA materials are ignored.</summary>
         public static string Role(string rendererName, string meshName, string materialNames)
         {
-            string s = ((rendererName ?? "") + " " + (meshName ?? "") + " " + (materialNames ?? "")).ToLowerInvariant();
+            string s = ((rendererName ?? "") + " " + (meshName ?? "") + " " + MaterialsForRole(materialNames)).ToLowerInvariant();
             if (s.Contains("vest")) return "vest";
             return "other";
         }
@@ -135,28 +164,64 @@ namespace SkiView
             return sb.ToString();
         }
 
-        public static string LegendLine(Entry e)
+        public static string TrisText(Entry e)
         {
-            return "id=" + e.id.ToString(CultureInfo.InvariantCulture)
-                + " role=" + e.role
-                + " sub=" + e.submeshes.ToString(CultureInfo.InvariantCulture)
-                + " tris=" + e.triangles.ToString(CultureInfo.InvariantCulture)
-                + " on=" + (e.enabled ? "1" : "0")
-                + " read=" + (e.readable ? "1" : "0")
-                + " mesh=" + e.mesh
-                + " mats=" + e.materials
-                + " path=" + e.path;
+            return e.readable ? e.triangles.ToString(CultureInfo.InvariantCulture) : "unread";
         }
 
-        /// <summary>Same paths always get the same ids, sorted by path.</summary>
-        public static List<Entry> AssignIds(List<Entry> raw)
+        public static string CompactLine(Entry e)
+        {
+            return "inst=" + e.id.ToString(CultureInfo.InvariantCulture)
+                + " " + e.role
+                + " en=" + (e.enabled ? "1" : "0")
+                + " act=" + (e.active ? "1" : "0")
+                + " vis=" + (e.visible ? "1" : "0")
+                + " lod=" + (string.IsNullOrEmpty(e.lod) ? "none" : e.lod)
+                + (e.haveBaseline ? " baseEn=" + (e.baselineEnabled ? "1" : "0") : "")
+                + " sub=" + e.submeshes.ToString(CultureInfo.InvariantCulture)
+                + " tris=" + TrisText(e)
+                + (e.pathShared > 1 ? " pathShared=" + e.pathShared.ToString(CultureInfo.InvariantCulture) : "")
+                + " " + e.mesh;
+        }
+
+        public static string LegendLine(Entry e)
+        {
+            return CompactLine(e) + " mats=" + e.materials + " path=" + e.path;
+        }
+
+        static int DisplayRank(Entry e)
+        {
+            if (e.role == "vest" && e.enabled) return 0;
+            if (e.role == "vest") return 1;
+            return 2;
+        }
+
+        /// <summary>Enabled vests first. Instance ids are kept; a shared path is counted, not merged.</summary>
+        public static List<Entry> OrderForDisplay(List<Entry> raw)
         {
             var list = new List<Entry>(raw);
-            list.Sort((a, b) => string.Compare(a.path, b.path, StringComparison.Ordinal));
+            list.Sort((a, b) =>
+            {
+                int rank = DisplayRank(a).CompareTo(DisplayRank(b));
+                if (rank != 0) return rank;
+                int path = string.Compare(a.path, b.path, StringComparison.Ordinal);
+                if (path != 0) return path;
+                return a.id.CompareTo(b.id);
+            });
+            var counts = new Dictionary<string, int>();
+            for (int i = 0; i < list.Count; i++)
+            {
+                string path = list[i].path ?? "";
+                int n;
+                counts.TryGetValue(path, out n);
+                counts[path] = n + 1;
+            }
             for (int i = 0; i < list.Count; i++)
             {
                 var e = list[i];
-                e.id = i;
+                int n;
+                counts.TryGetValue(e.path ?? "", out n);
+                e.pathShared = n;
                 list[i] = e;
             }
             return list;

@@ -40,7 +40,10 @@ public static class SkiViewVestQaTest
 
         Check(SkiViewVestQaLogic.Role("Vest_LOD0", "SkiView_Gear_Slalom_125", "M_125_Vest") == "vest", "gear vest name");
         Check(SkiViewVestQaLogic.Role("Body_LOD0", "Body", "SetA") == "other", "body is not a vest");
-        Check(SkiViewVestQaLogic.Role("Panel", "Cube", "VestWet_C125") == "vest", "material name still counts");
+        Check(SkiViewVestQaLogic.Role("Panel", "Cube", "VestWet_C125") == "vest", "gameplay vest material still counts");
+        Check(SkiViewVestQaLogic.Role("Body_LOD0", "Body", "VestQa_22_0") == "other", "old QA material name is not a vest");
+        Check(SkiViewVestQaLogic.Role("Body_LOD0", "Body", "QaShade_-200_0/Hidden") == "other", "shade material name is not a vest");
+        Check(SkiViewVestQaLogic.Role("INTERNAL_ONLY_125_Gear_Vest_LOD0", "INTERNAL_ONLY_125_Gear_Vest_LOD0", "QaShade_1_0") == "vest", "object name stays vest after a shade swap");
 
         Check(SkiViewVestQaLogic.ParseSub("2.0", out int rid, out int sub) && rid == 2 && sub == 0, "vestsub parser");
         Check(!SkiViewVestQaLogic.ParseSub("2", out _, out _), "vestsub needs a dot");
@@ -51,14 +54,24 @@ public static class SkiViewVestQaTest
         var q = SkiViewVestQaLogic.ArgsFromUrl("http://127.0.0.1:8099/index.html?lake=skiview&vestqa=1&vestid=3");
         Check(q["vestqa"] == "1" && q["vestid"] == "3", "query-style url");
 
-        var rows = SkiViewVestQaLogic.AssignIds(new List<SkiViewVestQaLogic.Entry>
+        var rows = SkiViewVestQaLogic.OrderForDisplay(new List<SkiViewVestQaLogic.Entry>
         {
-            new SkiViewVestQaLogic.Entry { path = "Skier/Gear/Shorts", mesh = "Shorts", role = "other", submeshes = 1, materials = "M_125_Shorts", triangles = 10, enabled = true },
-            new SkiViewVestQaLogic.Entry { path = "Skier/Gear/Vest_LOD0", mesh = "Vest_LOD0", role = "vest", submeshes = 1, materials = "M_125_Vest/Universal Render Pipeline/Lit", triangles = 1791, enabled = true, readable = true }
+            new SkiViewVestQaLogic.Entry { id = -100, path = "Skier/Body", mesh = "Body", role = "overlap", submeshes = 1, materials = "SetA", enabled = true, active = true },
+            new SkiViewVestQaLogic.Entry { id = -200, path = "Skier/Gear_Vest/SkinnedMeshRenderer", mesh = "INTERNAL_ONLY_125_Gear_Vest_LOD0", role = "vest", submeshes = 1, materials = "M_125_Vest", triangles = -1, enabled = true, active = true, readable = false },
+            new SkiViewVestQaLogic.Entry { id = -300, path = "Skier/Gear_Vest/SkinnedMeshRenderer", mesh = "INTERNAL_ONLY_125_Gear_Vest_LOD0", role = "vest", submeshes = 1, materials = "M_125_Vest", enabled = true, active = true, readable = false }
         });
-        Check(rows.Count == 2 && rows[0].path.EndsWith("Shorts") && rows[0].id == 0 && rows[1].id == 1, "ids follow path order");
-        string line = SkiViewVestQaLogic.LegendLine(rows[1]);
-        Check(line.Contains("id=1") && line.Contains("role=vest") && line.Contains("sub=1") && line.Contains("tris=1791") && line.Contains("M_125_Vest") && line.Contains("Vest_LOD0"), "legend names mesh and material");
+        Check(rows.Count == 3 && rows[0].role == "vest" && rows[1].role == "vest" && rows[2].id == -100, "enabled vests are listed before overlap");
+        Check((rows[0].id == -200 && rows[1].id == -300) || (rows[0].id == -300 && rows[1].id == -200), "same path keeps both instance ids");
+        Check(rows[0].pathShared == 2 && rows[1].pathShared == 2 && rows[2].pathShared == 1, "shared path is counted and not merged");
+        var more = new List<SkiViewVestQaLogic.Entry>(rows);
+        more.Add(new SkiViewVestQaLogic.Entry { id = -400, path = "Skier/Eye", mesh = "Eye", role = "overlap", enabled = true });
+        var again = SkiViewVestQaLogic.OrderForDisplay(more);
+        bool vestKept = false;
+        for (int i = 0; i < again.Count; i++) if (again[i].id == -200 && again[i].role == "vest") vestKept = true;
+        Check(vestKept && again[0].id != 0, "adding an overlap row does not renumber the vest");
+        string line = "";
+        for (int i = 0; i < again.Count; i++) if (again[i].id == -200) line = SkiViewVestQaLogic.CompactLine(again[i]);
+        Check(line.Contains("inst=-200") && line.Contains("tris=unread") && line.Contains("pathShared=2") && line.Contains("INTERNAL_ONLY_125_Gear_Vest_LOD0"), "compact line uses the instance id");
 
         string beat = SkiViewVestQaLogic.Heartbeat(0, "skiview", "waiting for skier", null);
         Check(beat.Length > 0 && beat.Contains("renderers=0") && beat.Contains("scene=skiview") && beat.Contains("waiting for skier"), "zero renderers still produce a heartbeat");

@@ -18,14 +18,31 @@ namespace SkiView
             public Renderer renderer;
         }
 
+        class Snap
+        {
+            public Material[] materials;
+            public bool enabled;
+            public string materialNames;
+        }
+
         readonly List<Live> live = new List<Live>();
-        string signature = "";
+        readonly Dictionary<int, Snap> snaps = new Dictionary<int, Snap>();
+        readonly List<Material> spawned = new List<Material>();
         string appliedKey = "";
+        string vestKey = "";
         float nextScan;
         bool framed;
+        bool seeded;
+        string shade = "lit";
+        bool isolate;
+        int isolateInst;
+        bool scopeAll;
+        float poseRoll = float.NaN;
+        int selectedInst;
+        bool showOverlap;
+        Vector2 scroll;
         string state = "init";
         string scanError = "";
-        readonly List<Material> spawned = new List<Material>();
         static SkiViewVestQa inst;
         static string loadedScene = "";
 
@@ -68,15 +85,15 @@ namespace SkiView
 
         void Rebind(string sceneName)
         {
+            RestoreAll();
             live.Clear();
-            signature = "";
+            snaps.Clear();
             appliedKey = "";
+            vestKey = "";
             nextScan = 0f;
             framed = false;
             scanError = "";
             state = "rebind " + sceneName;
-            for (int i = 0; i < spawned.Count; i++) if (spawned[i] != null) Destroy(spawned[i]);
-            spawned.Clear();
         }
 
         static Dictionary<string, string> ReadArgs()
@@ -105,19 +122,29 @@ namespace SkiView
         void LateUpdate()
         {
             var args = ReadArgs();
+            Seed(args);
             var game = FindFirstObjectByType<SkiViewGame>();
             if (game == null) { state = "waiting for game"; return; }
             if (game.skier == null) { state = "waiting for skier"; return; }
-            if (Time.unscaledTime >= nextScan) { nextScan = Time.unscaledTime + 0.5f; Scan(game, args); }
-            ApplyPose(game, args);
-            ApplyShade(args);
+            if (Time.unscaledTime >= nextScan) { nextScan = Time.unscaledTime + 0.5f; Scan(game); }
+            ApplyPose(game);
+            ApplyShade();
         }
 
-        void Scan(SkiViewGame game, Dictionary<string, string> args)
+        void Seed(Dictionary<string, string> args)
+        {
+            if (seeded) return;
+            seeded = true;
+            shade = SkiViewVestQaLogic.Shade(Arg(args, "vestshade"));
+            poseRoll = SkiViewVestQaLogic.PoseRollDegrees(Arg(args, "pose"));
+            scopeAll = Arg(args, "vestscope") == "all" || Arg(args, "vestqa") == "all";
+        }
+
+        void Scan(SkiViewGame game)
         {
             try
             {
-                ScanBody(game, args);
+                ScanBody(game);
                 scanError = "";
                 state = "scanned";
             }
@@ -129,7 +156,7 @@ namespace SkiView
             }
         }
 
-        void ScanBody(SkiViewGame game, Dictionary<string, string> args)
+        void ScanBody(SkiViewGame game)
         {
             var found = new List<Renderer>();
             var seen = new HashSet<int>();
@@ -147,72 +174,123 @@ namespace SkiView
             if (game.rig != null && game.rig.animator != null) AddRoot(game.rig.animator.transform);
 
             Transform chest = Chest(game);
-            bool scopeAll = Arg(args, "vestscope") == "all" || Arg(args, "vestqa") == "all";
             var raw = new List<SkiViewVestQaLogic.Entry>();
             var renderers = new List<Renderer>();
             foreach (var r in found)
             {
+                int id = r.GetInstanceID();
+                Remember(id, r);
+                Snap snap;
+                snaps.TryGetValue(id, out snap);
+                string mats = snap != null ? snap.materialNames : GameplayMatNames(r);
                 var mesh = MeshOf(r);
-                string mats = MatNames(r);
                 string role = SkiViewVestQaLogic.Role(r.name, mesh != null ? mesh.name : "", mats);
                 bool overlap = role == "other" && OverlapsCollar(r, chest);
-                if (role != "vest" && !(overlap && scopeAll) && !overlap) continue;
+                if (role != "vest" && !overlap) continue;
                 if (overlap && role == "other") role = "overlap";
-                if (role == "overlap" && !scopeAll)
-                {
-                    // Logged so a body facet is not invisible, and left on its gameplay material.
-                }
-                int tris = 0;
+                int tris = -1;
                 int subs = 1;
                 bool readable = false;
                 if (mesh != null)
                 {
                     subs = Mathf.Max(1, mesh.subMeshCount);
                     readable = mesh.isReadable;
-                    if (readable) for (int s = 0; s < mesh.subMeshCount; s++) tris += (int)mesh.GetIndexCount(s) / 3;
+                    if (readable)
+                    {
+                        tris = 0;
+                        for (int s = 0; s < mesh.subMeshCount; s++) tris += (int)mesh.GetIndexCount(s) / 3;
+                    }
                 }
+                var lod = r.GetComponentInParent<LODGroup>();
                 raw.Add(new SkiViewVestQaLogic.Entry
                 {
+                    id = id,
                     role = role,
                     path = PathOf(r.transform) + "/" + r.GetType().Name,
                     mesh = mesh != null ? mesh.name : "",
                     submeshes = subs,
                     materials = mats,
                     triangles = tris,
-                    enabled = r.enabled && r.gameObject.activeInHierarchy,
-                    readable = readable
+                    enabled = r.enabled,
+                    active = r.gameObject.activeInHierarchy,
+                    visible = r.isVisible,
+                    readable = readable,
+                    haveBaseline = snap != null,
+                    baselineEnabled = snap != null && snap.enabled,
+                    lod = lod == null ? "none" : (lod.enabled ? "on" : "off")
                 });
                 renderers.Add(r);
             }
-            var ordered = SkiViewVestQaLogic.AssignIds(raw);
-            // AssignIds sorts a copy; match renderers back by path. Paths can repeat if two renderers share a name chain.
-            var byPath = new Dictionary<string, Queue<Renderer>>();
-            for (int i = 0; i < raw.Count; i++)
-            {
-                if (!byPath.TryGetValue(raw[i].path, out var q)) { q = new Queue<Renderer>(); byPath[raw[i].path] = q; }
-                q.Enqueue(renderers[i]);
-            }
+            var ordered = SkiViewVestQaLogic.OrderForDisplay(raw);
+            var byId = new Dictionary<int, Renderer>();
+            for (int i = 0; i < raw.Count; i++) byId[raw[i].id] = renderers[i];
             live.Clear();
-            var sig = new StringBuilder();
+            var vestIds = new StringBuilder();
+            int overlaps = 0;
             foreach (var e in ordered)
             {
-                Renderer rr = null;
-                if (byPath.TryGetValue(e.path, out var q) && q.Count > 0) rr = q.Dequeue();
+                Renderer rr;
+                byId.TryGetValue(e.id, out rr);
                 live.Add(new Live { entry = e, renderer = rr });
-                sig.Append(SkiViewVestQaLogic.LegendLine(e)).Append('\n');
+                if (e.role == "vest") vestIds.Append(e.id).Append(',');
+                else overlaps++;
             }
-            string text = sig.ToString();
-            if (text != signature)
+            string key = vestIds.ToString();
+            if (key != vestKey)
             {
-                signature = text;
-                Debug.Log("[VESTQA] count=" + live.Count + " shade=" + SkiViewVestQaLogic.Shade(Arg(args, "vestshade"))
-                    + " pose=" + (Arg(args, "pose") ?? "") + "\n" + text);
+                vestKey = key;
+                var log = new StringBuilder();
+                log.Append("[VESTQA] vestInstances=");
+                int vestN = 0;
+                for (int i = 0; i < live.Count; i++)
+                {
+                    if (live[i].entry.role != "vest") continue;
+                    vestN++;
+                    log.Append('\n').Append(SkiViewVestQaLogic.LegendLine(live[i].entry));
+                }
+                log.Append("\noverlap=").Append(overlaps).Append(" vest=").Append(vestN);
+                Debug.Log(log.ToString());
             }
         }
 
-        void ApplyPose(SkiViewGame game, Dictionary<string, string> args)
+        void Remember(int id, Renderer r)
         {
-            float roll = SkiViewVestQaLogic.PoseRollDegrees(Arg(args, "pose"));
+            if (snaps.ContainsKey(id) || r == null) return;
+            var ms = r.sharedMaterials;
+            if (ms != null)
+                for (int i = 0; i < ms.Length; i++)
+                    if (ms[i] != null && SkiViewVestQaLogic.IsQaMaterialName(ms[i].name)) return;
+            snaps[id] = new Snap
+            {
+                materials = ms == null ? new Material[0] : (Material[])ms.Clone(),
+                enabled = r.enabled,
+                materialNames = GameplayMatNames(r)
+            };
+        }
+
+        void RestoreAll()
+        {
+            foreach (var kv in snaps)
+            {
+                var r = RendererById(kv.Key);
+                if (r == null) continue;
+                r.sharedMaterials = kv.Value.materials;
+                r.enabled = kv.Value.enabled;
+            }
+            for (int i = 0; i < spawned.Count; i++) if (spawned[i] != null) Destroy(spawned[i]);
+            spawned.Clear();
+        }
+
+        Renderer RendererById(int id)
+        {
+            for (int i = 0; i < live.Count; i++)
+                if (live[i].renderer != null && live[i].renderer.GetInstanceID() == id) return live[i].renderer;
+            return null;
+        }
+
+        void ApplyPose(SkiViewGame game)
+        {
+            float roll = poseRoll;
             if (float.IsNaN(roll)) return;
             Transform body = game.skier;
             body.rotation = body.rotation * Quaternion.AngleAxis(roll, body.forward);
@@ -243,34 +321,33 @@ namespace SkiView
             if (!framed) { framed = true; Debug.Log("[VESTQA] face camera re-aimed after pose"); }
         }
 
-        void ApplyShade(Dictionary<string, string> args)
+        void ApplyShade()
         {
-            string shade = SkiViewVestQaLogic.Shade(Arg(args, "vestshade"));
-            int solo = SkiViewVestQaLogic.ParseId(Arg(args, "vestid"));
-            bool hasSub = SkiViewVestQaLogic.ParseSub(Arg(args, "vestsub"), out int subRenderer, out int subIndex);
-            bool scopeAll = Arg(args, "vestscope") == "all" || Arg(args, "vestqa") == "all";
-            bool isolate = solo >= 0 || hasSub;
+            string key = shade + "|" + (isolate ? isolateInst.ToString() : "") + "|" + scopeAll + "|" + vestKey;
+            if (key != appliedKey)
+            {
+                RestoreAll();
+                appliedKey = key;
+                if (shade != "lit")
+                {
+                    Shader shader = LoadShader();
+                    if (shader == null) Debug.LogError("[VESTQA] debug shader missing; materials left unchanged");
+                    else Paint(shader);
+                }
+            }
+            if (!isolate) return;
             for (int i = 0; i < live.Count; i++)
             {
                 var item = live[i];
                 if (item.renderer == null) continue;
                 bool affect = item.entry.role == "vest" || (scopeAll && item.entry.role == "overlap");
-                if (!affect || !isolate) continue;
-                bool keep = solo < 0 || item.entry.id == solo;
-                if (hasSub) keep = item.entry.id == subRenderer;
-                item.renderer.enabled = keep;
+                if (!affect) continue;
+                item.renderer.enabled = item.entry.id == isolateInst;
             }
-            string key = shade + "|" + solo + "|" + (hasSub ? subRenderer + "." + subIndex : "") + "|" + scopeAll + "|" + signature;
-            if (shade == "lit" || key == appliedKey) return;
-            Shader shader = LoadShader();
-            if (shader == null)
-            {
-                Debug.LogError("[VESTQA] debug shader missing; materials left unchanged");
-                return;
-            }
-            for (int i = 0; i < spawned.Count; i++) if (spawned[i] != null) Destroy(spawned[i]);
-            spawned.Clear();
-            appliedKey = key;
+        }
+
+        void Paint(Shader shader)
+        {
             for (int i = 0; i < live.Count; i++)
             {
                 var item = live[i];
@@ -278,15 +355,13 @@ namespace SkiView
                 if (r == null) continue;
                 bool affect = item.entry.role == "vest" || (scopeAll && item.entry.role == "overlap");
                 if (!affect) continue;
-                if (isolate && !(solo < 0 || item.entry.id == solo) && !(hasSub && item.entry.id == subRenderer)) continue;
+                if (isolate && item.entry.id != isolateInst) continue;
                 int subs = Mathf.Max(1, item.entry.submeshes);
                 var mats = new Material[subs];
                 for (int s = 0; s < subs; s++)
                 {
-                    bool dim = hasSub && item.entry.id == subRenderer && s != subIndex;
-                    var m = new Material(shader) { name = "VestQa_" + item.entry.id + "_" + s };
+                    var m = new Material(shader) { name = "QaShade_" + item.entry.id + "_" + s };
                     Color c = shade == "unlit" ? new Color(0.55f, 0.55f, 0.52f, 1f) : IdColor(item.entry.id, s);
-                    if (dim) c = new Color(0.08f, 0.08f, 0.08f, 1f);
                     if (m.HasProperty("_Color")) m.SetColor("_Color", c);
                     if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
                     string modeShade = shade == "ids" || shade == "unlit" ? "unlit" : shade;
@@ -307,30 +382,94 @@ namespace SkiView
 
         static Color IdColor(int id, int submesh)
         {
-            int n = id * 8 + submesh + 1;
-            float r = ((n * 67) % 255) / 255f;
-            float g = ((n * 131) % 255) / 255f;
-            float b = ((n * 193) % 255) / 255f;
+            uint n = (uint)id * 8u + (uint)submesh + 1u;
+            float r = ((n * 67u) % 255u) / 255f;
+            float g = ((n * 131u) % 255u) / 255f;
+            float b = ((n * 193u) % 255u) / 255f;
             return new Color(0.25f + 0.75f * r, 0.25f + 0.75f * g, 0.25f + 0.75f * b, 1f);
         }
 
         void OnGUI()
         {
-            var args = ReadArgs();
-            float roll = SkiViewVestQaLogic.PoseRollDegrees(Arg(args, "pose"));
-            var sb = new StringBuilder();
-            sb.Append(SkiViewVestQaLogic.Heartbeat(live.Count, loadedScene, state, scanError));
-            sb.Append(" shade=").Append(SkiViewVestQaLogic.Shade(Arg(args, "vestshade")));
-            if (!float.IsNaN(roll)) sb.Append(" poseRoll=").Append(roll.ToString("0"));
-            sb.Append('\n');
-            if (live.Count == 0) sb.Append("renderers=0\n");
-            for (int i = 0; i < live.Count; i++) sb.Append(SkiViewVestQaLogic.LegendLine(live[i].entry)).Append('\n');
-            var style = new GUIStyle(GUI.skin.label) { fontSize = 13, wordWrap = true, normal = { textColor = Color.white } };
-            const float w = 460f;
-            float h = style.CalcHeight(new GUIContent(sb.ToString()), w);
-            var area = new Rect(Mathf.Max(12f, Screen.width - w - 12f), 118f, w, h + 8f);
-            GUI.Box(area, GUIContent.none);
-            GUI.Label(new Rect(area.x + 6f, area.y + 4f, w - 12f, h), sb.ToString(), style);
+            int vestN = 0, overlapN = 0;
+            for (int i = 0; i < live.Count; i++)
+            {
+                if (live[i].entry.role == "vest") vestN++;
+                else overlapN++;
+            }
+            const float w = 440f;
+            float x = Mathf.Max(8f, Screen.width - w - 8f);
+            float y = 64f;
+            float panelH = Mathf.Min(420f, Mathf.Max(180f, Screen.height - 150f));
+            GUI.Box(new Rect(x, y, w, panelH), GUIContent.none);
+            var label = new GUIStyle(GUI.skin.label) { fontSize = 12, wordWrap = true, normal = { textColor = Color.white } };
+            var small = new GUIStyle(GUI.skin.button) { fontSize = 11 };
+            string head = SkiViewVestQaLogic.Heartbeat(vestN, loadedScene, state, scanError)
+                + " shade=" + shade
+                + " overlap=" + overlapN
+                + (isolate ? " isolate=" + isolateInst : "")
+                + (float.IsNaN(poseRoll) ? "" : " poseRoll=" + poseRoll.ToString("0"));
+            GUI.Label(new Rect(x + 6f, y + 4f, w - 12f, 36f), head, label);
+            float by = y + 40f;
+            if (GUI.Button(new Rect(x + 6f, by, 64f, 22f), "Lit", small)) SetShade("lit");
+            if (GUI.Button(new Rect(x + 74f, by, 64f, 22f), "Unlit", small)) SetShade("unlit");
+            if (GUI.Button(new Rect(x + 142f, by, 72f, 22f), "Normals", small)) SetShade("normals");
+            if (GUI.Button(new Rect(x + 218f, by, 78f, 22f), "Tangents", small)) SetShade("tangents");
+            if (GUI.Button(new Rect(x + 300f, by, 50f, 22f), "Ids", small)) SetShade("ids");
+            by += 26f;
+            if (GUI.Button(new Rect(x + 6f, by, 80f, 22f), "Isolate", small)) IsolateSelected();
+            if (GUI.Button(new Rect(x + 90f, by, 80f, 22f), "Show all", small)) ShowAll();
+            if (GUI.Button(new Rect(x + 174f, by, 52f, 22f), "Pose L", small)) poseRoll = SkiViewVestQaLogic.PoseDegrees;
+            if (GUI.Button(new Rect(x + 230f, by, 52f, 22f), "Pose C", small)) poseRoll = 0f;
+            if (GUI.Button(new Rect(x + 286f, by, 52f, 22f), "Pose R", small)) poseRoll = -SkiViewVestQaLogic.PoseDegrees;
+            if (GUI.Button(new Rect(x + 342f, by, 90f, 22f), showOverlap ? "Hide rest" : "Overlap", small)) showOverlap = !showOverlap;
+            by += 26f;
+            var shown = new List<Live>();
+            for (int i = 0; i < live.Count; i++)
+                if (live[i].entry.role == "vest" || showOverlap) shown.Add(live[i]);
+            float rowH = 22f;
+            float viewH = panelH - (by - y) - 48f;
+            if (viewH < 60f) viewH = 60f;
+            var view = new Rect(x + 6f, by, w - 12f, viewH);
+            var content = new Rect(0f, 0f, w - 28f, Mathf.Max(viewH, shown.Count * rowH));
+            scroll = GUI.BeginScrollView(view, scroll, content);
+            if (shown.Count == 0) GUI.Label(new Rect(0f, 0f, content.width, rowH), "renderers=0", label);
+            for (int i = 0; i < shown.Count; i++)
+            {
+                string text = (shown[i].entry.id == selectedInst ? "> " : "") + SkiViewVestQaLogic.CompactLine(shown[i].entry);
+                if (GUI.Button(new Rect(0f, i * rowH, content.width, rowH - 2f), text, small))
+                    selectedInst = shown[i].entry.id;
+            }
+            GUI.EndScrollView();
+            string detail = "select a row";
+            for (int i = 0; i < live.Count; i++)
+            {
+                if (live[i].entry.id != selectedInst) continue;
+                detail = "inst=" + live[i].entry.id + " " + live[i].entry.path + " mats=" + live[i].entry.materials;
+                break;
+            }
+            GUI.Label(new Rect(x + 6f, y + panelH - 42f, w - 12f, 38f), detail, label);
+        }
+
+        void SetShade(string next)
+        {
+            shade = next;
+            appliedKey = "";
+        }
+
+        void IsolateSelected()
+        {
+            if (selectedInst == 0) return;
+            isolate = true;
+            isolateInst = selectedInst;
+            appliedKey = "";
+        }
+
+        void ShowAll()
+        {
+            isolate = false;
+            isolateInst = 0;
+            appliedKey = "";
         }
 
         static Mesh MeshOf(Renderer r)
@@ -340,7 +479,7 @@ namespace SkiView
             return mf != null ? mf.sharedMesh : null;
         }
 
-        static string MatNames(Renderer r)
+        static string GameplayMatNames(Renderer r)
         {
             var ms = r.sharedMaterials;
             if (ms == null || ms.Length == 0) return "";
