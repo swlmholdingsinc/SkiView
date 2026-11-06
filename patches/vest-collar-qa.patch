@@ -1,0 +1,618 @@
+--- Assets/SkiView/Scripts/SkiViewVestQaLogic.cs	2026-11-06 22:42:08.192572584 +0000
++++ Assets/SkiView/Scripts/SkiViewVestQaLogic.cs	2026-11-06 22:42:08.196572564 +0000
+@@ -0,0 +1,153 @@
++using System;
++using System.Collections.Generic;
++using System.Globalization;
++
++namespace SkiView
++{
++    /// <summary>
++    /// Pure rules for the opt-in collar QA view. No scene changes live here.
++    /// Gameplay stays on the normal materials unless a vest QA argument is present.
++    /// </summary>
++    public static class SkiViewVestQaLogic
++    {
++        public const float PoseDegrees = 35f;
++
++        public struct Entry
++        {
++            public int id;
++            public string role;
++            public string path;
++            public string mesh;
++            public int submeshes;
++            public string materials;
++            public int triangles;
++            public bool enabled;
++            public bool readable;
++        }
++
++        public static bool IsOn(string value)
++        {
++            if (string.IsNullOrEmpty(value)) return false;
++            value = value.Trim().ToLowerInvariant();
++            return value == "1" || value == "true" || value == "on" || value == "yes" || value == "all";
++        }
++
++        /// <summary>True only when the page or command line asked for the collar view.</summary>
++        public static bool Requested(string vestqa, string vestshade, string pose, string vestid, string vestsub)
++        {
++            if (IsOn(vestqa)) return true;
++            if (!string.IsNullOrEmpty(vestshade)) return true;
++            if (!float.IsNaN(PoseRollDegrees(pose))) return true;
++            if (!string.IsNullOrEmpty(vestid)) return true;
++            if (!string.IsNullOrEmpty(vestsub)) return true;
++            return false;
++        }
++
++        /// <summary>NaN when pose is absent. left is +35 degrees about the skier forward axis; right is -35.</summary>
++        public static float PoseRollDegrees(string pose)
++        {
++            if (string.IsNullOrEmpty(pose)) return float.NaN;
++            pose = pose.Trim().ToLowerInvariant();
++            if (pose == "left" || pose == "l") return PoseDegrees;
++            if (pose == "right" || pose == "r") return -PoseDegrees;
++            if (pose == "center" || pose == "mid" || pose == "0") return 0f;
++            return float.NaN;
++        }
++
++        /// <summary>lit is the gameplay material. Anything else is a debug replacement.</summary>
++        public static string Shade(string vestshade)
++        {
++            if (string.IsNullOrEmpty(vestshade)) return "lit";
++            vestshade = vestshade.Trim().ToLowerInvariant();
++            if (vestshade == "normal" || vestshade == "normals") return "normals";
++            if (vestshade == "tangent" || vestshade == "tangents") return "tangents";
++            if (vestshade == "unlit" || vestshade == "flat") return "unlit";
++            if (vestshade == "id" || vestshade == "ids" || vestshade == "color") return "ids";
++            if (vestshade == "lit" || vestshade == "pbr" || vestshade == "off") return "lit";
++            return "lit";
++        }
++
++        public static int ShadeMode(string shade)
++        {
++            if (shade == "normals") return 1;
++            if (shade == "tangents") return 2;
++            return 0;
++        }
++
++        /// <summary>vest if the name, mesh, or material says so. otherwise other.</summary>
++        public static string Role(string rendererName, string meshName, string materialNames)
++        {
++            string s = ((rendererName ?? "") + " " + (meshName ?? "") + " " + (materialNames ?? "")).ToLowerInvariant();
++            if (s.Contains("vest")) return "vest";
++            return "other";
++        }
++
++        public static bool ParseSub(string vestsub, out int rendererId, out int submesh)
++        {
++            rendererId = -1;
++            submesh = -1;
++            if (string.IsNullOrEmpty(vestsub)) return false;
++            int dot = vestsub.IndexOf('.');
++            if (dot <= 0) return false;
++            if (!int.TryParse(vestsub.Substring(0, dot), NumberStyles.Integer, CultureInfo.InvariantCulture, out rendererId)) return false;
++            if (!int.TryParse(vestsub.Substring(dot + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out submesh)) return false;
++            return rendererId >= 0 && submesh >= 0;
++        }
++
++        public static int ParseId(string vestid)
++        {
++            if (string.IsNullOrEmpty(vestid)) return -1;
++            return int.TryParse(vestid.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int id) ? id : -1;
++        }
++
++        /// <summary>Reads vestqa, vestshade, pose, vestid, vestsub from a query or from a path that already uses lake=a&amp;cam=face.</summary>
++        public static Dictionary<string, string> ArgsFromUrl(string url)
++        {
++            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
++            if (string.IsNullOrEmpty(url)) return map;
++            int q = url.IndexOf('?');
++            string qs = q >= 0 ? url.Substring(q + 1) : url;
++            int slash = qs.LastIndexOf('/');
++            if (q < 0 && slash >= 0) qs = qs.Substring(slash + 1);
++            int hash = qs.IndexOf('#');
++            if (hash >= 0) qs = qs.Substring(0, hash);
++            foreach (var kv in qs.Split('&'))
++            {
++                if (kv.Length == 0 || kv.IndexOf('=') < 0) continue;
++                int e = kv.IndexOf('=');
++                string k = Uri.UnescapeDataString(kv.Substring(0, e).Replace('+', ' ')).ToLowerInvariant();
++                string v = Uri.UnescapeDataString(kv.Substring(e + 1).Replace('+', ' '));
++                if (k == "vestqa" || k == "vestshade" || k == "pose" || k == "vestid" || k == "vestsub" || k == "vestscope" || k == "cam" || k == "skier")
++                    map[k] = v;
++            }
++            return map;
++        }
++
++        public static string LegendLine(Entry e)
++        {
++            return "id=" + e.id.ToString(CultureInfo.InvariantCulture)
++                + " role=" + e.role
++                + " sub=" + e.submeshes.ToString(CultureInfo.InvariantCulture)
++                + " tris=" + e.triangles.ToString(CultureInfo.InvariantCulture)
++                + " on=" + (e.enabled ? "1" : "0")
++                + " read=" + (e.readable ? "1" : "0")
++                + " mesh=" + e.mesh
++                + " mats=" + e.materials
++                + " path=" + e.path;
++        }
++
++        /// <summary>Same paths always get the same ids, sorted by path.</summary>
++        public static List<Entry> AssignIds(List<Entry> raw)
++        {
++            var list = new List<Entry>(raw);
++            list.Sort((a, b) => string.Compare(a.path, b.path, StringComparison.Ordinal));
++            for (int i = 0; i < list.Count; i++)
++            {
++                var e = list[i];
++                e.id = i;
++                list[i] = e;
++            }
++            return list;
++        }
++    }
++}
+--- Assets/SkiView/Scripts/SkiViewVestQa.cs	2026-11-06 22:42:08.200572544 +0000
++++ Assets/SkiView/Scripts/SkiViewVestQa.cs	2026-11-06 22:42:08.200572544 +0000
+@@ -0,0 +1,327 @@
++using System.Collections.Generic;
++using System.Text;
++using UnityEngine;
++
++namespace SkiView
++{
++    /// <summary>
++    /// Opt-in collar QA. Created only when the URL asks for it, so a normal run never replaces materials or poses.
++    /// It names the renderer and submesh that are actually enabled, and can show them unlit, as normals, or as tangents.
++    /// </summary>
++    public class SkiViewVestQa : MonoBehaviour
++    {
++        struct Live
++        {
++            public SkiViewVestQaLogic.Entry entry;
++            public Renderer renderer;
++        }
++
++        readonly List<Live> live = new List<Live>();
++        string signature = "";
++        string appliedKey = "";
++        float nextScan;
++        bool framed;
++        readonly List<Material> spawned = new List<Material>();
++
++        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
++        static void Boot()
++        {
++            if (!Application.isPlaying) return;
++            var args = ReadArgs();
++            if (!SkiViewVestQaLogic.Requested(Arg(args, "vestqa"), Arg(args, "vestshade"), Arg(args, "pose"), Arg(args, "vestid"), Arg(args, "vestsub")))
++                return;
++            var go = new GameObject("SkiViewVestQa");
++            go.AddComponent<SkiViewVestQa>();
++        }
++
++        static Dictionary<string, string> ReadArgs()
++        {
++            var fromUrl = SkiViewVestQaLogic.ArgsFromUrl(Application.absoluteURL ?? "");
++            foreach (var key in new[] { "vestqa", "vestshade", "pose", "vestid", "vestsub", "vestscope", "cam", "skier" })
++            {
++                string v = SkiViewArgs.Get(key);
++                if (v != null) fromUrl[key] = v;
++            }
++            return fromUrl;
++        }
++
++        static string Arg(Dictionary<string, string> args, string key)
++        {
++            return args.TryGetValue(key, out var v) ? v : null;
++        }
++
++        void OnDestroy()
++        {
++            for (int i = 0; i < spawned.Count; i++) if (spawned[i] != null) Destroy(spawned[i]);
++            spawned.Clear();
++        }
++
++        void LateUpdate()
++        {
++            var args = ReadArgs();
++            var game = FindFirstObjectByType<SkiViewGame>();
++            if (game == null || game.skier == null) return;
++            if (Time.unscaledTime >= nextScan) { nextScan = Time.unscaledTime + 0.5f; Scan(game, args); }
++            ApplyPose(game, args);
++            ApplyShade(args);
++        }
++
++        void Scan(SkiViewGame game, Dictionary<string, string> args)
++        {
++            var found = new List<Renderer>();
++            var seen = new HashSet<int>();
++            void AddRoot(Transform root)
++            {
++                if (root == null) return;
++                foreach (var r in root.GetComponentsInChildren<Renderer>(true))
++                {
++                    if (r == null || !seen.Add(r.GetInstanceID())) continue;
++                    found.Add(r);
++                }
++            }
++            AddRoot(game.skier);
++            if (game.rig != null) AddRoot(game.rig.transform);
++            if (game.rig != null && game.rig.animator != null) AddRoot(game.rig.animator.transform);
++
++            Transform chest = Chest(game);
++            bool scopeAll = Arg(args, "vestscope") == "all" || Arg(args, "vestqa") == "all";
++            var raw = new List<SkiViewVestQaLogic.Entry>();
++            var renderers = new List<Renderer>();
++            foreach (var r in found)
++            {
++                var mesh = MeshOf(r);
++                string mats = MatNames(r);
++                string role = SkiViewVestQaLogic.Role(r.name, mesh != null ? mesh.name : "", mats);
++                bool overlap = role == "other" && OverlapsCollar(r, chest);
++                if (role != "vest" && !(overlap && scopeAll) && !overlap) continue;
++                if (overlap && role == "other") role = "overlap";
++                if (role == "overlap" && !scopeAll)
++                {
++                    // Logged so a body facet is not invisible, and left on its gameplay material.
++                }
++                int tris = 0;
++                int subs = 1;
++                bool readable = false;
++                if (mesh != null)
++                {
++                    subs = Mathf.Max(1, mesh.subMeshCount);
++                    readable = mesh.isReadable;
++                    if (readable) for (int s = 0; s < mesh.subMeshCount; s++) tris += (int)mesh.GetIndexCount(s) / 3;
++                }
++                raw.Add(new SkiViewVestQaLogic.Entry
++                {
++                    role = role,
++                    path = PathOf(r.transform) + "/" + r.GetType().Name,
++                    mesh = mesh != null ? mesh.name : "",
++                    submeshes = subs,
++                    materials = mats,
++                    triangles = tris,
++                    enabled = r.enabled && r.gameObject.activeInHierarchy,
++                    readable = readable
++                });
++                renderers.Add(r);
++            }
++            var ordered = SkiViewVestQaLogic.AssignIds(raw);
++            // AssignIds sorts a copy; match renderers back by path. Paths can repeat if two renderers share a name chain.
++            var byPath = new Dictionary<string, Queue<Renderer>>();
++            for (int i = 0; i < raw.Count; i++)
++            {
++                if (!byPath.TryGetValue(raw[i].path, out var q)) { q = new Queue<Renderer>(); byPath[raw[i].path] = q; }
++                q.Enqueue(renderers[i]);
++            }
++            live.Clear();
++            var sig = new StringBuilder();
++            foreach (var e in ordered)
++            {
++                Renderer rr = null;
++                if (byPath.TryGetValue(e.path, out var q) && q.Count > 0) rr = q.Dequeue();
++                live.Add(new Live { entry = e, renderer = rr });
++                sig.Append(SkiViewVestQaLogic.LegendLine(e)).Append('\n');
++            }
++            string text = sig.ToString();
++            if (text != signature)
++            {
++                signature = text;
++                Debug.Log("[VESTQA] count=" + live.Count + " shade=" + SkiViewVestQaLogic.Shade(Arg(args, "vestshade"))
++                    + " pose=" + (Arg(args, "pose") ?? "") + "\n" + text);
++            }
++        }
++
++        void ApplyPose(SkiViewGame game, Dictionary<string, string> args)
++        {
++            float roll = SkiViewVestQaLogic.PoseRollDegrees(Arg(args, "pose"));
++            if (float.IsNaN(roll)) return;
++            Transform body = game.skier;
++            body.rotation = body.rotation * Quaternion.AngleAxis(roll, body.forward);
++            string cam = Arg(args, "cam");
++            if (cam != null && cam.Trim().ToLowerInvariant() == "face")
++                Reframe(game);
++        }
++
++        void Reframe(SkiViewGame game)
++        {
++            if (game == null) return;
++            var cam = Camera.main;
++            if (cam == null) return;
++            Transform head = Head(game);
++            Vector3 aim = head != null ? head.position : game.skier.position + Vector3.up * 1.58f;
++            Vector3 faceDir = head != null ? head.forward : game.skier.forward;
++            faceDir.y = 0f;
++            if (faceDir.sqrMagnitude < 1e-4f) faceDir = Vector3.forward;
++            faceDir.Normalize();
++            Vector3 toCam = cam.transform.position - aim;
++            toCam.y = 0f;
++            if (toCam.sqrMagnitude > 0.01f && Vector3.Dot(faceDir, toCam.normalized) < 0f) faceDir = -faceDir;
++            Vector3 portrait = aim - Vector3.up * 0.055f;
++            Vector3 pos = portrait + faceDir * 0.94f + Vector3.up * 0.01f;
++            cam.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(portrait - pos, Vector3.up));
++            cam.fieldOfView = 30f;
++            cam.nearClipPlane = 0.05f;
++            if (!framed) { framed = true; Debug.Log("[VESTQA] face camera re-aimed after pose"); }
++        }
++
++        void ApplyShade(Dictionary<string, string> args)
++        {
++            string shade = SkiViewVestQaLogic.Shade(Arg(args, "vestshade"));
++            int solo = SkiViewVestQaLogic.ParseId(Arg(args, "vestid"));
++            bool hasSub = SkiViewVestQaLogic.ParseSub(Arg(args, "vestsub"), out int subRenderer, out int subIndex);
++            bool scopeAll = Arg(args, "vestscope") == "all" || Arg(args, "vestqa") == "all";
++            bool isolate = solo >= 0 || hasSub;
++            for (int i = 0; i < live.Count; i++)
++            {
++                var item = live[i];
++                if (item.renderer == null) continue;
++                bool affect = item.entry.role == "vest" || (scopeAll && item.entry.role == "overlap");
++                if (!affect || !isolate) continue;
++                bool keep = solo < 0 || item.entry.id == solo;
++                if (hasSub) keep = item.entry.id == subRenderer;
++                item.renderer.enabled = keep;
++            }
++            string key = shade + "|" + solo + "|" + (hasSub ? subRenderer + "." + subIndex : "") + "|" + scopeAll + "|" + signature;
++            if (shade == "lit" || key == appliedKey) return;
++            Shader shader = LoadShader();
++            if (shader == null)
++            {
++                Debug.LogError("[VESTQA] debug shader missing; materials left unchanged");
++                return;
++            }
++            for (int i = 0; i < spawned.Count; i++) if (spawned[i] != null) Destroy(spawned[i]);
++            spawned.Clear();
++            appliedKey = key;
++            for (int i = 0; i < live.Count; i++)
++            {
++                var item = live[i];
++                var r = item.renderer;
++                if (r == null) continue;
++                bool affect = item.entry.role == "vest" || (scopeAll && item.entry.role == "overlap");
++                if (!affect) continue;
++                if (isolate && !(solo < 0 || item.entry.id == solo) && !(hasSub && item.entry.id == subRenderer)) continue;
++                int subs = Mathf.Max(1, item.entry.submeshes);
++                var mats = new Material[subs];
++                for (int s = 0; s < subs; s++)
++                {
++                    bool dim = hasSub && item.entry.id == subRenderer && s != subIndex;
++                    var m = new Material(shader) { name = "VestQa_" + item.entry.id + "_" + s };
++                    Color c = shade == "unlit" ? new Color(0.55f, 0.55f, 0.52f, 1f) : IdColor(item.entry.id, s);
++                    if (dim) c = new Color(0.08f, 0.08f, 0.08f, 1f);
++                    if (m.HasProperty("_Color")) m.SetColor("_Color", c);
++                    if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
++                    string modeShade = shade == "ids" || shade == "unlit" ? "unlit" : shade;
++                    if (m.HasProperty("_Mode")) m.SetFloat("_Mode", SkiViewVestQaLogic.ShadeMode(modeShade));
++                    mats[s] = m;
++                    spawned.Add(m);
++                }
++                r.sharedMaterials = mats;
++            }
++        }
++
++        static Shader LoadShader()
++        {
++            var s = Resources.Load<Shader>("VestQa");
++            if (s != null) return s;
++            return Shader.Find("Hidden/SkiView/VestQa");
++        }
++
++        static Color IdColor(int id, int submesh)
++        {
++            int n = id * 8 + submesh + 1;
++            float r = ((n * 67) % 255) / 255f;
++            float g = ((n * 131) % 255) / 255f;
++            float b = ((n * 193) % 255) / 255f;
++            return new Color(0.25f + 0.75f * r, 0.25f + 0.75f * g, 0.25f + 0.75f * b, 1f);
++        }
++
++        void OnGUI()
++        {
++            if (live.Count == 0) return;
++            var args = ReadArgs();
++            float roll = SkiViewVestQaLogic.PoseRollDegrees(Arg(args, "pose"));
++            var sb = new StringBuilder();
++            sb.Append("VEST QA  shade=").Append(SkiViewVestQaLogic.Shade(Arg(args, "vestshade")));
++            if (!float.IsNaN(roll)) sb.Append("  poseRoll=").Append(roll.ToString("0"));
++            sb.Append('\n');
++            for (int i = 0; i < live.Count; i++) sb.Append(SkiViewVestQaLogic.LegendLine(live[i].entry)).Append('\n');
++            var style = new GUIStyle(GUI.skin.label) { fontSize = 13, wordWrap = true, normal = { textColor = Color.white } };
++            const float w = 460f;
++            float h = style.CalcHeight(new GUIContent(sb.ToString()), w);
++            var area = new Rect(Mathf.Max(12f, Screen.width - w - 12f), 118f, w, h + 8f);
++            GUI.Box(area, GUIContent.none);
++            GUI.Label(new Rect(area.x + 6f, area.y + 4f, w - 12f, h), sb.ToString(), style);
++        }
++
++        static Mesh MeshOf(Renderer r)
++        {
++            if (r is SkinnedMeshRenderer sm) return sm.sharedMesh;
++            var mf = r.GetComponent<MeshFilter>();
++            return mf != null ? mf.sharedMesh : null;
++        }
++
++        static string MatNames(Renderer r)
++        {
++            var ms = r.sharedMaterials;
++            if (ms == null || ms.Length == 0) return "";
++            var sb = new StringBuilder();
++            for (int i = 0; i < ms.Length; i++)
++            {
++                if (i > 0) sb.Append('|');
++                if (ms[i] == null) sb.Append("null");
++                else sb.Append(ms[i].name).Append('/').Append(ms[i].shader != null ? ms[i].shader.name : "");
++            }
++            return sb.ToString();
++        }
++
++        static string PathOf(Transform t)
++        {
++            var sb = new StringBuilder(t.name);
++            while (t.parent != null) { t = t.parent; sb.Insert(0, t.name + "/"); }
++            return sb.ToString();
++        }
++
++        static bool OverlapsCollar(Renderer r, Transform chest)
++        {
++            if (chest == null || r == null) return false;
++            Bounds b = r.bounds;
++            Vector3 c = chest.position;
++            Vector3 closest = b.ClosestPoint(c);
++            return (closest - c).sqrMagnitude < 0.35f * 0.35f;
++        }
++
++        static Transform Chest(SkiViewGame game)
++        {
++            var anim = game.rig != null ? game.rig.animator : null;
++            if (anim != null && anim.isHuman)
++                return anim.GetBoneTransform(HumanBodyBones.UpperChest) ?? anim.GetBoneTransform(HumanBodyBones.Chest) ?? anim.GetBoneTransform(HumanBodyBones.Neck);
++            return game.skier;
++        }
++
++        static Transform Head(SkiViewGame game)
++        {
++            var anim = game.rig != null ? game.rig.animator : null;
++            if (anim != null && anim.isHuman) return anim.GetBoneTransform(HumanBodyBones.Head);
++            if (anim == null) return null;
++            foreach (var t in anim.GetComponentsInChildren<Transform>(true))
++                if (t.name.EndsWith("Head")) return t;
++            return null;
++        }
++    }
++}
+--- Assets/SkiView/Editor/SkiViewVestQaTest.cs	2026-11-06 22:42:08.208572504 +0000
++++ Assets/SkiView/Editor/SkiViewVestQaTest.cs	2026-11-06 22:42:08.208572504 +0000
+@@ -0,0 +1,66 @@
++using System.Collections.Generic;
++using UnityEditor;
++using UnityEngine;
++using SkiView;
++
++/// <summary>
++/// Collar QA rules. No play mode and no mesh edits.
++/// Run: unity_run.sh SkiViewVestQaTest.Run
++/// </summary>
++public static class SkiViewVestQaTest
++{
++    public static void Run()
++    {
++        int fails = 0;
++        void Check(bool ok, string what)
++        {
++            Debug.Log("[VestQaTest] " + (ok ? "PASS" : "FAIL") + " " + what);
++            if (!ok) fails++;
++        }
++
++        Check(!SkiViewVestQaLogic.Requested(null, null, null, null, null), "absent args stay off");
++        Check(!SkiViewVestQaLogic.Requested("0", "", "", "", ""), "vestqa=0 stays off");
++        Check(SkiViewVestQaLogic.Requested("1", null, null, null, null), "vestqa=1 opts in");
++        Check(SkiViewVestQaLogic.Requested(null, "normals", null, null, null), "vestshade opts in");
++        Check(SkiViewVestQaLogic.Requested(null, null, "left", null, null), "pose opts in");
++        Check(!SkiViewVestQaLogic.Requested(null, null, "nope", null, null), "unknown pose does not opt in");
++
++        Check(float.IsNaN(SkiViewVestQaLogic.PoseRollDegrees(null)), "no pose");
++        Check(Mathf.Approximately(SkiViewVestQaLogic.PoseRollDegrees("left"), 35f), "left is +35");
++        Check(Mathf.Approximately(SkiViewVestQaLogic.PoseRollDegrees("right"), -35f), "right is -35");
++        Check(Mathf.Approximately(SkiViewVestQaLogic.PoseRollDegrees("center"), 0f), "center is 0");
++        Check(SkiViewVestQaLogic.PoseRollDegrees("left") != SkiViewVestQaLogic.PoseRollDegrees("right"), "left and right differ");
++
++        Check(SkiViewVestQaLogic.Shade(null) == "lit", "default shade is lit");
++        Check(SkiViewVestQaLogic.Shade("unlit") == "unlit", "unlit");
++        Check(SkiViewVestQaLogic.Shade("normals") == "normals", "normals");
++        Check(SkiViewVestQaLogic.Shade("tangents") == "tangents", "tangents");
++        Check(SkiViewVestQaLogic.Shade("ids") == "ids", "ids");
++        Check(SkiViewVestQaLogic.ShadeMode("normals") == 1 && SkiViewVestQaLogic.ShadeMode("tangents") == 2 && SkiViewVestQaLogic.ShadeMode("unlit") == 0, "shader mode ids");
++
++        Check(SkiViewVestQaLogic.Role("Vest_LOD0", "SkiView_Gear_Slalom_125", "M_125_Vest") == "vest", "gear vest name");
++        Check(SkiViewVestQaLogic.Role("Body_LOD0", "Body", "SetA") == "other", "body is not a vest");
++        Check(SkiViewVestQaLogic.Role("Panel", "Cube", "VestWet_C125") == "vest", "material name still counts");
++
++        Check(SkiViewVestQaLogic.ParseSub("2.0", out int rid, out int sub) && rid == 2 && sub == 0, "vestsub parser");
++        Check(!SkiViewVestQaLogic.ParseSub("2", out _, out _), "vestsub needs a dot");
++        Check(SkiViewVestQaLogic.ParseId("4") == 4 && SkiViewVestQaLogic.ParseId(null) == -1, "vestid parser");
++
++        var url = SkiViewVestQaLogic.ArgsFromUrl("http://127.0.0.1:8099/lake=skiview&skier=male&at=gate&cam=face&vestqa=1&pose=left&vestshade=normals");
++        Check(url["vestqa"] == "1" && url["pose"] == "left" && url["vestshade"] == "normals" && url["cam"] == "face" && url["skier"] == "male", "path-style capture url");
++        var q = SkiViewVestQaLogic.ArgsFromUrl("http://127.0.0.1:8099/index.html?lake=skiview&vestqa=1&vestid=3");
++        Check(q["vestqa"] == "1" && q["vestid"] == "3", "query-style url");
++
++        var rows = SkiViewVestQaLogic.AssignIds(new List<SkiViewVestQaLogic.Entry>
++        {
++            new SkiViewVestQaLogic.Entry { path = "Skier/Gear/Shorts", mesh = "Shorts", role = "other", submeshes = 1, materials = "M_125_Shorts", triangles = 10, enabled = true },
++            new SkiViewVestQaLogic.Entry { path = "Skier/Gear/Vest_LOD0", mesh = "Vest_LOD0", role = "vest", submeshes = 1, materials = "M_125_Vest/Universal Render Pipeline/Lit", triangles = 1791, enabled = true, readable = true }
++        });
++        Check(rows.Count == 2 && rows[0].path.EndsWith("Shorts") && rows[0].id == 0 && rows[1].id == 1, "ids follow path order");
++        string line = SkiViewVestQaLogic.LegendLine(rows[1]);
++        Check(line.Contains("id=1") && line.Contains("role=vest") && line.Contains("sub=1") && line.Contains("tris=1791") && line.Contains("M_125_Vest") && line.Contains("Vest_LOD0"), "legend names mesh and material");
++
++        Debug.Log("[VestQaTest] " + fails + " failure(s)");
++        if (Application.isBatchMode) EditorApplication.Exit(fails == 0 ? 0 : 3);
++    }
++}
+--- Assets/SkiView/Resources/VestQa.shader	2026-11-06 22:42:08.220572444 +0000
++++ Assets/SkiView/Resources/VestQa.shader	2026-11-06 22:42:08.220572444 +0000
+@@ -0,0 +1,60 @@
++Shader "Hidden/SkiView/VestQa"
++{
++    Properties
++    {
++        _Color ("Color", Color) = (0.55, 0.55, 0.52, 1)
++        _Mode ("Mode", Float) = 0
++    }
++    SubShader
++    {
++        Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" "Queue" = "Geometry" }
++        Pass
++        {
++            Name "VestQaForward"
++            Tags { "LightMode" = "UniversalForward" }
++            Cull Off
++            ZWrite On
++            HLSLPROGRAM
++            #pragma vertex vert
++            #pragma fragment frag
++            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
++            CBUFFER_START(UnityPerMaterial)
++                float4 _Color;
++                float _Mode;
++            CBUFFER_END
++            struct Attributes
++            {
++                float4 positionOS : POSITION;
++                float3 normalOS : NORMAL;
++                float4 tangentOS : TANGENT;
++            };
++            struct Varyings
++            {
++                float4 positionCS : SV_POSITION;
++                float3 normalWS : TEXCOORD0;
++                float3 tangentWS : TEXCOORD1;
++            };
++            Varyings vert(Attributes input)
++            {
++                Varyings o;
++                o.positionCS = TransformObjectToHClip(input.positionOS.xyz);
++                o.normalWS = TransformObjectToWorldNormal(input.normalOS);
++                o.tangentWS = TransformObjectToWorldDir(input.tangentOS.xyz);
++                return o;
++            }
++            half4 frag(Varyings input) : SV_Target
++            {
++                if (_Mode < 0.5) return half4(_Color.rgb, 1);
++                if (_Mode < 1.5)
++                {
++                    half3 n = normalize(input.normalWS);
++                    return half4(n * 0.5 + 0.5, 1);
++                }
++                half3 t = normalize(input.tangentWS);
++                return half4(t * 0.5 + 0.5, 1);
++            }
++            ENDHLSL
++        }
++    }
++    FallBack Off
++}
