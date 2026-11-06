@@ -38,6 +38,7 @@ namespace SkiView
         int isolateInst;
         bool scopeAll;
         float poseRoll = float.NaN;
+        bool faceCam;
         int selectedInst;
         bool showOverlap;
         Vector2 scroll;
@@ -138,6 +139,8 @@ namespace SkiView
             shade = SkiViewVestQaLogic.Shade(Arg(args, "vestshade"));
             poseRoll = SkiViewVestQaLogic.PoseRollDegrees(Arg(args, "pose"));
             scopeAll = Arg(args, "vestscope") == "all" || Arg(args, "vestqa") == "all";
+            string camArg = Arg(args, "cam");
+            faceCam = camArg != null && camArg.Trim().ToLowerInvariant() == "face";
         }
 
         void Scan(SkiViewGame game)
@@ -156,22 +159,23 @@ namespace SkiView
             }
         }
 
+        static void AddRoot(Transform root, List<Renderer> found, HashSet<int> seen)
+        {
+            if (root == null) return;
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r == null || !seen.Add(r.GetInstanceID())) continue;
+                found.Add(r);
+            }
+        }
+
         void ScanBody(SkiViewGame game)
         {
             var found = new List<Renderer>();
             var seen = new HashSet<int>();
-            void AddRoot(Transform root)
-            {
-                if (root == null) return;
-                foreach (var r in root.GetComponentsInChildren<Renderer>(true))
-                {
-                    if (r == null || !seen.Add(r.GetInstanceID())) continue;
-                    found.Add(r);
-                }
-            }
-            AddRoot(game.skier);
-            if (game.rig != null) AddRoot(game.rig.transform);
-            if (game.rig != null && game.rig.animator != null) AddRoot(game.rig.animator.transform);
+            AddRoot(game.skier, found, seen);
+            if (game.rig != null) AddRoot(game.rig.transform, found, seen);
+            if (game.rig != null && game.rig.animator != null) AddRoot(game.rig.animator.transform, found, seen);
 
             Transform chest = Chest(game);
             var raw = new List<SkiViewVestQaLogic.Entry>();
@@ -294,9 +298,7 @@ namespace SkiView
             if (float.IsNaN(roll)) return;
             Transform body = game.skier;
             body.rotation = body.rotation * Quaternion.AngleAxis(roll, body.forward);
-            string cam = Arg(args, "cam");
-            if (cam != null && cam.Trim().ToLowerInvariant() == "face")
-                Reframe(game);
+            if (faceCam) Reframe(game);
         }
 
         void Reframe(SkiViewGame game)
