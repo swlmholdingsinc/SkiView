@@ -1,0 +1,547 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using SkiView;
+
+/// <summary>
+/// Read-only samples of the game pose path. Does not save the scene or assets.
+/// Does not call SkiViewCharacterCapture125. That harness rolls the root ±35° and is a static orientation, not this file.
+///
+/// Each kept frame is SkiViewGame.SimulateFor -> ApplyVisuals -> SkierRig.Drive.
+/// UpdateGear125 is then invoked only when that method exists on the compiled SkiViewGame.
+/// This repository's ApplyVisuals does not call UpdateGear125. Weights are that method's writes, or are left unread.
+///
+/// Unity.exe -batchmode -projectPath &lt;staged&gt; -executeMethod SkiViewPoseEvidence125.Export -logFile pose-evidence.log -quit
+/// Optional: SV_POSE_OUT, SV_POSE_SECONDS (default 40, max 90). No -nographics required; pixels are not read.
+/// Exit 0 wrote the export (a missing gear driver is reported in summary.json, not invented).
+/// Exit 3 scene or humanoid rig missing. Exit 5 exception.
+/// </summary>
+public static class SkiViewPoseEvidence125
+{
+    const string ScenePath = "Assets/SkiView/Scenes/SkiViewLake.unity";
+    const string BodyFbx = "Assets/SkiView/Skier/INTERNAL_ONLY_Felderpuss_V3_WadeCox.fbx";
+    const string VestFbx = "Assets/SkiView/Resources/Gear125/SkiView_Gear_Slalom_125.fbx";
+    const int Stride = 1;
+    static readonly HumanBodyBones[] Bones =
+    {
+        HumanBodyBones.Hips, HumanBodyBones.Spine, HumanBodyBones.Chest, HumanBodyBones.UpperChest,
+        HumanBodyBones.Neck, HumanBodyBones.Head,
+        HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftLowerLeg, HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg,
+        HumanBodyBones.LeftShoulder, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand,
+        HumanBodyBones.RightShoulder, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand
+    };
+
+    public static void Export()
+    {
+        int code = 0;
+        try { code = Run(); }
+        catch (Exception ex)
+        {
+            Debug.LogError("[PoseEv] " + ex);
+            code = 5;
+        }
+        if (Application.isBatchMode) EditorApplication.Exit(code);
+    }
+
+    static int Run()
+    {
+        if (!File.Exists(ScenePath))
+        {
+            Debug.LogError("[PoseEv] missing " + ScenePath + ". SkiViewCharacterCapture125 was not run.");
+            return 3;
+        }
+        EditorSceneManager.OpenScene(ScenePath);
+        var game = UnityEngine.Object.FindFirstObjectByType<SkiViewGame>();
+        if (game == null || game.path == null || game.path.Count == 0 || game.rig == null || game.rig.animator == null || !game.rig.animator.isHuman || game.skier == null)
+        {
+            Debug.LogError("[PoseEv] SkiViewLake has no humanoid rig on a path. Drive was not called.");
+            return 3;
+        }
+
+        string dir = Environment.GetEnvironmentVariable("SV_POSE_OUT");
+        if (string.IsNullOrEmpty(dir)) dir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screens/pose125"));
+        Directory.CreateDirectory(dir);
+        float seconds = 40f;
+        string secEnv = Environment.GetEnvironmentVariable("SV_POSE_SECONDS");
+        if (!string.IsNullOrEmpty(secEnv))
+            float.TryParse(secEnv, NumberStyles.Float, CultureInfo.InvariantCulture, out seconds);
+        if (seconds < 1f) seconds = 40f;
+        if (seconds > 90f) seconds = 90f;
+        int stride = Stride;
+        string strideEnv = Environment.GetEnvironmentVariable("SV_POSE_STRIDE");
+        if (!string.IsNullOrEmpty(strideEnv)) int.TryParse(strideEnv, NumberStyles.Integer, CultureInfo.InvariantCulture, out stride);
+        if (stride < 1) stride = 1;
+
+        var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        var gear = game.GetType().GetMethod("UpdateGear125", flags, null, Type.EmptyTypes, null);
+        var ensure = game.GetType().GetMethod("EnsureGear125", flags, null, Type.EmptyTypes, null);
+        var setGear = game.GetType().GetMethod("SetGear125", flags, null, new[] { typeof(bool) }, null);
+        string driver = gear == null ? "missing" : "UpdateGear125";
+        string driverError = "";
+
+        named.Clear();
+        namedRoot = null;
+        game.autopilot = true;
+        UnityEngine.Random.InitState(125);
+        game.Init();
+        TryInvoke(ensure, game, null, ref driverError);
+        if (setGear != null) TryInvoke(setGear, game, new object[] { game.jumpMode }, ref driverError);
+
+        File.WriteAllText(Path.Combine(dir, "bind.json"), BindJson());
+
+        var frames = new StringBuilder();
+        int kept = 0, seen = 0, both50 = 0, both99 = 0;
+        float bestPair = -1f, bestBend = -1f, bestArm = -1f, bestAbsLean = -1f;
+        float maxBend = 0f, maxArmR = 0f, maxHip = 0f, maxArmDeg = 0f;
+        bool bendSeen = false, armSeen = false, poseMoved = false;
+        Quaternion bindHead = Quaternion.identity;
+        bool haveBindHead = false;
+        var head = game.rig.animator.GetBoneTransform(HumanBodyBones.Head);
+        if (head != null) { bindHead = head.localRotation; haveBindHead = true; }
+
+        int steps = Mathf.RoundToInt(seconds / (1f / 60f));
+        for (int i = 0; i < steps; i++)
+        {
+            game.SimulateFor(1f / 60f);
+            if (gear != null && !TryInvoke(gear, game, null, ref driverError)) driver = "threw";
+            seen++;
+            float bend, armR;
+            ReadKeys(game, out bend, out armR, ref bendSeen, ref armSeen);
+            float hip, armDeg;
+            string measure;
+            Measure(game, out hip, out armDeg, out measure);
+            if (hip > maxHip) maxHip = hip;
+            if (armDeg > maxArmDeg) maxArmDeg = armDeg;
+            float pair = SkiViewPoseEvidence125Logic.Pair(bend, armR);
+            float absLean = Mathf.Abs(game.LeanDeg);
+            if (bend > maxBend) maxBend = bend;
+            if (armR > maxArmR) maxArmR = armR;
+            if (SkiViewPoseEvidence125Logic.BothAtLeast(bend, armR, 50f)) both50++;
+            if (SkiViewPoseEvidence125Logic.BothAtLeast(bend, armR, 99f)) both99++;
+            if (haveBindHead && head != null && Quaternion.Angle(head.localRotation, bindHead) > 0.5f) poseMoved = true;
+            if (!SkiViewPoseEvidence125Logic.Keep(i, stride, pair, bestPair, bend, bestBend, armR, bestArm, absLean, bestAbsLean)) continue;
+            if (pair > bestPair) bestPair = pair;
+            if (bend > bestBend) bestBend = bend;
+            if (armR > bestArm) bestArm = armR;
+            if (absLean > bestAbsLean) bestAbsLean = absLean;
+            if (kept > 0) frames.Append('\n');
+            frames.Append(FrameJson(game, i, bend, armR, hip, armDeg, measure, driver));
+            kept++;
+        }
+
+        File.WriteAllText(Path.Combine(dir, "frames.jsonl"), frames.ToString());
+        File.WriteAllText(Path.Combine(dir, "summary.json"), Summary(game, dir, seconds, stride, seen, kept, driver, driverError, maxBend, maxArmR, bestPair, both50, both99, bendSeen, armSeen, maxHip, maxArmDeg, poseMoved));
+        Debug.Log("[PoseEv] " + dir + " steps=" + seen + " kept=" + kept + " driver=" + driver
+            + " maxBend=" + F(maxBend) + " maxArmR=" + F(maxArmR) + " both99=" + both99
+            + " maxHipDeg=" + F(maxHip) + " maxArmFwdDeg=" + F(maxArmDeg)
+            + " sceneSaved=false characterCapture125=not-run");
+        return 0;
+    }
+
+    static string Summary(SkiViewGame game, string dir, float seconds, int stride, int seen, int kept, string driver, string driverError,
+        float maxBend, float maxArmR, float bestPair, int both50, int both99, bool bendSeen, bool armSeen,
+        float maxHip, float maxArmDeg, bool poseMoved)
+    {
+        var sb = new StringBuilder();
+        sb.Append("{\n");
+        sb.Append("  \"evaluation\": \"SkiViewGame.SimulateFor -> ApplyVisuals -> SkierRig.Drive\",\n");
+        sb.Append("  \"staticCaptureOrientation\": false,\n");
+        sb.Append("  \"characterCapture125\": \"not invoked. SkiViewCharacterCapture125.Run is unchanged. Its root rolls are static orientations and are not samples in this export.\",\n");
+        sb.Append("  \"gearDriver\": \"").Append(driver).Append("\",\n");
+        sb.Append("  \"gearDriverInvokedByExport\": ").Append(driver == "missing" ? "false" : "true").Append(",\n");
+        sb.Append("  \"applyVisualsInThisRepoCallsUpdateGear125\": false,\n");
+        sb.Append("  \"driverError\": \"").Append(Esc(driverError)).Append("\",\n");
+        sb.Append("  \"note\": \"");
+        if (driver == "UpdateGear125")
+            sb.Append("Weights are the writes from UpdateGear125 after each ApplyVisuals. That method sets SK_bendFwd_fold_Vest from the same hip-flexion value as SK_hipFlex_tuck_Shorts, and SK_armhole_ease_Vest_R from the right-arm forward angle. The export does not force either weight to 100.");
+        else if (driver == "threw")
+            sb.Append("UpdateGear125 threw. Blendshape weights were not invented.");
+        else
+            sb.Append("UpdateGear125 is not on this SkiViewGame. Blendshape weights were read as the mesh held them and were not invented. hipFlexDeg and armForwardRDeg are measured from the posed bones and are not weights.");
+        sb.Append("\",\n");
+        sb.Append("  \"seed\": 125,\n");
+        sb.Append("  \"autopilot\": true,\n");
+        sb.Append("  \"seconds\": ").Append(seconds.ToString("0.###", CultureInfo.InvariantCulture)).Append(",\n");
+        sb.Append("  \"stride\": ").Append(stride).Append(",\n");
+        sb.Append("  \"steps\": ").Append(seen).Append(",\n");
+        sb.Append("  \"kept\": ").Append(kept).Append(",\n");
+        sb.Append("  \"jumpMode\": ").Append(game.jumpMode ? "true" : "false").Append(",\n");
+        sb.Append("  \"bootsPresent\": ").Append(game.rig.frontBoot != null && game.rig.rearBoot != null ? "true" : "false").Append(",\n");
+        sb.Append("  \"headLeftBind\": ").Append(poseMoved ? "true" : "false").Append(",\n");
+        sb.Append("  \"bendShapeSeen\": ").Append(bendSeen ? "true" : "false").Append(",\n");
+        sb.Append("  \"armholeRShapeSeen\": ").Append(armSeen ? "true" : "false").Append(",\n");
+        sb.Append("  \"maxBendFwd\": ").Append(F(maxBend)).Append(",\n");
+        sb.Append("  \"maxArmholeR\": ").Append(F(maxArmR)).Append(",\n");
+        sb.Append("  \"maxPair\": ").Append(F(bestPair < 0f ? 0f : bestPair)).Append(",\n");
+        sb.Append("  \"framesBothAtLeast50\": ").Append(both50).Append(",\n");
+        sb.Append("  \"framesBothAtLeast99\": ").Append(both99).Append(",\n");
+        sb.Append("  \"maxHipFlexDeg\": ").Append(F(maxHip)).Append(",\n");
+        sb.Append("  \"maxArmForwardRDeg\": ").Append(F(maxArmDeg)).Append(",\n");
+        sb.Append("  \"bodySha256\": \"").Append(ShaFile(BodyFbx)).Append("\",\n");
+        sb.Append("  \"vestSha256\": \"").Append(ShaFile(VestFbx)).Append("\",\n");
+        sb.Append("  \"output\": \"").Append(Esc(dir)).Append("\",\n");
+        sb.Append("  \"sceneSaved\": false,\n");
+        sb.Append("  \"limits\": [\n");
+        sb.Append("    \"Edit-mode SimulateFor calls the same ApplyVisuals and SkierRig.Drive the play-mode loop calls. It is not a player-build frame and it does not read the framebuffer.\",\n");
+        sb.Append("    \"SkiViewCharacterCapture125 rolls the skier root for the camera. Those rolls are not gameplay poses and are not in frames.jsonl.\",\n");
+        if (driver == "missing")
+            sb.Append("    \"The compiled game has no UpdateGear125, so simultaneous bendFwd and armhole_R weights were not observed. Bone angles are still in the frames.\",\n");
+        if (!bendSeen || !armSeen)
+            sb.Append("    \"A vest blendshape name was not found on an enabled renderer. A zero weight is then not evidence the pose never reaches that key.\",\n");
+        if (game.rig.frontBoot == null || game.rig.rearBoot == null)
+            sb.Append("    \"A boot transform is missing, so SkierRig.Drive returns after the clip evaluate and does not run stance IK.\",\n");
+        if (!poseMoved)
+            sb.Append("    \"The head local rotation stayed on the pre-step pose. Treat the bone samples as unmoved until a run shows headLeftBind true.\",\n");
+        sb.Append("    \"No scene, asset, or bind file is written.\"\n");
+        sb.Append("  ]\n}\n");
+        return sb.ToString();
+    }
+
+    static string BindJson()
+    {
+        var sb = new StringBuilder();
+        sb.Append("{\n  \"evaluation\": \"asset-bind\",\n  \"gameplay\": false,\n  \"staticCaptureOrientation\": false,\n");
+        sb.Append("  \"bodySha256\": \"").Append(ShaFile(BodyFbx)).Append("\",\n");
+        sb.Append("  \"vestSha256\": \"").Append(ShaFile(VestFbx)).Append("\",\n");
+        sb.Append("  \"bones\": [\n");
+        var src = AssetDatabase.LoadAssetAtPath<GameObject>(BodyFbx);
+        GameObject temp = null;
+        if (src != null)
+        {
+            temp = (GameObject)PrefabUtility.InstantiatePrefab(src);
+            var anim = temp != null ? temp.GetComponentInChildren<Animator>() : null;
+            bool any = false;
+            if (anim != null && anim.isHuman)
+            {
+                for (int i = 0; i < Bones.Length; i++)
+                {
+                    var t = anim.GetBoneTransform(Bones[i]);
+                    if (t == null) continue;
+                    if (any) sb.Append(",\n");
+                    any = true;
+                    Bone(sb, "    ", Bones[i].ToString(), t, false);
+                }
+            }
+        }
+        sb.Append("\n  ],\n  \"vestMeshes\": [\n");
+        AppendAssetVests(sb, VestFbx);
+        sb.Append("\n  ]\n}\n");
+        if (temp != null) UnityEngine.Object.DestroyImmediate(temp);
+        return sb.ToString();
+    }
+
+    static void AppendAssetVests(StringBuilder sb, string assetPath)
+    {
+        var src = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+        if (src == null) return;
+        bool any = false;
+        foreach (var sm in src.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            if (sm == null || sm.sharedMesh == null) continue;
+            if ((sm.name + " " + sm.sharedMesh.name).IndexOf("Vest", StringComparison.OrdinalIgnoreCase) < 0) continue;
+            if (any) sb.Append(",\n");
+            any = true;
+            MeshId(sb, "    ", sm, true);
+        }
+    }
+
+    static string FrameJson(SkiViewGame game, int index, float bend, float armR, float hip, float armDeg, string measure, string driver)
+    {
+        var anim = game.rig.animator;
+        var root = game.skier;
+        var sb = new StringBuilder();
+        sb.Append("{\"i\": ").Append(index);
+        sb.Append(", \"t\": ").Append(F(index / 60f));
+        sb.Append(", \"evaluation\": \"ApplyVisuals+Drive\"");
+        sb.Append(", \"staticCaptureOrientation\": false");
+        sb.Append(", \"gearDriver\": \"").Append(driver).Append("\"");
+        sb.Append(", \"blendshapeWeightsFromDriver\": ").Append(driver == "UpdateGear125" ? "true" : "false");
+        sb.Append(", \"mode\": \"").Append(game.mode).Append("\"");
+        sb.Append(", \"leanDeg\": ").Append(F(game.LeanDeg));
+        sb.Append(", \"leanTotalDeg\": ").Append(F(game.rig.LeanTotalDeg));
+        sb.Append(", \"ropeM\": ").Append(F(game.sim.ropeM));
+        sb.Append(", \"rope01\": ").Append(F(game.rig.rope01));
+        sb.Append(", \"lateral\": ").Append(F(game.sim.Lateral));
+        sb.Append(", \"stretch01\": ").Append(F(game.rig.Stretch01));
+        sb.Append(", \"releaseL\": ").Append(F(game.rig.ReleaseL));
+        sb.Append(", \"releaseR\": ").Append(F(game.rig.ReleaseR));
+        sb.Append(", \"bendFwd\": ").Append(F(bend));
+        sb.Append(", \"armholeR\": ").Append(F(armR));
+        sb.Append(", \"bothAtLeast99\": ").Append(SkiViewPoseEvidence125Logic.BothAtLeast(bend, armR, 99f) ? "true" : "false");
+        sb.Append(", \"hipFlexDeg\": ").Append(F(hip));
+        sb.Append(", \"armForwardRDeg\": ").Append(F(armDeg));
+        sb.Append(", \"measure\": \"").Append(measure).Append("\"");
+        sb.Append(", \"rootLocalPos\": "); Vec(sb, root.localPosition);
+        sb.Append(", \"rootLocalRot\": "); Quat(sb, root.localRotation);
+        sb.Append(", \"rootWorldPos\": "); Vec(sb, root.position);
+        sb.Append(", \"rootWorldRot\": "); Quat(sb, root.rotation);
+        sb.Append(", \"bones\": [");
+        bool any = false;
+        for (int i = 0; i < Bones.Length; i++)
+        {
+            var t = anim.GetBoneTransform(Bones[i]);
+            if (t == null) continue;
+            if (any) sb.Append(", ");
+            any = true;
+            Bone(sb, "", Bones[i].ToString(), t, true);
+        }
+        sb.Append("], \"vests\": [");
+        AppendRuntimeVests(sb, game);
+        sb.Append("]}");
+        return sb.ToString();
+    }
+
+    static void Bone(StringBuilder sb, string pad, string name, Transform t, bool world)
+    {
+        sb.Append(pad).Append("{\"bone\": \"").Append(name).Append("\", \"localPos\": ");
+        Vec(sb, t.localPosition);
+        sb.Append(", \"localRot\": ");
+        Quat(sb, t.localRotation);
+        sb.Append(", \"localScale\": ");
+        Vec(sb, t.localScale);
+        if (world)
+        {
+            sb.Append(", \"worldPos\": ");
+            Vec(sb, t.position);
+            sb.Append(", \"worldRot\": ");
+            Quat(sb, t.rotation);
+        }
+        sb.Append("}");
+    }
+
+    static void AppendRuntimeVests(StringBuilder sb, SkiViewGame game)
+    {
+        var seen = new HashSet<int>();
+        AppendFrom(sb, game.skier, seen);
+        if (game.rig != null && game.rig.animator != null) AppendFrom(sb, game.rig.animator.transform, seen);
+    }
+
+    static void AppendFrom(StringBuilder sb, Transform root, HashSet<int> seen)
+    {
+        if (root == null) return;
+        foreach (var sm in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            if (sm == null || sm.sharedMesh == null) continue;
+            if ((sm.name + " " + sm.sharedMesh.name).IndexOf("Vest", StringComparison.OrdinalIgnoreCase) < 0) continue;
+            if (!seen.Add(sm.GetInstanceID())) continue;
+            if (seen.Count > 1) sb.Append(", ");
+            MeshId(sb, "", sm, false);
+        }
+    }
+
+    static void MeshId(StringBuilder sb, string pad, SkinnedMeshRenderer sm, bool asset)
+    {
+        var mesh = sm.sharedMesh;
+        sb.Append(pad).Append("{\"name\": \"").Append(Esc(sm.name));
+        sb.Append("\", \"mesh\": \"").Append(Esc(mesh.name));
+        sb.Append("\", \"enabled\": ").Append(sm.enabled ? "true" : "false");
+        if (!asset) sb.Append(", \"instance\": ").Append(sm.GetInstanceID());
+        sb.Append(", \"verts\": ").Append(mesh.vertexCount);
+        sb.Append(", \"shapes\": ").Append(mesh.blendShapeCount);
+        sb.Append(", \"bones\": ").Append(mesh.bindposes != null ? mesh.bindposes.Length : 0);
+        sb.Append(", \"bindPoseSha256\": \"").Append(HashBind(mesh)).Append("\"");
+        sb.Append(", \"shapeNameSha256\": \"").Append(HashShapeNames(mesh)).Append("\"");
+        if (!asset)
+        {
+            sb.Append(", \"weights\": [");
+            bool wany = false;
+            for (int i = 0; i < mesh.blendShapeCount; i++)
+            {
+                string shape = mesh.GetBlendShapeName(i);
+                float w = sm.GetBlendShapeWeight(i);
+                bool key = shape == SkiViewPoseEvidence125Logic.BendFwd || shape == SkiViewPoseEvidence125Logic.ArmholeR
+                    || shape == SkiViewPoseEvidence125Logic.ArmholeL || shape == SkiViewPoseEvidence125Logic.HipTuck;
+                if (!key && w < 0.05f) continue;
+                if (wany) sb.Append(", ");
+                wany = true;
+                sb.Append("{\"name\": \"").Append(Esc(shape)).Append("\", \"weight\": ").Append(F(w)).Append("}");
+            }
+            sb.Append("]");
+        }
+        sb.Append("}");
+    }
+
+    static void ReadKeys(SkiViewGame game, out float bend, out float armR, ref bool bendSeen, ref bool armSeen)
+    {
+        bend = 0f; armR = 0f;
+        ReadOne(game.skier, ref bend, ref armR, ref bendSeen, ref armSeen);
+        if (game.rig != null && game.rig.animator != null)
+            ReadOne(game.rig.animator.transform, ref bend, ref armR, ref bendSeen, ref armSeen);
+    }
+
+    static void ReadOne(Transform root, ref float bend, ref float armR, ref bool bendSeen, ref bool armSeen)
+    {
+        if (root == null) return;
+        foreach (var sm in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            if (sm == null || sm.sharedMesh == null || !sm.enabled) continue;
+            var mesh = sm.sharedMesh;
+            int b = mesh.GetBlendShapeIndex(SkiViewPoseEvidence125Logic.BendFwd);
+            int a = mesh.GetBlendShapeIndex(SkiViewPoseEvidence125Logic.ArmholeR);
+            if (b >= 0) { bendSeen = true; bend = Mathf.Max(bend, sm.GetBlendShapeWeight(b)); }
+            if (a >= 0) { armSeen = true; armR = Mathf.Max(armR, sm.GetBlendShapeWeight(a)); }
+        }
+    }
+
+    static void Measure(SkiViewGame game, out float hip, out float armR, out string source)
+    {
+        hip = 0f; armR = 0f; source = "none";
+        var anim = game.rig.animator;
+        var root = anim.transform;
+        var hips = Named(root, "mixamorig:Hips");
+        var spine1 = Named(root, "mixamorig:Spine1");
+        var spine2 = Named(root, "mixamorig:Spine2");
+        var lul = Named(root, "mixamorig:LeftUpLeg");
+        var lll = Named(root, "mixamorig:LeftLeg");
+        var rul = Named(root, "mixamorig:RightUpLeg");
+        var rll = Named(root, "mixamorig:RightLeg");
+        var lsh = Named(root, "mixamorig:LeftShoulder");
+        var rsh = Named(root, "mixamorig:RightShoulder");
+        var lua = Named(root, "mixamorig:LeftArm");
+        var lla = Named(root, "mixamorig:LeftForeArm");
+        var rua = Named(root, "mixamorig:RightArm");
+        var rla = Named(root, "mixamorig:RightForeArm");
+        if (hips != null && spine1 != null && lul != null && lll != null && rul != null && rll != null)
+        {
+            source = "mixamorig";
+            Vector3 sp = (spine1.position - hips.position).normalized;
+            float hL = SkiViewPoseEvidence125Logic.HipFlexDeg(Vector3.Angle(sp, (lll.position - lul.position).normalized));
+            float hR = SkiViewPoseEvidence125Logic.HipFlexDeg(Vector3.Angle(sp, (rll.position - rul.position).normalized));
+            hip = SkiViewPoseEvidence125Logic.Larger(hL, hR);
+        }
+        else
+        {
+            var h = anim.GetBoneTransform(HumanBodyBones.Hips);
+            var spT = anim.GetBoneTransform(HumanBodyBones.Chest) ?? anim.GetBoneTransform(HumanBodyBones.Spine);
+            var a = anim.GetBoneTransform(HumanBodyBones.LeftUpperLeg);
+            var b = anim.GetBoneTransform(HumanBodyBones.LeftLowerLeg);
+            var c = anim.GetBoneTransform(HumanBodyBones.RightUpperLeg);
+            var d = anim.GetBoneTransform(HumanBodyBones.RightLowerLeg);
+            if (h != null && spT != null && a != null && b != null && c != null && d != null)
+            {
+                source = "humanoid";
+                Vector3 sp = (spT.position - h.position).normalized;
+                hip = SkiViewPoseEvidence125Logic.Larger(
+                    SkiViewPoseEvidence125Logic.HipFlexDeg(Vector3.Angle(sp, (b.position - a.position).normalized)),
+                    SkiViewPoseEvidence125Logic.HipFlexDeg(Vector3.Angle(sp, (d.position - c.position).normalized)));
+            }
+            hips = h; spine2 = anim.GetBoneTransform(HumanBodyBones.UpperChest) ?? anim.GetBoneTransform(HumanBodyBones.Chest);
+            lsh = anim.GetBoneTransform(HumanBodyBones.LeftShoulder);
+            rsh = anim.GetBoneTransform(HumanBodyBones.RightShoulder);
+            lua = anim.GetBoneTransform(HumanBodyBones.LeftUpperArm);
+            lla = anim.GetBoneTransform(HumanBodyBones.LeftLowerArm);
+            rua = anim.GetBoneTransform(HumanBodyBones.RightUpperArm);
+            rla = anim.GetBoneTransform(HumanBodyBones.RightLowerArm);
+        }
+        if (hips == null || spine2 == null || lsh == null || rsh == null || rua == null || rla == null) return;
+        Vector3 up = (spine2.position - hips.position).normalized;
+        Vector3 lr = (lsh.position - rsh.position).normalized;
+        Vector3 fw = Vector3.Cross(up, lr);
+        if (fw.sqrMagnitude > 1e-6f) fw.Normalize();
+        else fw = spine2.forward;
+        Vector3 arR = (rla.position - rua.position).normalized;
+        armR = SkiViewPoseEvidence125Logic.ArmForwardDeg(Vector3.Dot(arR, fw));
+        if (source == "none") source = "humanoid";
+    }
+
+    static readonly Dictionary<string, Transform> named = new Dictionary<string, Transform>();
+    static Transform namedRoot;
+
+    static Transform Named(Transform root, string name)
+    {
+        if (root == null) return null;
+        if (namedRoot != root)
+        {
+            named.Clear();
+            namedRoot = root;
+            var all = root.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < all.Length; i++) if (!named.ContainsKey(all[i].name)) named.Add(all[i].name, all[i]);
+        }
+        Transform found;
+        return named.TryGetValue(name, out found) ? found : null;
+    }
+
+    static bool TryInvoke(MethodInfo method, object target, object[] args, ref string error)
+    {
+        if (method == null) return false;
+        try { method.Invoke(target, args); return true; }
+        catch (Exception ex)
+        {
+            var inner = ex.InnerException ?? ex;
+            if (error.Length == 0) error = inner.GetType().Name + ": " + inner.Message;
+            Debug.LogError("[PoseEv] " + method.Name + " " + inner);
+            return false;
+        }
+    }
+
+    static string ShaFile(string assetPath)
+    {
+        string full = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+        if (!File.Exists(full)) return "";
+        using (var sha = SHA256.Create())
+        using (var fs = File.OpenRead(full))
+            return Hex(sha.ComputeHash(fs));
+    }
+
+    static string HashBind(Mesh mesh)
+    {
+        if (mesh == null || mesh.bindposes == null || mesh.bindposes.Length == 0) return "";
+        using (var sha = SHA256.Create())
+        using (var ms = new MemoryStream())
+        using (var bw = new BinaryWriter(ms))
+        {
+            var bp = mesh.bindposes;
+            for (int i = 0; i < bp.Length; i++)
+            {
+                var m = bp[i];
+                for (int c = 0; c < 16; c++) bw.Write(m[c]);
+            }
+            return Hex(sha.ComputeHash(ms.ToArray()));
+        }
+    }
+
+    static string HashShapeNames(Mesh mesh)
+    {
+        if (mesh == null || mesh.blendShapeCount == 0) return "";
+        var sb = new StringBuilder();
+        for (int i = 0; i < mesh.blendShapeCount; i++)
+        {
+            if (i > 0) sb.Append('\n');
+            sb.Append(mesh.GetBlendShapeName(i));
+        }
+        using (var sha = SHA256.Create())
+            return Hex(sha.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString())));
+    }
+
+    static string Hex(byte[] bytes)
+    {
+        var sb = new StringBuilder(bytes.Length * 2);
+        for (int i = 0; i < bytes.Length; i++) sb.Append(bytes[i].ToString("x2"));
+        return sb.ToString();
+    }
+
+    static void Vec(StringBuilder sb, Vector3 v)
+    {
+        sb.Append("[").Append(F(v.x)).Append(",").Append(F(v.y)).Append(",").Append(F(v.z)).Append("]");
+    }
+
+    static void Quat(StringBuilder sb, Quaternion q)
+    {
+        sb.Append("[").Append(F(q.x)).Append(",").Append(F(q.y)).Append(",").Append(F(q.z)).Append(",").Append(F(q.w)).Append("]");
+    }
+
+    static string F(float v) { return v.ToString("0.####", CultureInfo.InvariantCulture); }
+
+    static string Esc(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return "";
+        return s.Replace("\\", "\\\\").Replace("\"", "'").Replace("\n", " ").Replace("\r", " ");
+    }
+}
