@@ -136,7 +136,9 @@ public static class SkiViewNativeEvidence125
                     list = new List<SkinnedMeshRenderer>();
                     owners[id] = list;
                 }
-                list.Add(smr);
+                bool seenRenderer = false;
+                for (int i = 0; i < list.Count; i++) if (list[i].GetInstanceID() == smr.GetInstanceID()) { seenRenderer = true; break; }
+                if (!seenRenderer) list.Add(smr);
             }
         }
         Take(game.skier);
@@ -164,7 +166,20 @@ public static class SkiViewNativeEvidence125
             sb.Append(", \"contentLabel\": \"").Append(SkiViewCharacterCapture125Logic.VestContentLabel(sha)).Append("\"");
         sb.Append(", \"sourcePath\": \"").Append(Esc(path)).Append("\"");
         sb.Append(", \"sourceSha256\": \"").Append(sha).Append("\"");
+        sb.Append(", \"persistent\": ").Append(EditorUtility.IsPersistent(mesh) ? "true" : "false");
+        string suffix = NameSuffix(mesh.name, first.name);
+        sb.Append(", \"producer\": \"").Append(Esc(string.IsNullOrEmpty(path) ? (string.IsNullOrEmpty(suffix) ? "runtime mesh, asset path empty" : suffix) : "imported asset")).Append("\"");
+        if (string.IsNullOrEmpty(path))
+            sb.Append(", \"sourceSha256Reason\": \"AssetDatabase.GetAssetPath is empty. contentSha256 hashes positions in mesh vertex order plus indices. No FBX path is inferred.\"");
         sb.Append(", \"vertexCount\": ").Append(mesh.vertexCount);
+        if (role == "body")
+        {
+            sb.Append(", \"vertexOrder\": \"mesh vertex index, the order the triangle indices address\"");
+            sb.Append(", \"contentSha256\": \"").Append(ContentSha(mesh)).Append("\"");
+            sb.Append(", \"positions\": [");
+            WritePositions(sb, mesh);
+            sb.Append("]");
+        }
         sb.Append(", \"renderers\": [");
         for (int i = 0; i < renderers.Count; i++)
         {
@@ -480,6 +495,76 @@ public static class SkiViewNativeEvidence125
             if (error.Length == 0) error = inner.GetType().Name + ": " + inner.Message;
             return false;
         }
+    }
+
+    static string NameSuffix(string meshName, string rendererName)
+    {
+        if (string.IsNullOrEmpty(meshName) || string.IsNullOrEmpty(rendererName)) return "";
+        if (!meshName.StartsWith(rendererName, StringComparison.Ordinal) || meshName.Length <= rendererName.Length) return "";
+        return meshName.Substring(rendererName.Length).TrimStart('_');
+    }
+
+    static string ContentSha(Mesh mesh)
+    {
+        Mesh.MeshDataArray read = Mesh.AcquireReadOnlyMeshData(mesh);
+        try
+        {
+            var data = read[0];
+            using (var ms = new MemoryStream())
+            using (var sha = SHA256.Create())
+            {
+                int vc = data.vertexCount;
+                var pos = new NativeArray<Vector3>(vc, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                data.GetVertices(pos);
+                for (int i = 0; i < vc; i++)
+                {
+                    ms.Write(BitConverter.GetBytes(pos[i].x), 0, 4);
+                    ms.Write(BitConverter.GetBytes(pos[i].y), 0, 4);
+                    ms.Write(BitConverter.GetBytes(pos[i].z), 0, 4);
+                }
+                pos.Dispose();
+                for (int s = 0; s < data.subMeshCount; s++)
+                {
+                    var desc = data.GetSubMesh(s);
+                    int begin = desc.indexStart;
+                    if (data.indexFormat == IndexFormat.UInt32)
+                    {
+                        var raw = data.GetIndexData<int>();
+                        for (int i = 0; i < desc.indexCount; i++) ms.Write(BitConverter.GetBytes(raw[begin + i] + desc.baseVertex), 0, 4);
+                    }
+                    else
+                    {
+                        var raw = data.GetIndexData<ushort>();
+                        for (int i = 0; i < desc.indexCount; i++) ms.Write(BitConverter.GetBytes(raw[begin + i] + desc.baseVertex), 0, 4);
+                    }
+                }
+                ms.Position = 0;
+                var hash = sha.ComputeHash(ms);
+                var sb = new StringBuilder(hash.Length * 2);
+                for (int i = 0; i < hash.Length; i++) sb.Append(hash[i].ToString("x2"));
+                return sb.ToString();
+            }
+        }
+        finally { read.Dispose(); }
+    }
+
+    static void WritePositions(StringBuilder sb, Mesh mesh)
+    {
+        Mesh.MeshDataArray read = Mesh.AcquireReadOnlyMeshData(mesh);
+        try
+        {
+            var data = read[0];
+            int vc = data.vertexCount;
+            var pos = new NativeArray<Vector3>(vc, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+            data.GetVertices(pos);
+            for (int i = 0; i < vc; i++)
+            {
+                if (i > 0) sb.Append(",");
+                Vec(sb, pos[i]);
+            }
+            pos.Dispose();
+        }
+        finally { read.Dispose(); }
     }
 
     static string ShaFile(string assetPath)

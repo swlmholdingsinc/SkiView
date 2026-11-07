@@ -1,0 +1,487 @@
+diff --git a/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs b/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs
+index c76952c..48599e2 100644
+--- a/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs
++++ b/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs
+@@ -136,7 +136,9 @@ public static class SkiViewNativeEvidence125
+                     list = new List<SkinnedMeshRenderer>();
+                     owners[id] = list;
+                 }
+-                list.Add(smr);
++                bool seenRenderer = false;
++                for (int i = 0; i < list.Count; i++) if (list[i].GetInstanceID() == smr.GetInstanceID()) { seenRenderer = true; break; }
++                if (!seenRenderer) list.Add(smr);
+             }
+         }
+         Take(game.skier);
+@@ -164,7 +166,20 @@ public static class SkiViewNativeEvidence125
+             sb.Append(", \"contentLabel\": \"").Append(SkiViewCharacterCapture125Logic.VestContentLabel(sha)).Append("\"");
+         sb.Append(", \"sourcePath\": \"").Append(Esc(path)).Append("\"");
+         sb.Append(", \"sourceSha256\": \"").Append(sha).Append("\"");
++        sb.Append(", \"persistent\": ").Append(EditorUtility.IsPersistent(mesh) ? "true" : "false");
++        string suffix = NameSuffix(mesh.name, first.name);
++        sb.Append(", \"producer\": \"").Append(Esc(string.IsNullOrEmpty(path) ? (string.IsNullOrEmpty(suffix) ? "runtime mesh, asset path empty" : suffix) : "imported asset")).Append("\"");
++        if (string.IsNullOrEmpty(path))
++            sb.Append(", \"sourceSha256Reason\": \"AssetDatabase.GetAssetPath is empty. contentSha256 hashes positions in mesh vertex order plus indices. No FBX path is inferred.\"");
+         sb.Append(", \"vertexCount\": ").Append(mesh.vertexCount);
++        if (role == "body")
++        {
++            sb.Append(", \"vertexOrder\": \"mesh vertex index, the order the triangle indices address\"");
++            sb.Append(", \"contentSha256\": \"").Append(ContentSha(mesh)).Append("\"");
++            sb.Append(", \"positions\": [");
++            WritePositions(sb, mesh);
++            sb.Append("]");
++        }
+         sb.Append(", \"renderers\": [");
+         for (int i = 0; i < renderers.Count; i++)
+         {
+@@ -482,6 +497,76 @@ public static class SkiViewNativeEvidence125
+         }
+     }
+ 
++    static string NameSuffix(string meshName, string rendererName)
++    {
++        if (string.IsNullOrEmpty(meshName) || string.IsNullOrEmpty(rendererName)) return "";
++        if (!meshName.StartsWith(rendererName, StringComparison.Ordinal) || meshName.Length <= rendererName.Length) return "";
++        return meshName.Substring(rendererName.Length).TrimStart('_');
++    }
++
++    static string ContentSha(Mesh mesh)
++    {
++        Mesh.MeshDataArray read = Mesh.AcquireReadOnlyMeshData(mesh);
++        try
++        {
++            var data = read[0];
++            using (var ms = new MemoryStream())
++            using (var sha = SHA256.Create())
++            {
++                int vc = data.vertexCount;
++                var pos = new NativeArray<Vector3>(vc, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
++                data.GetVertices(pos);
++                for (int i = 0; i < vc; i++)
++                {
++                    ms.Write(BitConverter.GetBytes(pos[i].x), 0, 4);
++                    ms.Write(BitConverter.GetBytes(pos[i].y), 0, 4);
++                    ms.Write(BitConverter.GetBytes(pos[i].z), 0, 4);
++                }
++                pos.Dispose();
++                for (int s = 0; s < data.subMeshCount; s++)
++                {
++                    var desc = data.GetSubMesh(s);
++                    int begin = desc.indexStart;
++                    if (data.indexFormat == IndexFormat.UInt32)
++                    {
++                        var raw = data.GetIndexData<int>();
++                        for (int i = 0; i < desc.indexCount; i++) ms.Write(BitConverter.GetBytes(raw[begin + i] + desc.baseVertex), 0, 4);
++                    }
++                    else
++                    {
++                        var raw = data.GetIndexData<ushort>();
++                        for (int i = 0; i < desc.indexCount; i++) ms.Write(BitConverter.GetBytes(raw[begin + i] + desc.baseVertex), 0, 4);
++                    }
++                }
++                ms.Position = 0;
++                var hash = sha.ComputeHash(ms);
++                var sb = new StringBuilder(hash.Length * 2);
++                for (int i = 0; i < hash.Length; i++) sb.Append(hash[i].ToString("x2"));
++                return sb.ToString();
++            }
++        }
++        finally { read.Dispose(); }
++    }
++
++    static void WritePositions(StringBuilder sb, Mesh mesh)
++    {
++        Mesh.MeshDataArray read = Mesh.AcquireReadOnlyMeshData(mesh);
++        try
++        {
++            var data = read[0];
++            int vc = data.vertexCount;
++            var pos = new NativeArray<Vector3>(vc, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
++            data.GetVertices(pos);
++            for (int i = 0; i < vc; i++)
++            {
++                if (i > 0) sb.Append(",");
++                Vec(sb, pos[i]);
++            }
++            pos.Dispose();
++        }
++        finally { read.Dispose(); }
++    }
++
+     static string ShaFile(string assetPath)
+     {
+         string full = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+diff --git a/Assets/SkiView/Editor/SkiViewNeckSkinMatchCapture.cs b/Assets/SkiView/Editor/SkiViewNeckSkinMatchCapture.cs
+new file mode 100644
+index 0000000..c4708e8
+--- /dev/null
++++ b/Assets/SkiView/Editor/SkiViewNeckSkinMatchCapture.cs
+@@ -0,0 +1,151 @@
++using System;
++using System.IO;
++using System.Reflection;
++using System.Text;
++using UnityEditor;
++using UnityEditor.SceneManagement;
++using UnityEngine;
++using UnityEngine.Rendering;
++using UnityEngine.Rendering.Universal;
++using SkiView;
++
++/// <summary>
++/// Same pose as the body-head coverage views. Before is the live body skin. After matches that skin to Face125.
++/// The head mesh clip is left in place. Vest, UVs, binds, and the rig are not edited.
++///
++/// Unity.exe -batchmode -projectPath &lt;staged&gt; -executeMethod SkiViewNeckSkinMatchCapture.Run -logFile neck-skin-match.log -quit
++/// </summary>
++public static class SkiViewNeckSkinMatchCapture
++{
++    const string ScenePath = "Assets/SkiView/Scenes/SkiViewLake.unity";
++
++    public static void Run()
++    {
++        int code = 0;
++        try { code = Capture(); }
++        catch (Exception ex)
++        {
++            Debug.LogError("[NeckSkin] " + ex);
++            code = 5;
++        }
++        if (Application.isBatchMode) EditorApplication.Exit(code);
++    }
++
++    static int Capture()
++    {
++        if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
++        {
++            Debug.LogError("[NeckSkin] no graphics device. Do not pass -nographics.");
++            return 2;
++        }
++        bool allowOther = Environment.GetEnvironmentVariable("SV_CAPTURE_ALLOW_NON_D3D11") == "1";
++        if (!allowOther && SystemInfo.graphicsDeviceType != GraphicsDeviceType.Direct3D11)
++        {
++            Debug.LogError("[NeckSkin] graphicsDeviceType=" + SystemInfo.graphicsDeviceType);
++            return 2;
++        }
++        var pipeline = GraphicsSettings.currentRenderPipeline;
++        if (pipeline == null || pipeline.GetType().Name.IndexOf("Universal", StringComparison.Ordinal) < 0)
++        {
++            Debug.LogError("[NeckSkin] URP is not active.");
++            return 2;
++        }
++        if (!File.Exists(ScenePath)) { Debug.LogError("[NeckSkin] missing scene"); return 3; }
++        EditorSceneManager.OpenScene(ScenePath);
++        var game = UnityEngine.Object.FindFirstObjectByType<SkiViewGame>();
++        if (game == null || game.skier == null || game.rig == null || game.rig.animator == null)
++        {
++            Debug.LogError("[NeckSkin] no skier rig");
++            return 3;
++        }
++        var setAthlete = game.GetType().GetMethod("SetAthlete", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(int) }, null);
++        if (setAthlete == null) { Debug.LogError("[NeckSkin] SetAthlete missing"); return 3; }
++
++        string dir = Environment.GetEnvironmentVariable("SV_NECK_OUT");
++        if (string.IsNullOrEmpty(dir)) dir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screens/neck-skin-match"));
++        Directory.CreateDirectory(dir);
++
++        var camGo = new GameObject("NeckSkinMatchCam");
++        var cam = camGo.AddComponent<Camera>();
++        cam.clearFlags = CameraClearFlags.Skybox;
++        cam.fieldOfView = 30f;
++        cam.nearClipPlane = 0.05f;
++        cam.farClipPlane = 200f;
++        cam.aspect = 1280f / 720f;
++        if (cam.GetComponent<UniversalAdditionalCameraData>() == null)
++            camGo.AddComponent<UniversalAdditionalCameraData>();
++
++        var shots = new StringBuilder();
++        var root = game.rig.animator.transform;
++        int changed = 0;
++        try
++        {
++            Pair(game, setAthlete, cam, dir, root, 0, "male", shots, ref changed);
++            Pair(game, setAthlete, cam, dir, root, 1, "female", shots, ref changed);
++        }
++        finally { UnityEngine.Object.DestroyImmediate(camGo); }
++
++        var sb = new StringBuilder();
++        sb.Append("{\n");
++        sb.Append("  \"playMode\": false,\n");
++        sb.Append("  \"playerFixed\": false,\n");
++        sb.Append("  \"geometryEdited\": false,\n");
++        sb.Append("  \"uvEdited\": false,\n");
++        sb.Append("  \"rigEdited\": false,\n");
++        sb.Append("  \"vestEdited\": false,\n");
++        sb.Append("  \"assetSaved\": false,\n");
++        sb.Append("  \"materialsMatched\": ").Append(changed).Append(",\n");
++        sb.Append("  \"cause\": \"Body_LOD SetA keeps _METALLICSPECGLOSSMAP and metallic 1. Face125 sets metallic 0, smoothness 0.25, and HumanSkin125 when that material exists. The match copies the face shader and those scalars onto Body_LOD skin and leaves the body albedo, tint, mesh, and vest.\",\n");
++        sb.Append("  \"shots\": [\n").Append(shots).Append("\n  ]\n}\n");
++        File.WriteAllText(Path.Combine(dir, "neck-skin.json"), sb.ToString());
++        Debug.Log("[NeckSkin] " + dir + " materialsMatched=" + changed + " playerFixed=false sceneSaved=false");
++        return changed > 0 ? 0 : 4;
++    }
++
++    static void Pair(SkiViewGame game, MethodInfo setAthlete, Camera cam, string dir, Transform root, int athlete, string label, StringBuilder shots, ref int changed)
++    {
++        setAthlete.Invoke(game, new object[] { athlete });
++        SkiViewNeckSkinMatch.Remember(root);
++        SkiViewNeckSkinMatch.Restore();
++        Shoot(game, cam, dir, label + "_before", shots);
++        changed += SkiViewNeckSkinMatch.Apply(root);
++        Shoot(game, cam, dir, label + "_after", shots);
++    }
++
++    static void Shoot(SkiViewGame game, Camera cam, string dir, string prefix, StringBuilder shots)
++    {
++        var anim = game.rig.animator;
++        var head = anim.GetBoneTransform(HumanBodyBones.Head);
++        var neck = anim.GetBoneTransform(HumanBodyBones.Neck);
++        if (head == null) return;
++        Vector3 flatFwd = head.forward; flatFwd.y = 0f;
++        if (flatFwd.sqrMagnitude < 1e-4f) flatFwd = Vector3.forward;
++        flatFwd.Normalize();
++        Vector3 side = Vector3.Cross(Vector3.up, flatFwd);
++        SkiViewCharacterCapture125.Frame(cam, head);
++        One(cam, dir, prefix + "_front", shots);
++        Aim(cam, head.position, side, 0.94f);
++        One(cam, dir, prefix + "_side", shots);
++        Aim(cam, head.position, -flatFwd, 0.94f);
++        One(cam, dir, prefix + "_rear", shots);
++        Vector3 collar = neck != null ? Vector3.Lerp(neck.position, head.position, 0.35f) : head.position + Vector3.down * 0.12f;
++        Aim(cam, collar, flatFwd + Vector3.up * 0.15f, 1.55f);
++        One(cam, dir, prefix + "_collar", shots);
++    }
++
++    static void Aim(Camera cam, Vector3 aim, Vector3 dir, float dist)
++    {
++        if (dir.sqrMagnitude < 1e-6f) dir = Vector3.forward;
++        dir.Normalize();
++        Vector3 pos = aim + dir * dist;
++        cam.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(aim - pos, Vector3.up));
++    }
++
++    static void One(Camera cam, string dir, string name, StringBuilder shots)
++    {
++        uint hash; float mean, stdev; int bytes;
++        string err = SkiViewCharacterCapture125.Render(cam, Path.Combine(dir, name + ".png"), out hash, out mean, out stdev, out bytes);
++        if (shots.Length > 0) shots.Append(",\n");
++        shots.Append("    {\"name\": \"").Append(name).Append("\", \"bytes\": ").Append(bytes).Append(", \"error\": \"").Append(err ?? "").Append("\"}");
++    }
++}
+diff --git a/Assets/SkiView/Editor/SkiViewNeckSkinMatchCapture.cs.meta b/Assets/SkiView/Editor/SkiViewNeckSkinMatchCapture.cs.meta
+new file mode 100644
+index 0000000..6c1a466
+--- /dev/null
++++ b/Assets/SkiView/Editor/SkiViewNeckSkinMatchCapture.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: c8e3f5a29d58417cc35b8069a27d59e8
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Scripts/SkiViewNeckSkinMatch.cs b/Assets/SkiView/Scripts/SkiViewNeckSkinMatch.cs
+new file mode 100644
+index 0000000..a92d279
+--- /dev/null
++++ b/Assets/SkiView/Scripts/SkiViewNeckSkinMatch.cs
+@@ -0,0 +1,167 @@
++using System.Collections.Generic;
++using UnityEngine;
++
++namespace SkiView
++{
++    /// <summary>
++    /// Aligns Body_LOD skin with the live Face125 material. The head clip stays.
++    /// Does not change meshes, UVs, bind poses, the rig, or vest materials.
++    /// FaceMat in EnsureFace125 sets metallic 0 and smoothness 0.25. SetA leaves metallic at 1
++    /// when its mask map is assigned, and that keyword keeps the neck on the metal path.
++    /// </summary>
++    public static class SkiViewNeckSkinMatch
++    {
++        const string MetallicKeyword = "_METALLICSPECGLOSSMAP";
++
++        struct Slot
++        {
++            public Material mat;
++            public Shader shader;
++            public bool metallicKeyword;
++            public float metallic, smoothness, wetness, sss, pore, bump;
++            public bool hasMetallic, hasSmoothness, hasWetness, hasSss, hasPore, hasBump;
++        }
++
++        static readonly Dictionary<int, Slot> baseline = new Dictionary<int, Slot>();
++
++        public static bool IsBodySkin(string rendererName, string materialName)
++        {
++            if (string.IsNullOrEmpty(rendererName) || rendererName.IndexOf("Body_LOD", System.StringComparison.Ordinal) < 0) return false;
++            if (string.IsNullOrEmpty(materialName)) return false;
++            string n = materialName.ToLowerInvariant();
++            if (n.Contains("vest") || n.Contains("short") || n.Contains("glove") || n.Contains("fabric") || n.Contains("hair") || n.Contains("eye")) return false;
++            return true;
++        }
++
++        public static void Remember(Transform root)
++        {
++            if (root == null) return;
++            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
++            {
++                if (r == null) continue;
++                var mats = r.sharedMaterials;
++                for (int i = 0; i < mats.Length; i++)
++                {
++                    var m = mats[i];
++                    if (m == null || !IsBodySkin(r.name, m.name) || baseline.ContainsKey(m.GetInstanceID())) continue;
++                    baseline[m.GetInstanceID()] = Read(m);
++                }
++            }
++        }
++
++        public static int Apply(Transform root)
++        {
++            if (root == null) return 0;
++            Remember(root);
++            var face = ActiveFace(root);
++            int changed = 0;
++            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
++            {
++                if (r == null) continue;
++                var mats = r.sharedMaterials;
++                bool edit = false;
++                for (int i = 0; i < mats.Length; i++)
++                {
++                    var m = mats[i];
++                    if (m == null || !IsBodySkin(r.name, m.name)) continue;
++                    Match(m, face);
++                    edit = true;
++                    changed++;
++                }
++                if (edit) r.sharedMaterials = mats;
++            }
++            return changed;
++        }
++
++        public static int Restore()
++        {
++            int n = 0;
++            foreach (var pair in baseline)
++            {
++                Write(pair.Value);
++                n++;
++            }
++            return n;
++        }
++
++        static Slot Read(Material m)
++        {
++            var s = new Slot { mat = m, shader = m.shader, metallicKeyword = m.IsKeywordEnabled(MetallicKeyword) };
++            s.hasMetallic = m.HasProperty("_Metallic");
++            s.hasSmoothness = m.HasProperty("_Smoothness");
++            s.hasWetness = m.HasProperty("_Wetness");
++            s.hasSss = m.HasProperty("_SSSStrength");
++            s.hasPore = m.HasProperty("_PoreStrength");
++            s.hasBump = m.HasProperty("_BumpScale");
++            if (s.hasMetallic) s.metallic = m.GetFloat("_Metallic");
++            if (s.hasSmoothness) s.smoothness = m.GetFloat("_Smoothness");
++            if (s.hasWetness) s.wetness = m.GetFloat("_Wetness");
++            if (s.hasSss) s.sss = m.GetFloat("_SSSStrength");
++            if (s.hasPore) s.pore = m.GetFloat("_PoreStrength");
++            if (s.hasBump) s.bump = m.GetFloat("_BumpScale");
++            return s;
++        }
++
++        static void Write(Slot s)
++        {
++            if (s.mat == null) return;
++            var baseMap = s.mat.HasProperty("_BaseMap") ? s.mat.GetTexture("_BaseMap") : null;
++            var bump = s.mat.HasProperty("_BumpMap") ? s.mat.GetTexture("_BumpMap") : null;
++            var tint = s.mat.HasProperty("_BaseColor") ? s.mat.GetColor("_BaseColor") : Color.white;
++            if (s.shader != null) s.mat.shader = s.shader;
++            if (baseMap != null && s.mat.HasProperty("_BaseMap")) s.mat.SetTexture("_BaseMap", baseMap);
++            if (bump != null && s.mat.HasProperty("_BumpMap")) s.mat.SetTexture("_BumpMap", bump);
++            if (s.mat.HasProperty("_BaseColor")) s.mat.SetColor("_BaseColor", tint);
++            if (s.metallicKeyword) s.mat.EnableKeyword(MetallicKeyword); else s.mat.DisableKeyword(MetallicKeyword);
++            if (s.hasMetallic && s.mat.HasProperty("_Metallic")) s.mat.SetFloat("_Metallic", s.metallic);
++            if (s.hasSmoothness && s.mat.HasProperty("_Smoothness")) s.mat.SetFloat("_Smoothness", s.smoothness);
++            if (s.hasWetness && s.mat.HasProperty("_Wetness")) s.mat.SetFloat("_Wetness", s.wetness);
++            if (s.hasSss && s.mat.HasProperty("_SSSStrength")) s.mat.SetFloat("_SSSStrength", s.sss);
++            if (s.hasPore && s.mat.HasProperty("_PoreStrength")) s.mat.SetFloat("_PoreStrength", s.pore);
++            if (s.hasBump && s.mat.HasProperty("_BumpScale")) s.mat.SetFloat("_BumpScale", s.bump);
++        }
++
++        static void Match(Material body, Material face)
++        {
++            var baseMap = body.HasProperty("_BaseMap") ? body.GetTexture("_BaseMap") : null;
++            var bump = body.HasProperty("_BumpMap") ? body.GetTexture("_BumpMap") : null;
++            var tint = body.HasProperty("_BaseColor") ? body.GetColor("_BaseColor") : Color.white;
++            if (face != null && face.shader != null) body.shader = face.shader;
++            if (baseMap != null && body.HasProperty("_BaseMap")) body.SetTexture("_BaseMap", baseMap);
++            if (bump != null && body.HasProperty("_BumpMap")) body.SetTexture("_BumpMap", bump);
++            if (body.HasProperty("_BaseColor")) body.SetColor("_BaseColor", tint);
++            body.DisableKeyword(MetallicKeyword);
++            float metallic = face != null && face.HasProperty("_Metallic") ? face.GetFloat("_Metallic") : 0f;
++            float smoothness = face != null && face.HasProperty("_Smoothness") ? face.GetFloat("_Smoothness") : 0.25f;
++            if (body.HasProperty("_Metallic")) body.SetFloat("_Metallic", metallic);
++            if (body.HasProperty("_Smoothness")) body.SetFloat("_Smoothness", smoothness);
++            Copy(face, body, "_Wetness");
++            Copy(face, body, "_SSSStrength");
++            Copy(face, body, "_PoreStrength");
++            Copy(face, body, "_BumpScale");
++        }
++
++        static void Copy(Material from, Material to, string prop)
++        {
++            if (from == null || !from.HasProperty(prop) || !to.HasProperty(prop)) return;
++            to.SetFloat(prop, from.GetFloat(prop));
++        }
++
++        static Material ActiveFace(Transform root)
++        {
++            Material found = null;
++            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
++            {
++                if (r == null || !r.gameObject.activeInHierarchy) continue;
++                if (r.name.IndexOf("Eye", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
++                foreach (var m in r.sharedMaterials)
++                {
++                    if (m == null || !m.name.StartsWith("M_Face125_", System.StringComparison.Ordinal)) continue;
++                    if (m.name.IndexOf("Eye", System.StringComparison.Ordinal) >= 0 || m.name.IndexOf("Pony", System.StringComparison.Ordinal) >= 0) continue;
++                    found = m;
++                }
++            }
++            return found;
++        }
++    }
++}
+diff --git a/Assets/SkiView/Scripts/SkiViewNeckSkinMatch.cs.meta b/Assets/SkiView/Scripts/SkiViewNeckSkinMatch.cs.meta
+new file mode 100644
+index 0000000..54cb691
+--- /dev/null
++++ b/Assets/SkiView/Scripts/SkiViewNeckSkinMatch.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: b7d2e4f18c47306bb24a7f58916c48d7
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+--- a/Assets/SkiView/Scripts/SkiViewGame.Athletes.cs	2026-11-07 03:42:18.030999651 +0000
++++ b/Assets/SkiView/Scripts/SkiViewGame.Athletes.cs	2026-11-07 04:20:00.000000000 +0000
+@@ -234,6 +234,7 @@
+                     }
+                 }
+             }
++            SkiViewNeckSkinMatch.Apply(rig.animator != null ? rig.animator.transform : rig.transform);
+         }
+ 
+         void UpdateFaceCamera(bool snap)
