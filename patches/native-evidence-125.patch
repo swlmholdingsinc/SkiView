@@ -1,0 +1,915 @@
+diff --git a/Assets/SkiView/Editor/SkiViewCharacterCapture125.cs b/Assets/SkiView/Editor/SkiViewCharacterCapture125.cs
+index 469666a..43f7f97 100644
+--- a/Assets/SkiView/Editor/SkiViewCharacterCapture125.cs
++++ b/Assets/SkiView/Editor/SkiViewCharacterCapture125.cs
+@@ -129,11 +129,28 @@ public static class SkiViewCharacterCapture125
+                 Transform head = anim.GetBoneTransform(HumanBodyBones.Head);
+                 Transform neck = anim.GetBoneTransform(HumanBodyBones.Neck);
+                 if (head == null || neck == null) { Debug.LogError("[CharCap] missing head or neck"); return 4; }
+-                float headY = head.localPosition.y, neckY = neck.localPosition.y;
+-                bool headOk = SkiViewCharacterCapture125Logic.BoneOk(headY, SkiViewCharacterCapture125Logic.HeadLocalY);
+-                bool neckOk = SkiViewCharacterCapture125Logic.BoneOk(neckY, SkiViewCharacterCapture125Logic.NeckLocalY);
+-                if (!headOk || !neckOk) fails++;
+-                Debug.Log("[CharCap] " + sex + " headY=" + headY.ToString("0.#####", CultureInfo.InvariantCulture) + " neckY=" + neckY.ToString("0.#####", CultureInfo.InvariantCulture) + " headOk=" + headOk + " neckOk=" + neckOk);
++                float headLocal = head.localPosition.y, neckLocal = neck.localPosition.y;
++                Vector3 headRoot = anim.transform.InverseTransformPoint(head.position);
++                Vector3 neckRoot = anim.transform.InverseTransformPoint(neck.position);
++                float headBind = SkiViewCharacterCapture125Logic.BindRootY(SkiViewCharacterCapture125Logic.HeadJoint);
++                float neckBind = SkiViewCharacterCapture125Logic.BindRootY(SkiViewCharacterCapture125Logic.NeckJoint);
++                float headCanonical = SkiViewCharacterCapture125Logic.CanonicalY(headBind);
++                float neckCanonical = SkiViewCharacterCapture125Logic.CanonicalY(neckBind);
++                bool headLocalOk = SkiViewCharacterCapture125Logic.BoneOk(headLocal, SkiViewCharacterCapture125Logic.HeadParentLocalY);
++                bool neckLocalOk = SkiViewCharacterCapture125Logic.BoneOk(neckLocal, SkiViewCharacterCapture125Logic.NeckParentLocalY);
++                bool headCanonOk = SkiViewCharacterCapture125Logic.BoneOk(headCanonical, SkiViewCharacterCapture125Logic.HeadCanonicalY);
++                bool neckCanonOk = SkiViewCharacterCapture125Logic.BoneOk(neckCanonical, SkiViewCharacterCapture125Logic.NeckCanonicalY);
++                if (!headLocalOk || !neckLocalOk || !headCanonOk || !neckCanonOk) fails++;
++                Debug.Log("[CharCap] " + sex
++                    + " headLocalY=" + headLocal.ToString("0.#####", CultureInfo.InvariantCulture)
++                    + " neckLocalY=" + neckLocal.ToString("0.#####", CultureInfo.InvariantCulture)
++                    + " headSkeletonY=" + headBind.ToString("0.#####", CultureInfo.InvariantCulture)
++                    + " neckSkeletonY=" + neckBind.ToString("0.#####", CultureInfo.InvariantCulture)
++                    + " headCanonicalY=" + headCanonical.ToString("0.#####", CultureInfo.InvariantCulture)
++                    + " neckCanonicalY=" + neckCanonical.ToString("0.#####", CultureInfo.InvariantCulture)
++                    + " headPosedRootY=" + headRoot.y.ToString("0.#####", CultureInfo.InvariantCulture)
++                    + " neckPosedRootY=" + neckRoot.y.ToString("0.#####", CultureInfo.InvariantCulture)
++                    + " localOk=" + (headLocalOk && neckLocalOk) + " canonicalOk=" + (headCanonOk && neckCanonOk));
+                 var vests = Vests(game.skier, game.rig.animator.transform);
+                 if (vests.Count < 1) { Debug.LogError("[CharCap] no original vest renderer after SetAthlete " + sex); fails++; }
+ 
+@@ -157,8 +174,14 @@ public static class SkiViewCharacterCapture125
+                         first = false;
+                         metrics.Append("    {\"name\": \"").Append(name)
+                             .Append("\", \"roll\": ").Append(roll.ToString("0", CultureInfo.InvariantCulture))
+-                            .Append(", \"headLocalY\": ").Append(headY.ToString("0.#####", CultureInfo.InvariantCulture))
+-                            .Append(", \"neckLocalY\": ").Append(neckY.ToString("0.#####", CultureInfo.InvariantCulture))
++                            .Append(", \"headLocalY\": ").Append(headLocal.ToString("0.#####", CultureInfo.InvariantCulture))
++                            .Append(", \"neckLocalY\": ").Append(neckLocal.ToString("0.#####", CultureInfo.InvariantCulture))
++                            .Append(", \"headSkeletonY\": ").Append(headBind.ToString("0.#####", CultureInfo.InvariantCulture))
++                            .Append(", \"neckSkeletonY\": ").Append(neckBind.ToString("0.#####", CultureInfo.InvariantCulture))
++                            .Append(", \"headCanonicalY\": ").Append(headCanonical.ToString("0.#####", CultureInfo.InvariantCulture))
++                            .Append(", \"neckCanonicalY\": ").Append(neckCanonical.ToString("0.#####", CultureInfo.InvariantCulture))
++                            .Append(", \"headPosedRootY\": ").Append(headRoot.y.ToString("0.#####", CultureInfo.InvariantCulture))
++                            .Append(", \"neckPosedRootY\": ").Append(neckRoot.y.ToString("0.#####", CultureInfo.InvariantCulture))
+                             .Append(", \"vests\": ").Append(vests.Count)
+                             .Append(", \"bytes\": ").Append(bytes)
+                             .Append(", \"mean\": ").Append(mean.ToString("0.##", CultureInfo.InvariantCulture))
+@@ -208,7 +231,7 @@ public static class SkiViewCharacterCapture125
+         }
+     }
+ 
+-    static void Frame(Camera cam, Transform head)
++    internal static void Frame(Camera cam, Transform head)
+     {
+         Vector3 aim = head.position;
+         Vector3 fwd = head.forward;
+@@ -251,7 +274,7 @@ public static class SkiViewCharacterCapture125
+         }
+     }
+ 
+-    static string Render(Camera cam, string path, out uint hash, out float mean, out float stdev, out int bytes)
++    internal static string Render(Camera cam, string path, out uint hash, out float mean, out float stdev, out int bytes)
+     {
+         hash = 0; mean = 0; stdev = 0; bytes = 0;
+         var rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32);
+diff --git a/Assets/SkiView/Editor/SkiViewCharacterCapture125Logic.cs b/Assets/SkiView/Editor/SkiViewCharacterCapture125Logic.cs
+index 0d61071..3c752da 100644
+--- a/Assets/SkiView/Editor/SkiViewCharacterCapture125Logic.cs
++++ b/Assets/SkiView/Editor/SkiViewCharacterCapture125Logic.cs
+@@ -7,9 +7,17 @@ namespace SkiView
+     /// <summary>Rules for the D3D11 character capture. No scene changes.</summary>
+     public static class SkiViewCharacterCapture125Logic
+     {
+-        public const float HeadLocalY = 1.55578f;
+-        public const float NeckLocalY = 1.44886f;
+         public const float BoneEpsilon = 0.001f;
++        /// <summary>Parent-local translation Y of mixamorig:Head in INTERNAL_ONLY_Felderpuss_V3_WadeCox.fbx. This is what Transform.localPosition.y is.</summary>
++        public const float HeadParentLocalY = 0.11152041f;
++        /// <summary>Parent-local translation Y of mixamorig:Neck in the same file.</summary>
++        public const float NeckParentLocalY = 0.15049955f;
++        /// <summary>Blender armature matrix_world translation Z, identical on body, gear, and both faces. Skeleton-space height plus this offset is the canonical world height.</summary>
++        public const float ArmatureObjectOffsetZ = -0.048361f;
++        /// <summary>Canonical head world height. Not parent-local Y and not skeleton-space Y.</summary>
++        public const float HeadCanonicalY = 1.555778f;
++        /// <summary>Canonical neck world height.</summary>
++        public const float NeckCanonicalY = 1.448865f;
+         public const float PoseLeft = 35f;
+         public const float PoseRight = -35f;
+ 
+@@ -46,6 +54,169 @@ namespace SkiView
+             return Math.Abs(measured - canonical) <= BoneEpsilon;
+         }
+ 
++        /// <summary>One imported bind joint. Rotation is the Unity quaternion from the FBX importer skeleton.</summary>
++        public struct BindJoint
++        {
++            public readonly float px, py, pz, qx, qy, qz, qw;
++            public BindJoint(float px, float py, float pz, float qx, float qy, float qz, float qw)
++            {
++                this.px = px; this.py = py; this.pz = pz;
++                this.qx = qx; this.qy = qy; this.qz = qz; this.qw = qw;
++            }
++        }
++
++        /// <summary>
++        /// Model root to head, in importer order. Armature carries the file's -90° X.
++        /// Composing this is the root-space bind position. It is not parent-local Y.
++        /// </summary>
++        public static readonly BindJoint[] BindChain = new[]
++        {
++            new BindJoint(0f, 0f, 0f, -0.7071068f, 0f, 0f, 0.7071067f),
++            new BindJoint(0.00020160222f, 0.006811854f, 1.0058476f, 0.7071068f, 0f, 0f, 0.7071068f),
++            new BindJoint(0.00093684334f, 0.09524512f, -0.018706575f, -0.050025433f, 0.00028784084f, -0.0057465974f, 0.9987314f),
++            new BindJoint(-5.3862836e-10f, 0.11359373f, -1.1621523e-8f, 0.028563015f, -0.00027098024f, 0.0037820362f, 0.9995848f),
++            new BindJoint(6.8219527e-12f, 0.13385658f, 3.1542413e-10f, 0.08163163f, 0.00043349888f, 0.011176379f, 0.9965998f),
++            new BindJoint(-6.4335963e-9f, 0.15049955f, 1.4243142e-8f, 0.082010515f, 0.0028557447f, 0.013901659f, 0.9965304f),
++            new BindJoint(-6.538248e-9f, 0.11152041f, -6.456685e-8f, -1.2665986e-7f, -1.3969838e-9f, -2.2773744e-8f, 1f)
++        };
++
++        public const int NeckJoint = 5;
++        public const int HeadJoint = 6;
++
++        public static void Compose(int count, out float x, out float y, out float z)
++        {
++            if (count < 1) count = 1;
++            if (count > BindChain.Length) count = BindChain.Length;
++            float px = 0f, py = 0f, pz = 0f;
++            float qx = 0f, qy = 0f, qz = 0f, qw = 1f;
++            for (int i = 0; i < count; i++)
++            {
++                BindJoint j = BindChain[i];
++                float tx, ty, tz;
++                Rotate(qx, qy, qz, qw, j.px, j.py, j.pz, out tx, out ty, out tz);
++                px += tx; py += ty; pz += tz;
++                float nx, ny, nz, nw;
++                Multiply(qx, qy, qz, qw, j.qx, j.qy, j.qz, j.qw, out nx, out ny, out nz, out nw);
++                qx = nx; qy = ny; qz = nz; qw = nw;
++            }
++            x = px; y = py; z = pz;
++        }
++
++        public static float BindRootY(int jointInclusive)
++        {
++            float x, y, z;
++            Compose(jointInclusive + 1, out x, out y, out z);
++            return y;
++        }
++
++        /// <summary>Skeleton-space root Y plus the armature object offset. This is the canonical world height.</summary>
++        public static float CanonicalY(float skeletonRootY)
++        {
++            return skeletonRootY + ArmatureObjectOffsetZ;
++        }
++
++        /// <summary>A root-space height is not the parent-local translation. The logged baseline mixed these.</summary>
++        public static bool RootDistinctFromParentLocal(float rootY, float parentLocalY)
++        {
++            return Math.Abs(rootY - parentLocalY) > 0.05f;
++        }
++
++        static void Multiply(float ax, float ay, float az, float aw, float bx, float by, float bz, float bw, out float x, out float y, out float z, out float w)
++        {
++            x = aw * bx + ax * bw + ay * bz - az * by;
++            y = aw * by - ax * bz + ay * bw + az * bx;
++            z = aw * bz + ax * by - ay * bx + az * bw;
++            w = aw * bw - ax * bx - ay * by - az * bz;
++        }
++
++        static void Rotate(float qx, float qy, float qz, float qw, float vx, float vy, float vz, out float x, out float y, out float z)
++        {
++            float tx = 2f * (qy * vz - qz * vy);
++            float ty = 2f * (qz * vx - qx * vz);
++            float tz = 2f * (qx * vy - qy * vx);
++            x = vx + qw * tx + (qy * tz - qz * ty);
++            y = vy + qw * ty + (qz * tx - qx * tz);
++            z = vz + qw * tz + (qx * ty - qy * tx);
++        }
++
++        /// <summary>The 39 representative core frames. Same indices as the pose-selection core tier. Not the extended pre/post or first/last frames.</summary>
++        public static readonly int[] CoreFrames =
++        {
++            109, 110, 578, 613, 616, 621, 777, 782, 784, 902, 903, 916, 923, 932, 942,
++            1101, 1105, 1108, 1226, 1227, 1240, 1256, 1265, 1266, 1424, 1432, 1470,
++            1565, 1566, 1902, 1903, 1904, 1915, 1916, 1931, 1932, 1966, 1967, 2322
++        };
++
++        public static bool IsCoreFrame(int index)
++        {
++            int lo = 0, hi = CoreFrames.Length - 1;
++            while (lo <= hi)
++            {
++                int mid = (lo + hi) >> 1;
++                int v = CoreFrames[mid];
++                if (v == index) return true;
++                if (v < index) lo = mid + 1;
++                else hi = mid - 1;
++            }
++            return false;
++        }
++
++        public static int LastCoreFrame()
++        {
++            return CoreFrames[CoreFrames.Length - 1];
++        }
++
++        /// <summary>A weight returned by GetBlendShapeWeight is written even when it is zero. Absence is not zero.</summary>
++        public static bool IncludeReadWeight(bool wasRead)
++        {
++            return wasRead;
++        }
++
++        public const bool BakeUseScale = false;
++        public const string BakeSpace = "SkinnedMeshRenderer local. BakeMesh useScale=false, so lossyScale is not in the vertices. localToWorldMatrix.MultiplyPoint3x4 applies that scale once. Do not multiply by lossyScale again.";
++
++        public static string MeshRole(string rendererName, string meshName)
++        {
++            string s = ((rendererName ?? "") + " " + (meshName ?? "")).ToLowerInvariant();
++            if (s.Contains("r6")) return "r6";
++            if (s.Contains("body")) return "body";
++            if (OriginalVestName(rendererName, meshName)) return "originalVest";
++            if (s.Contains("vest")) return "otherVest";
++            return "other";
++        }
++
++        public static bool BakeRole(string role, string rendererName, string meshName)
++        {
++            if (role == "r6" || role == "originalVest") return true;
++            if (role != "body") return false;
++            string s = ((rendererName ?? "") + " " + (meshName ?? "")).ToLowerInvariant();
++            return s.IndexOf("lod1") < 0 && s.IndexOf("lod2") < 0;
++        }
++
++        public static List<int> EnabledDuplicateIds(int[] ids, string[] meshes, bool[] enabled)
++        {
++            var list = new List<int>();
++            if (ids == null || meshes == null || enabled == null) return list;
++            int n = ids.Length;
++            if (meshes.Length < n) n = meshes.Length;
++            if (enabled.Length < n) n = enabled.Length;
++            var count = new Dictionary<string, int>();
++            for (int i = 0; i < n; i++)
++            {
++                if (!enabled[i] || string.IsNullOrEmpty(meshes[i])) continue;
++                int c;
++                count.TryGetValue(meshes[i], out c);
++                count[meshes[i]] = c + 1;
++            }
++            for (int i = 0; i < n; i++)
++            {
++                int c;
++                if (enabled[i] && !string.IsNullOrEmpty(meshes[i]) && count.TryGetValue(meshes[i], out c) && c > 1)
++                    list.Add(ids[i]);
++            }
++            return list;
++        }
++
+         /// <summary>Original slalom vest mesh. Jump vests and rejected candidates are not accepted.</summary>
+         public static bool OriginalVestName(string rendererName, string meshName)
+         {
+diff --git a/Assets/SkiView/Editor/SkiViewCharacterCapture125Test.cs b/Assets/SkiView/Editor/SkiViewCharacterCapture125Test.cs
+index f52dd8a..060a252 100644
+--- a/Assets/SkiView/Editor/SkiViewCharacterCapture125Test.cs
++++ b/Assets/SkiView/Editor/SkiViewCharacterCapture125Test.cs
+@@ -17,9 +17,25 @@ public static class SkiViewCharacterCapture125Test
+     public static void Run()
+     {
+         fails = 0;
+-        Check(SkiViewCharacterCapture125Logic.BoneOk(1.55578f, SkiViewCharacterCapture125Logic.HeadLocalY), "canonical head");
+-        Check(SkiViewCharacterCapture125Logic.BoneOk(1.44886f, SkiViewCharacterCapture125Logic.NeckLocalY), "canonical neck");
+-        Check(!SkiViewCharacterCapture125Logic.BoneOk(1.50f, SkiViewCharacterCapture125Logic.HeadLocalY), "wrong head fails");
++        Check(SkiViewCharacterCapture125Logic.BoneOk(0.11152f, SkiViewCharacterCapture125Logic.HeadParentLocalY), "baseline head parent-local matches the FBX");
++        Check(SkiViewCharacterCapture125Logic.BoneOk(0.1505f, SkiViewCharacterCapture125Logic.NeckParentLocalY), "baseline neck parent-local matches the FBX");
++        Check(!SkiViewCharacterCapture125Logic.BoneOk(0.11152f, SkiViewCharacterCapture125Logic.HeadCanonicalY), "parent-local head is not the canonical world height");
++        Check(!SkiViewCharacterCapture125Logic.BoneOk(0.1505f, SkiViewCharacterCapture125Logic.NeckCanonicalY), "parent-local neck is not the canonical world height");
++        float headSkeleton = SkiViewCharacterCapture125Logic.BindRootY(SkiViewCharacterCapture125Logic.HeadJoint);
++        float neckSkeleton = SkiViewCharacterCapture125Logic.BindRootY(SkiViewCharacterCapture125Logic.NeckJoint);
++        float headCanonical = SkiViewCharacterCapture125Logic.CanonicalY(headSkeleton);
++        float neckCanonical = SkiViewCharacterCapture125Logic.CanonicalY(neckSkeleton);
++        Check(SkiViewCharacterCapture125Logic.BoneOk(headCanonical, SkiViewCharacterCapture125Logic.HeadCanonicalY), "armature offset converts skeleton head to canonical");
++        Check(SkiViewCharacterCapture125Logic.BoneOk(neckCanonical, SkiViewCharacterCapture125Logic.NeckCanonicalY), "armature offset converts skeleton neck to canonical");
++        Check(SkiViewCharacterCapture125Logic.RootDistinctFromParentLocal(headSkeleton, SkiViewCharacterCapture125Logic.HeadParentLocalY), "skeleton height is not parent-local");
++        Check(SkiViewCharacterCapture125Logic.CoreFrames.Length == 39, "39 core frames");
++        Check(SkiViewCharacterCapture125Logic.IsCoreFrame(2322) && SkiViewCharacterCapture125Logic.IsCoreFrame(1903) && !SkiViewCharacterCapture125Logic.IsCoreFrame(0) && !SkiViewCharacterCapture125Logic.IsCoreFrame(2399), "core tier excludes the extended ends");
++        Check(SkiViewCharacterCapture125Logic.IncludeReadWeight(true) && !SkiViewCharacterCapture125Logic.IncludeReadWeight(false), "a read zero is kept and an unread weight is not written");
++        Check(SkiViewCharacterCapture125Logic.BakeUseScale == false && SkiViewCharacterCapture125Logic.BakeSpace.Contains("useScale=false") && SkiViewCharacterCapture125Logic.BakeSpace.Contains("Do not multiply by lossyScale again"), "bake space is documented once");
++        Check(SkiViewCharacterCapture125Logic.BakeRole("body", "Body_LOD0", "Body_LOD0") && !SkiViewCharacterCapture125Logic.BakeRole("body", "Body_LOD1", "Body_LOD1") && SkiViewCharacterCapture125Logic.BakeRole("r6", "Vest_r6", "Vest_r6"), "body LOD0, r6, and not body LOD1 are baked");
++        var dups = SkiViewCharacterCapture125Logic.EnabledDuplicateIds(new[] { -13886, 44948, 7 }, new[] { "Vest_LOD0", "Vest_LOD0", "Body_LOD0" }, new[] { true, true, true });
++        Check(dups.Count == 2 && dups[0] == -13886 && dups[1] == 44948, "two enabled vests are the duplicate pair");
++        Check(SkiViewCharacterCapture125Logic.EnabledDuplicateIds(new[] { 1, 2 }, new[] { "Vest_LOD0", "Vest_LOD0" }, new[] { true, false }).Count == 0, "a disabled twin is not a duplicate surface");
+         Check(SkiViewCharacterCapture125Logic.PoseRoll("front") == 0f && SkiViewCharacterCapture125Logic.PoseRoll("left") == 35f && SkiViewCharacterCapture125Logic.PoseRoll("right") == -35f, "poses differ");
+         Check(SkiViewCharacterCapture125Logic.OriginalVestName("INTERNAL_ONLY_125_Gear_Vest_LOD0", "INTERNAL_ONLY_125_Gear_Vest_LOD0"), "original vest");
+         Check(!SkiViewCharacterCapture125Logic.OriginalVestName("JumpVest_LOD0", "JumpVest"), "jump vest rejected");
+diff --git a/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs b/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs
+new file mode 100644
+index 0000000..03516dd
+--- /dev/null
++++ b/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs
+@@ -0,0 +1,284 @@
++using System;
++using System.Collections.Generic;
++using System.Globalization;
++using System.IO;
++using System.Reflection;
++using System.Security.Cryptography;
++using System.Text;
++using UnityEditor;
++using UnityEditor.SceneManagement;
++using UnityEngine;
++using SkiView;
++
++/// <summary>
++/// Same editor step as SkiViewPoseEvidence125 (seed 125, autopilot, SimulateFor, then UpdateGear125 if it exists).
++/// Writes the 39 core frames only, with every blendshape weight that was read, the body, and baked imported vertices.
++/// Does not decide clearance. Does not save the scene. The 24-shot command is a different method.
++///
++/// Unity.exe -batchmode -projectPath &lt;staged&gt; -executeMethod SkiViewNativeEvidence125.Core -logFile native-evidence.log -quit
++/// </summary>
++public static class SkiViewNativeEvidence125
++{
++    const string ScenePath = "Assets/SkiView/Scenes/SkiViewLake.unity";
++    const string BodyFbx = "Assets/SkiView/Skier/INTERNAL_ONLY_Felderpuss_V3_WadeCox.fbx";
++    const string VestFbx = "Assets/SkiView/Resources/Gear125/SkiView_Gear_Slalom_125.fbx";
++
++    public static void Core()
++    {
++        int code = 0;
++        try { code = Run(); }
++        catch (Exception ex)
++        {
++            Debug.LogError("[NativeEv] " + ex);
++            code = 5;
++        }
++        if (Application.isBatchMode) EditorApplication.Exit(code);
++    }
++
++    static int Run()
++    {
++        if (!File.Exists(ScenePath)) { Debug.LogError("[NativeEv] missing scene"); return 3; }
++        EditorSceneManager.OpenScene(ScenePath);
++        var game = UnityEngine.Object.FindFirstObjectByType<SkiViewGame>();
++        if (game == null || game.path == null || game.path.Count == 0 || game.rig == null || game.rig.animator == null || game.skier == null)
++        {
++            Debug.LogError("[NativeEv] SkiViewLake has no humanoid rig on a path.");
++            return 3;
++        }
++        string dir = Environment.GetEnvironmentVariable("SV_EVIDENCE_OUT");
++        if (string.IsNullOrEmpty(dir)) dir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screens/native-evidence125"));
++        Directory.CreateDirectory(dir);
++
++        var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
++        var gear = game.GetType().GetMethod("UpdateGear125", flags, null, Type.EmptyTypes, null);
++        var ensure = game.GetType().GetMethod("EnsureGear125", flags, null, Type.EmptyTypes, null);
++        var setGear = game.GetType().GetMethod("SetGear125", flags, null, new[] { typeof(bool) }, null);
++        string driverError = "";
++        game.autopilot = true;
++        UnityEngine.Random.InitState(125);
++        game.Init();
++        Invoke(ensure, game, null, ref driverError);
++        if (setGear != null) Invoke(setGear, game, new object[] { game.jumpMode }, ref driverError);
++
++        int last = SkiViewCharacterCapture125Logic.LastCoreFrame();
++        var frames = new StringBuilder();
++        int written = 0;
++        var baked = new Mesh { name = "NativeEvBake" };
++        for (int i = 0; i <= last; i++)
++        {
++            game.SimulateFor(1f / 60f);
++            if (gear != null) Invoke(gear, game, null, ref driverError);
++            if (!SkiViewCharacterCapture125Logic.IsCoreFrame(i)) continue;
++            if (written > 0) frames.Append('\n');
++            frames.Append(Frame(game, i, gear != null, baked));
++            written++;
++        }
++        UnityEngine.Object.DestroyImmediate(baked);
++        File.WriteAllText(Path.Combine(dir, "core.jsonl"), frames.ToString());
++        File.WriteAllText(Path.Combine(dir, "core-header.json"), Header(game, gear != null, driverError, written));
++        Debug.Log("[NativeEv] " + dir + " core=" + written + " driver=" + (gear != null) + " sceneSaved=false clearance=not-evaluated");
++        return 0;
++    }
++
++    static string Header(SkiViewGame game, bool driver, string driverError, int written)
++    {
++        var anim = game.rig.animator.transform;
++        var sb = new StringBuilder();
++        sb.Append("{\n");
++        sb.Append("  \"evaluation\": \"SkiViewGame.SimulateFor -> ApplyVisuals -> SkierRig.Drive\",\n");
++        sb.Append("  \"updateGear125InvokedByExport\": ").Append(driver ? "true" : "false").Append(",\n");
++        sb.Append("  \"applyVisualsInThisRepoCallsUpdateGear125\": false,\n");
++        sb.Append("  \"playMode\": false,\n");
++        sb.Append("  \"playerVisibility\": \"not observed\",\n");
++        sb.Append("  \"clearance\": \"not evaluated\",\n");
++        sb.Append("  \"seed\": 125,\n");
++        sb.Append("  \"coreFrames\": ").Append(written).Append(",\n");
++        sb.Append("  \"armatureObjectOffsetZ\": ").Append(G(SkiViewCharacterCapture125Logic.ArmatureObjectOffsetZ)).Append(",\n");
++        sb.Append("  \"headCanonicalY\": ").Append(G(SkiViewCharacterCapture125Logic.HeadCanonicalY)).Append(",\n");
++        sb.Append("  \"neckCanonicalY\": ").Append(G(SkiViewCharacterCapture125Logic.NeckCanonicalY)).Append(",\n");
++        sb.Append("  \"bakeUseScale\": false,\n");
++        sb.Append("  \"bakeSpace\": \"").Append(SkiViewCharacterCapture125Logic.BakeSpace).Append("\",\n");
++        sb.Append("  \"matrixLayout\": \"Unity Matrix4x4 indexer, column-major, 16 floats\",\n");
++        sb.Append("  \"skinWeights\": ").Append((int)QualitySettings.skinWeights).Append(",\n");
++        sb.Append("  \"animatorLossyScale\": "); Vec(sb, anim.lossyScale); sb.Append(",\n");
++        sb.Append("  \"skierLossyScale\": "); Vec(sb, game.skier.lossyScale); sb.Append(",\n");
++        sb.Append("  \"bodySha256\": \"").Append(ShaFile(BodyFbx)).Append("\",\n");
++        sb.Append("  \"originalVestSha256\": \"").Append(ShaFile(VestFbx)).Append("\",\n");
++        sb.Append("  \"r6Files\": ");
++        R6Files(sb);
++        sb.Append(",\n  \"driverError\": \"").Append(Esc(driverError)).Append("\",\n");
++        sb.Append("  \"sceneSaved\": false\n}\n");
++        return sb.ToString();
++    }
++
++    static string Frame(SkiViewGame game, int index, bool driver, Mesh baked)
++    {
++        var anim = game.rig.animator;
++        var sb = new StringBuilder();
++        sb.Append("{\"i\": ").Append(index);
++        sb.Append(", \"t\": ").Append(G(index / 60f));
++        sb.Append(", \"mode\": \"").Append(game.mode).Append("\"");
++        sb.Append(", \"gearDriverInvoked\": ").Append(driver ? "true" : "false");
++        sb.Append(", \"playMode\": false");
++        sb.Append(", \"animatorLossyScale\": "); Vec(sb, anim.transform.lossyScale);
++        sb.Append(", \"meshes\": [");
++        var seen = new HashSet<int>();
++        bool any = false;
++        any = AppendMeshes(sb, game.skier, baked, seen, any);
++        if (game.rig.animator != null) any = AppendMeshes(sb, game.rig.animator.transform, baked, seen, any);
++        sb.Append("]}");
++        return sb.ToString();
++    }
++
++    static bool AppendMeshes(StringBuilder sb, Transform root, Mesh baked, HashSet<int> seen, bool any)
++    {
++        if (root == null) return any;
++        foreach (var sm in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
++        {
++            if (sm == null || sm.sharedMesh == null || !seen.Add(sm.GetInstanceID())) continue;
++            string role = SkiViewCharacterCapture125Logic.MeshRole(sm.name, sm.sharedMesh.name);
++            if (role == "other" || role == "otherVest") continue;
++            if (any) sb.Append(", ");
++            any = true;
++            WriteMesh(sb, sm, role, baked);
++        }
++        return any;
++    }
++
++    static void WriteMesh(StringBuilder sb, SkinnedMeshRenderer sm, string role, Mesh baked)
++    {
++        var mesh = sm.sharedMesh;
++        bool bake = SkiViewCharacterCapture125Logic.BakeRole(role, sm.name, mesh.name);
++        sb.Append("{\"id\": ").Append(sm.GetInstanceID());
++        sb.Append(", \"role\": \"").Append(role).Append("\"");
++        sb.Append(", \"name\": \"").Append(Esc(sm.name)).Append("\"");
++        sb.Append(", \"mesh\": \"").Append(Esc(mesh.name)).Append("\"");
++        sb.Append(", \"enabled\": ").Append(sm.enabled ? "true" : "false");
++        sb.Append(", \"active\": ").Append(sm.gameObject.activeInHierarchy ? "true" : "false");
++        sb.Append(", \"shadowCasting\": \"").Append(sm.shadowCastingMode).Append("\"");
++        sb.Append(", \"receiveShadows\": ").Append(sm.receiveShadows ? "true" : "false");
++        sb.Append(", \"importedVertexCount\": ").Append(mesh.vertexCount);
++        sb.Append(", \"blendShapeCount\": ").Append(mesh.blendShapeCount);
++        sb.Append(", \"boneCount\": ").Append(sm.bones != null ? sm.bones.Length : 0);
++        sb.Append(", \"rootBone\": \"").Append(sm.rootBone != null ? Esc(sm.rootBone.name) : "").Append("\"");
++        sb.Append(", \"localScale\": "); Vec(sb, sm.transform.localScale);
++        sb.Append(", \"lossyScale\": "); Vec(sb, sm.transform.lossyScale);
++        sb.Append(", \"localToWorld\": "); Mat(sb, sm.localToWorldMatrix);
++        sb.Append(", \"worldToLocal\": "); Mat(sb, sm.worldToLocalMatrix);
++        if (sm.rootBone != null) { sb.Append(", \"rootBoneLocalToWorld\": "); Mat(sb, sm.rootBone.localToWorldMatrix); }
++        sb.Append(", \"bindposes\": [");
++        var bp = mesh.bindposes;
++        for (int i = 0; i < bp.Length; i++) { if (i > 0) sb.Append(", "); Mat(sb, bp[i]); }
++        sb.Append("], \"weights\": [");
++        for (int i = 0; i < mesh.blendShapeCount; i++)
++        {
++            if (!SkiViewCharacterCapture125Logic.IncludeReadWeight(true)) continue;
++            if (i > 0) sb.Append(", ");
++            float w = sm.GetBlendShapeWeight(i);
++            sb.Append("{\"name\": \"").Append(Esc(mesh.GetBlendShapeName(i))).Append("\", \"weight\": ").Append(G(w)).Append(", \"read\": true}");
++        }
++        sb.Append("], \"bones\": [");
++        var bones = sm.bones;
++        if (bones != null)
++        {
++            for (int i = 0; i < bones.Length; i++)
++            {
++                if (i > 0) sb.Append(", ");
++                var b = bones[i];
++                sb.Append("{\"name\": \"").Append(b != null ? Esc(b.name) : "").Append("\"");
++                if (b != null)
++                {
++                    sb.Append(", \"localPos\": "); Vec(sb, b.localPosition);
++                    sb.Append(", \"localRot\": "); Quat(sb, b.localRotation);
++                    sb.Append(", \"localScale\": "); Vec(sb, b.localScale);
++                    sb.Append(", \"lossyScale\": "); Vec(sb, b.lossyScale);
++                    sb.Append(", \"localToWorld\": "); Mat(sb, b.localToWorldMatrix);
++                }
++                sb.Append("}");
++            }
++        }
++        sb.Append("]");
++        if (!bake) { sb.Append(", \"baked\": false}"); return; }
++        baked.Clear();
++        sm.BakeMesh(baked, SkiViewCharacterCapture125Logic.BakeUseScale);
++        sb.Append(", \"baked\": true, \"bakeUseScale\": false, \"bakeSpace\": \"").Append(SkiViewCharacterCapture125Logic.BakeSpace).Append("\"");
++        sb.Append(", \"bakedVertexCount\": ").Append(baked.vertexCount);
++        var verts = baked.vertices;
++        var norms = baked.normals;
++        sb.Append(", \"vertices\": [");
++        for (int i = 0; i < verts.Length; i++) { if (i > 0) sb.Append(", "); Vec(sb, verts[i]); }
++        sb.Append("], \"normals\": [");
++        for (int i = 0; i < norms.Length; i++) { if (i > 0) sb.Append(", "); Vec(sb, norms[i]); }
++        sb.Append("]}");
++    }
++
++    static void R6Files(StringBuilder sb)
++    {
++        sb.Append("[");
++        bool any = false;
++        string[] guids = AssetDatabase.FindAssets("r6");
++        for (int i = 0; i < guids.Length; i++)
++        {
++            string path = AssetDatabase.GUIDToAssetPath(guids[i]);
++            if (string.IsNullOrEmpty(path)) continue;
++            string low = path.ToLowerInvariant();
++            if (low.IndexOf("r6") < 0) continue;
++            if (!low.EndsWith(".fbx") && !low.EndsWith(".asset")) continue;
++            if (any) sb.Append(", ");
++            any = true;
++            sb.Append("{\"path\": \"").Append(Esc(path)).Append("\", \"sha256\": \"").Append(ShaFile(path)).Append("\"}");
++        }
++        sb.Append("]");
++    }
++
++    static bool Invoke(MethodInfo method, object target, object[] args, ref string error)
++    {
++        if (method == null) return false;
++        try { method.Invoke(target, args); return true; }
++        catch (Exception ex)
++        {
++            var inner = ex.InnerException ?? ex;
++            if (error.Length == 0) error = inner.GetType().Name + ": " + inner.Message;
++            return false;
++        }
++    }
++
++    static string ShaFile(string assetPath)
++    {
++        string full = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
++        if (!File.Exists(full)) return "";
++        using (var sha = SHA256.Create())
++        using (var fs = File.OpenRead(full))
++        {
++            var bytes = sha.ComputeHash(fs);
++            var sb = new StringBuilder(bytes.Length * 2);
++            for (int i = 0; i < bytes.Length; i++) sb.Append(bytes[i].ToString("x2"));
++            return sb.ToString();
++        }
++    }
++
++    static void Mat(StringBuilder sb, Matrix4x4 m)
++    {
++        sb.Append("[");
++        for (int i = 0; i < 16; i++) { if (i > 0) sb.Append(","); sb.Append(G(m[i])); }
++        sb.Append("]");
++    }
++
++    static void Vec(StringBuilder sb, Vector3 v)
++    {
++        sb.Append("[").Append(G(v.x)).Append(",").Append(G(v.y)).Append(",").Append(G(v.z)).Append("]");
++    }
++
++    static void Quat(StringBuilder sb, Quaternion q)
++    {
++        sb.Append("[").Append(G(q.x)).Append(",").Append(G(q.y)).Append(",").Append(G(q.z)).Append(",").Append(G(q.w)).Append("]");
++    }
++
++    static string G(float v) { return v.ToString("G9", CultureInfo.InvariantCulture); }
++
++    static string Esc(string s)
++    {
++        if (string.IsNullOrEmpty(s)) return "";
++        return s.Replace("\\", "\\\\").Replace("\"", "'");
++    }
++}
+diff --git a/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs.meta b/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs.meta
+new file mode 100644
+index 0000000..19d4267
+--- /dev/null
++++ b/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: d4f7b1e50a926f3ccd8e6a02415793c2
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Editor/SkiViewRendererInventory125.cs b/Assets/SkiView/Editor/SkiViewRendererInventory125.cs
+new file mode 100644
+index 0000000..02b7c6f
+--- /dev/null
++++ b/Assets/SkiView/Editor/SkiViewRendererInventory125.cs
+@@ -0,0 +1,285 @@
++using System;
++using System.Collections.Generic;
++using System.Globalization;
++using System.IO;
++using System.Reflection;
++using System.Text;
++using UnityEditor;
++using UnityEditor.SceneManagement;
++using UnityEngine;
++using UnityEngine.Rendering;
++using UnityEngine.Rendering.Universal;
++using SkiView;
++
++/// <summary>
++/// Edit-mode inventory of the staged skier after the same SetAthlete call the 24-shot capture uses.
++/// Does not call UpdateGear125, does not run Drive, and does not save the scene.
++/// Same-pose lit frames: authored shadows, shadows off, and one hide per enabled duplicate mesh.
++/// Player visibility is not observed.
++///
++/// Unity.exe -batchmode -projectPath &lt;staged&gt; -executeMethod SkiViewRendererInventory125.Run -logFile renderer-inventory.log -quit
++/// </summary>
++public static class SkiViewRendererInventory125
++{
++    const string ScenePath = "Assets/SkiView/Scenes/SkiViewLake.unity";
++
++    public static void Run()
++    {
++        int code = 0;
++        try { code = Capture(); }
++        catch (Exception ex)
++        {
++            Debug.LogError("[RendInv] " + ex);
++            code = 5;
++        }
++        if (Application.isBatchMode) EditorApplication.Exit(code);
++    }
++
++    static int Capture()
++    {
++        if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
++        {
++            Debug.LogError("[RendInv] no graphics device. Do not pass -nographics.");
++            return 2;
++        }
++        bool allowOther = Environment.GetEnvironmentVariable("SV_CAPTURE_ALLOW_NON_D3D11") == "1";
++        if (!allowOther && SystemInfo.graphicsDeviceType != GraphicsDeviceType.Direct3D11)
++        {
++            Debug.LogError("[RendInv] graphicsDeviceType=" + SystemInfo.graphicsDeviceType);
++            return 2;
++        }
++        var pipeline = GraphicsSettings.currentRenderPipeline;
++        if (pipeline == null || pipeline.GetType().Name.IndexOf("Universal", StringComparison.Ordinal) < 0)
++        {
++            Debug.LogError("[RendInv] URP is not active.");
++            return 2;
++        }
++        if (!File.Exists(ScenePath)) { Debug.LogError("[RendInv] missing scene"); return 3; }
++        EditorSceneManager.OpenScene(ScenePath);
++        var game = UnityEngine.Object.FindFirstObjectByType<SkiViewGame>();
++        if (game == null || game.skier == null || game.rig == null || game.rig.animator == null)
++        {
++            Debug.LogError("[RendInv] no skier rig");
++            return 3;
++        }
++        var setAthlete = game.GetType().GetMethod("SetAthlete", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(int) }, null);
++        if (setAthlete == null) { Debug.LogError("[RendInv] SetAthlete missing"); return 3; }
++        Light sun = null;
++        foreach (var light in UnityEngine.Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
++            if (light != null && light.type == LightType.Directional && light.enabled) { sun = light; break; }
++        if (sun == null) { Debug.LogError("[RendInv] no directional light"); return 3; }
++
++        string dir = Environment.GetEnvironmentVariable("SV_INVENTORY_OUT");
++        if (string.IsNullOrEmpty(dir)) dir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screens/renderer125"));
++        Directory.CreateDirectory(dir);
++
++        var before = Collect(game);
++        setAthlete.Invoke(game, new object[] { 0 });
++        var after = Collect(game);
++        var beforeIds = new HashSet<int>();
++        for (int i = 0; i < before.Count; i++) beforeIds.Add(before[i].id);
++
++        int n = after.Count;
++        var ids = new int[n];
++        var meshes = new string[n];
++        var enabled = new bool[n];
++        for (int i = 0; i < n; i++) { ids[i] = after[i].id; meshes[i] = after[i].mesh; enabled[i] = after[i].enabled; }
++        var dups = SkiViewCharacterCapture125Logic.EnabledDuplicateIds(ids, meshes, enabled);
++
++        var head = game.rig.animator.GetBoneTransform(HumanBodyBones.Head);
++        var camGo = new GameObject("RendererInventoryCam");
++        var cam = camGo.AddComponent<Camera>();
++        cam.clearFlags = CameraClearFlags.Skybox;
++        cam.fieldOfView = 30f;
++        cam.nearClipPlane = 0.05f;
++        cam.farClipPlane = 200f;
++        cam.aspect = 1280f / 720f;
++        if (cam.GetComponent<UniversalAdditionalCameraData>() == null)
++            camGo.AddComponent<UniversalAdditionalCameraData>();
++        var savedEnabled = new Dictionary<int, bool>();
++        var savedCast = new Dictionary<int, ShadowCastingMode>();
++        var renderers = AllRenderers(game);
++        foreach (var r in renderers)
++        {
++            if (r == null) continue;
++            savedEnabled[r.GetInstanceID()] = r.enabled;
++            savedCast[r.GetInstanceID()] = r.shadowCastingMode;
++        }
++        var sunShadows = sun.shadows;
++        var shots = new StringBuilder();
++        try
++        {
++            if (head != null) SkiViewCharacterCapture125.Frame(cam, head);
++            Shot(cam, dir, "baseline_shadows_authored", shots);
++            sun.shadows = LightShadows.None;
++            foreach (var r in renderers) if (r != null) r.shadowCastingMode = ShadowCastingMode.Off;
++            Shot(cam, dir, "shadows_off", shots);
++            sun.shadows = sunShadows;
++            foreach (var r in renderers) if (r != null && savedCast.ContainsKey(r.GetInstanceID())) r.shadowCastingMode = savedCast[r.GetInstanceID()];
++            for (int i = 0; i < dups.Count; i++)
++            {
++                Renderer hide = null;
++                foreach (var r in renderers) if (r != null && r.GetInstanceID() == dups[i]) hide = r;
++                if (hide == null) continue;
++                hide.enabled = false;
++                Shot(cam, dir, "hide_" + dups[i], shots);
++                hide.enabled = savedEnabled[dups[i]];
++            }
++        }
++        finally
++        {
++            sun.shadows = sunShadows;
++            foreach (var r in renderers)
++            {
++                if (r == null) continue;
++                int id = r.GetInstanceID();
++                if (savedEnabled.ContainsKey(id)) r.enabled = savedEnabled[id];
++                if (savedCast.ContainsKey(id)) r.shadowCastingMode = savedCast[id];
++            }
++            UnityEngine.Object.DestroyImmediate(camGo);
++        }
++
++        var sb = new StringBuilder();
++        sb.Append("{\n");
++        sb.Append("  \"playMode\": false,\n");
++        sb.Append("  \"playerVisibility\": \"not observed\",\n");
++        sb.Append("  \"init\": \"edit-mode SetAthlete(0), the same call SkiViewCharacterCapture125.Run uses\",\n");
++        sb.Append("  \"updateGear125Invoked\": false,\n");
++        sb.Append("  \"driveInvoked\": false,\n");
++        sb.Append("  \"staticCaptureOrientation\": true,\n");
++        sb.Append("  \"clearance\": \"not evaluated\",\n");
++        sb.Append("  \"sceneSaved\": false,\n");
++        sb.Append("  \"beforeSetAthlete\": ");
++        WriteRows(sb, before, null);
++        sb.Append(",\n  \"afterSetAthlete\": ");
++        WriteRows(sb, after, beforeIds);
++        sb.Append(",\n  \"enabledDuplicateIds\": [");
++        for (int i = 0; i < dups.Count; i++) { if (i > 0) sb.Append(", "); sb.Append(dups[i]); }
++        sb.Append("],\n  \"shots\": [\n");
++        sb.Append(shots);
++        sb.Append("\n  ]\n}\n");
++        File.WriteAllText(Path.Combine(dir, "inventory.json"), sb.ToString());
++        Debug.Log("[RendInv] " + dir + " renderers=" + after.Count + " enabledDuplicates=" + dups.Count);
++        return 0;
++    }
++
++    static void Shot(Camera cam, string dir, string name, StringBuilder shots)
++    {
++        uint hash; float mean, stdev; int bytes;
++        string err = SkiViewCharacterCapture125.Render(cam, Path.Combine(dir, name + ".png"), out hash, out mean, out stdev, out bytes);
++        if (shots.Length > 0) shots.Append(",\n");
++        shots.Append("    {\"name\": \"").Append(name).Append("\", \"bytes\": ").Append(bytes)
++            .Append(", \"error\": \"").Append(err ?? "").Append("\"}");
++    }
++
++    struct Row
++    {
++        public int id;
++        public string name, mesh, path, role;
++        public bool enabled, active, receive;
++        public int verts, shapes;
++        public ShadowCastingMode cast;
++        public string materials;
++    }
++
++    static List<Row> Collect(SkiViewGame game)
++    {
++        var list = new List<Row>();
++        var seen = new HashSet<int>();
++        Add(game.skier, list, seen);
++        if (game.rig != null && game.rig.animator != null) Add(game.rig.animator.transform, list, seen);
++        return list;
++    }
++
++    static void Add(Transform root, List<Row> list, HashSet<int> seen)
++    {
++        if (root == null) return;
++        foreach (var r in root.GetComponentsInChildren<Renderer>(true))
++        {
++            if (r == null || !seen.Add(r.GetInstanceID())) continue;
++            var sm = r as SkinnedMeshRenderer;
++            string mesh = sm != null && sm.sharedMesh != null ? sm.sharedMesh.name : "";
++            var mats = r.sharedMaterials;
++            var mb = new StringBuilder();
++            if (mats != null)
++                for (int i = 0; i < mats.Length; i++)
++                {
++                    if (i > 0) mb.Append("|");
++                    mb.Append(mats[i] != null ? mats[i].name : "");
++                }
++            list.Add(new Row
++            {
++                id = r.GetInstanceID(),
++                name = r.name,
++                mesh = mesh,
++                path = PathOf(r.transform),
++                role = SkiViewCharacterCapture125Logic.MeshRole(r.name, mesh),
++                enabled = r.enabled,
++                active = r.gameObject.activeInHierarchy,
++                receive = r.receiveShadows,
++                verts = sm != null && sm.sharedMesh != null ? sm.sharedMesh.vertexCount : 0,
++                shapes = sm != null && sm.sharedMesh != null ? sm.sharedMesh.blendShapeCount : 0,
++                cast = r.shadowCastingMode,
++                materials = mb.ToString()
++            });
++        }
++    }
++
++    static List<Renderer> AllRenderers(SkiViewGame game)
++    {
++        var list = new List<Renderer>();
++        var seen = new HashSet<int>();
++        void Take(Transform root)
++        {
++            if (root == null) return;
++            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
++                if (r != null && seen.Add(r.GetInstanceID())) list.Add(r);
++        }
++        Take(game.skier);
++        if (game.rig != null && game.rig.animator != null) Take(game.rig.animator.transform);
++        return list;
++    }
++
++    static void WriteRows(StringBuilder sb, List<Row> rows, HashSet<int> before)
++    {
++        sb.Append("[\n");
++        for (int i = 0; i < rows.Count; i++)
++        {
++            if (i > 0) sb.Append(",\n");
++            var r = rows[i];
++            sb.Append("    {\"id\": ").Append(r.id);
++            sb.Append(", \"name\": \"").Append(Esc(r.name)).Append("\"");
++            sb.Append(", \"mesh\": \"").Append(Esc(r.mesh)).Append("\"");
++            sb.Append(", \"role\": \"").Append(r.role).Append("\"");
++            sb.Append(", \"path\": \"").Append(Esc(r.path)).Append("\"");
++            sb.Append(", \"enabled\": ").Append(r.enabled ? "true" : "false");
++            sb.Append(", \"active\": ").Append(r.active ? "true" : "false");
++            sb.Append(", \"shadowCasting\": \"").Append(r.cast).Append("\"");
++            sb.Append(", \"receiveShadows\": ").Append(r.receive ? "true" : "false");
++            sb.Append(", \"verts\": ").Append(r.verts);
++            sb.Append(", \"shapes\": ").Append(r.shapes);
++            sb.Append(", \"materials\": \"").Append(Esc(r.materials)).Append("\"");
++            if (before != null) sb.Append(", \"createdBySetAthlete\": ").Append(before.Contains(r.id) ? "false" : "true");
++            sb.Append("}");
++        }
++        sb.Append("\n  ]");
++    }
++
++    static string PathOf(Transform t)
++    {
++        var sb = new StringBuilder();
++        while (t != null)
++        {
++            if (sb.Length > 0) sb.Insert(0, "/");
++            sb.Insert(0, t.name);
++            t = t.parent;
++        }
++        return sb.ToString();
++    }
++
++    static string Esc(string s)
++    {
++        if (string.IsNullOrEmpty(s)) return "";
++        return s.Replace("\\", "\\\\").Replace("\"", "'");
++    }
++}
+diff --git a/Assets/SkiView/Editor/SkiViewRendererInventory125.cs.meta b/Assets/SkiView/Editor/SkiViewRendererInventory125.cs.meta
+new file mode 100644
+index 0000000..5218e97
+--- /dev/null
++++ b/Assets/SkiView/Editor/SkiViewRendererInventory125.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: c3e6a0d49f815e2bbc7d5f91304682b1
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
