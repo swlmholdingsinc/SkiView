@@ -129,11 +129,24 @@ public static class SkiViewCharacterCapture125
                 Transform head = anim.GetBoneTransform(HumanBodyBones.Head);
                 Transform neck = anim.GetBoneTransform(HumanBodyBones.Neck);
                 if (head == null || neck == null) { Debug.LogError("[CharCap] missing head or neck"); return 4; }
-                float headY = head.localPosition.y, neckY = neck.localPosition.y;
-                bool headOk = SkiViewCharacterCapture125Logic.BoneOk(headY, SkiViewCharacterCapture125Logic.HeadLocalY);
-                bool neckOk = SkiViewCharacterCapture125Logic.BoneOk(neckY, SkiViewCharacterCapture125Logic.NeckLocalY);
-                if (!headOk || !neckOk) fails++;
-                Debug.Log("[CharCap] " + sex + " headY=" + headY.ToString("0.#####", CultureInfo.InvariantCulture) + " neckY=" + neckY.ToString("0.#####", CultureInfo.InvariantCulture) + " headOk=" + headOk + " neckOk=" + neckOk);
+                float headLocal = head.localPosition.y, neckLocal = neck.localPosition.y;
+                Vector3 headRoot = anim.transform.InverseTransformPoint(head.position);
+                Vector3 neckRoot = anim.transform.InverseTransformPoint(neck.position);
+                float headBind = SkiViewCharacterCapture125Logic.BindRootY(SkiViewCharacterCapture125Logic.HeadJoint);
+                float neckBind = SkiViewCharacterCapture125Logic.BindRootY(SkiViewCharacterCapture125Logic.NeckJoint);
+                bool headOk = SkiViewCharacterCapture125Logic.BoneOk(headLocal, SkiViewCharacterCapture125Logic.HeadParentLocalY);
+                bool neckOk = SkiViewCharacterCapture125Logic.BoneOk(neckLocal, SkiViewCharacterCapture125Logic.NeckParentLocalY);
+                bool rootDistinct = SkiViewCharacterCapture125Logic.RootDistinctFromParentLocal(headRoot.y, headLocal)
+                    && SkiViewCharacterCapture125Logic.RootDistinctFromParentLocal(neckRoot.y, neckLocal);
+                if (!headOk || !neckOk || !rootDistinct) fails++;
+                Debug.Log("[CharCap] " + sex
+                    + " headLocalY=" + headLocal.ToString("0.#####", CultureInfo.InvariantCulture)
+                    + " neckLocalY=" + neckLocal.ToString("0.#####", CultureInfo.InvariantCulture)
+                    + " headRootY=" + headRoot.y.ToString("0.#####", CultureInfo.InvariantCulture)
+                    + " neckRootY=" + neckRoot.y.ToString("0.#####", CultureInfo.InvariantCulture)
+                    + " headBindRootY=" + headBind.ToString("0.#####", CultureInfo.InvariantCulture)
+                    + " neckBindRootY=" + neckBind.ToString("0.#####", CultureInfo.InvariantCulture)
+                    + " headOk=" + headOk + " neckOk=" + neckOk + " rootDistinct=" + rootDistinct);
                 var vests = Vests(game.skier, game.rig.animator.transform);
                 if (vests.Count < 1) { Debug.LogError("[CharCap] no original vest renderer after SetAthlete " + sex); fails++; }
 
@@ -157,8 +170,12 @@ public static class SkiViewCharacterCapture125
                         first = false;
                         metrics.Append("    {\"name\": \"").Append(name)
                             .Append("\", \"roll\": ").Append(roll.ToString("0", CultureInfo.InvariantCulture))
-                            .Append(", \"headLocalY\": ").Append(headY.ToString("0.#####", CultureInfo.InvariantCulture))
-                            .Append(", \"neckLocalY\": ").Append(neckY.ToString("0.#####", CultureInfo.InvariantCulture))
+                            .Append(", \"headLocalY\": ").Append(headLocal.ToString("0.#####", CultureInfo.InvariantCulture))
+                            .Append(", \"neckLocalY\": ").Append(neckLocal.ToString("0.#####", CultureInfo.InvariantCulture))
+                            .Append(", \"headRootY\": ").Append(headRoot.y.ToString("0.#####", CultureInfo.InvariantCulture))
+                            .Append(", \"neckRootY\": ").Append(neckRoot.y.ToString("0.#####", CultureInfo.InvariantCulture))
+                            .Append(", \"headBindRootY\": ").Append(headBind.ToString("0.#####", CultureInfo.InvariantCulture))
+                            .Append(", \"neckBindRootY\": ").Append(neckBind.ToString("0.#####", CultureInfo.InvariantCulture))
                             .Append(", \"vests\": ").Append(vests.Count)
                             .Append(", \"bytes\": ").Append(bytes)
                             .Append(", \"mean\": ").Append(mean.ToString("0.##", CultureInfo.InvariantCulture))
