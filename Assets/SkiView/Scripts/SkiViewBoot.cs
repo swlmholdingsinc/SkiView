@@ -49,6 +49,26 @@ namespace SkiView
             Debug.Log("[SkiView] boot " + phase + (string.IsNullOrEmpty(fault) ? "" : " " + fault));
         }
 
+        /// <summary>
+        /// Parameterless InitializeAsync releases its handle before a coroutine resumes, so IsValid is false after a successful init.
+        /// Call InitializeAsync(false), then this. A real failure stays failed.
+        /// </summary>
+        public static bool InitAllowsLoad(bool handleValid, bool succeeded, string exceptionMessage, out string fault)
+        {
+            if (!handleValid)
+            {
+                fault = "invalid handle";
+                return false;
+            }
+            if (!succeeded)
+            {
+                fault = string.IsNullOrEmpty(exceptionMessage) ? "init failed" : exceptionMessage;
+                return false;
+            }
+            fault = null;
+            return true;
+        }
+
         void Awake()
         {
             if (inst != null) { Destroy(gameObject); return; }
@@ -63,12 +83,16 @@ namespace SkiView
         IEnumerator Start()
         {
             SetPhase("addressables-init");
-            var init = Addressables.InitializeAsync();
+            var init = Addressables.InitializeAsync(false);
             yield return init;
-            if (!init.IsValid() || init.Status != AsyncOperationStatus.Succeeded)
+            bool valid = init.IsValid();
+            bool succeeded = valid && init.Status == AsyncOperationStatus.Succeeded;
+            string exceptionMessage = valid && init.OperationException != null ? init.OperationException.Message : null;
+            if (valid) Addressables.Release(init);
+            string fault;
+            if (!InitAllowsLoad(valid, succeeded, exceptionMessage, out fault))
             {
-                string why = init.IsValid() && init.OperationException != null ? init.OperationException.Message : "invalid handle";
-                SetPhase("init-failed", why);
+                SetPhase("init-failed", fault);
                 yield break;
             }
             SetPhase("init-ok");
