@@ -1,0 +1,405 @@
+diff --git a/Assets/SkiView/Editor/SkiViewBodyHeadCoverageCapture.cs b/Assets/SkiView/Editor/SkiViewBodyHeadCoverageCapture.cs
+new file mode 100644
+index 0000000..03dd938
+--- /dev/null
++++ b/Assets/SkiView/Editor/SkiViewBodyHeadCoverageCapture.cs
+@@ -0,0 +1,161 @@
++using System;
++using System.Collections.Generic;
++using System.IO;
++using System.Reflection;
++using System.Text;
++using UnityEditor;
++using UnityEditor.SceneManagement;
++using UnityEngine;
++using UnityEngine.Rendering;
++using UnityEngine.Rendering.Universal;
++using SkiView;
++
++/// <summary>
++/// Same static pose as the isolation run. Renders before and after the body head-island clip.
++/// Male and female, front, side, rear, and the collar boundary. Does not save assets.
++///
++/// Unity.exe -batchmode -projectPath &lt;staged&gt; -executeMethod SkiViewBodyHeadCoverageCapture.Run -logFile body-head-coverage.log -quit
++/// </summary>
++public static class SkiViewBodyHeadCoverageCapture
++{
++    const string ScenePath = "Assets/SkiView/Scenes/SkiViewLake.unity";
++
++    public static void Run()
++    {
++        int code = 0;
++        try { code = Capture(); }
++        catch (System.Exception ex)
++        {
++            Debug.LogError("[HeadCoverage] " + ex);
++            code = 5;
++        }
++        if (Application.isBatchMode) EditorApplication.Exit(code);
++    }
++
++    static int Capture()
++    {
++        if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
++        {
++            Debug.LogError("[HeadCoverage] no graphics device. Do not pass -nographics.");
++            return 2;
++        }
++        bool allowOther = Environment.GetEnvironmentVariable("SV_CAPTURE_ALLOW_NON_D3D11") == "1";
++        if (!allowOther && SystemInfo.graphicsDeviceType != GraphicsDeviceType.Direct3D11)
++        {
++            Debug.LogError("[HeadCoverage] graphicsDeviceType=" + SystemInfo.graphicsDeviceType);
++            return 2;
++        }
++        var pipeline = GraphicsSettings.currentRenderPipeline;
++        if (pipeline == null || pipeline.GetType().Name.IndexOf("Universal", System.StringComparison.Ordinal) < 0)
++        {
++            Debug.LogError("[HeadCoverage] URP is not active.");
++            return 2;
++        }
++        if (!File.Exists(ScenePath)) { Debug.LogError("[HeadCoverage] missing scene"); return 3; }
++        EditorSceneManager.OpenScene(ScenePath);
++        var game = UnityEngine.Object.FindFirstObjectByType<SkiViewGame>();
++        if (game == null || game.skier == null || game.rig == null || game.rig.animator == null)
++        {
++            Debug.LogError("[HeadCoverage] no skier rig");
++            return 3;
++        }
++        var setAthlete = game.GetType().GetMethod("SetAthlete", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new[] { typeof(int) }, null);
++        if (setAthlete == null) { Debug.LogError("[HeadCoverage] SetAthlete missing"); return 3; }
++
++        string dir = Environment.GetEnvironmentVariable("SV_HEAD_OUT");
++        if (string.IsNullOrEmpty(dir)) dir = Path.GetFullPath(Path.Combine(Application.dataPath, "../Screens/body-head-coverage"));
++        Directory.CreateDirectory(dir);
++
++        var camGo = new GameObject("BodyHeadCoverageCam");
++        var cam = camGo.AddComponent<Camera>();
++        cam.clearFlags = CameraClearFlags.Skybox;
++        cam.fieldOfView = 30f;
++        cam.nearClipPlane = 0.05f;
++        cam.farClipPlane = 200f;
++        cam.aspect = 1280f / 720f;
++        if (cam.GetComponent<UniversalAdditionalCameraData>() == null)
++            camGo.AddComponent<UniversalAdditionalCameraData>();
++
++        var shots = new StringBuilder();
++        int removed = 0;
++        var bodyMeshes = new List<KeyValuePair<SkinnedMeshRenderer, Mesh>>();
++        var scanRoot = game.rig.animator != null ? game.rig.animator.transform : game.skier;
++        foreach (var smr in scanRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
++        {
++            if (smr == null || smr.sharedMesh == null) continue;
++            if (smr.name.IndexOf("Body_LOD", System.StringComparison.Ordinal) < 0) continue;
++            bodyMeshes.Add(new KeyValuePair<SkinnedMeshRenderer, Mesh>(smr, smr.sharedMesh));
++        }
++        try
++        {
++            setAthlete.Invoke(game, new object[] { 0 });
++            RestoreBody(bodyMeshes);
++            Shoot(game, cam, dir, "male_before", shots);
++            setAthlete.Invoke(game, new object[] { 1 });
++            RestoreBody(bodyMeshes);
++            Shoot(game, cam, dir, "female_before", shots);
++            removed = SkiViewBodyHeadCoverage.Apply(scanRoot);
++            setAthlete.Invoke(game, new object[] { 0 });
++            Shoot(game, cam, dir, "male_after", shots);
++            setAthlete.Invoke(game, new object[] { 1 });
++            Shoot(game, cam, dir, "female_after", shots);
++        }
++        finally { UnityEngine.Object.DestroyImmediate(camGo); }
++
++        var sb = new StringBuilder();
++        sb.Append("{\n");
++        sb.Append("  \"playMode\": false,\n");
++        sb.Append("  \"playerFixed\": false,\n");
++        sb.Append("  \"trianglesRemoved\": ").Append(removed).Append(",\n");
++        sb.Append("  \"uv\": \"u in [0.505, 0.892] and v > 0.505, the island EnsureFace125 already names\",\n");
++        sb.Append("  \"assetSaved\": false,\n");
++        sb.Append("  \"vestEdited\": false,\n");
++        sb.Append("  \"shots\": [\n").Append(shots).Append("\n  ]\n}\n");
++        File.WriteAllText(Path.Combine(dir, "coverage.json"), sb.ToString());
++        Debug.Log("[HeadCoverage] " + dir + " trianglesRemoved=" + removed);
++        return removed > 0 ? 0 : 4;
++    }
++
++    static void RestoreBody(List<KeyValuePair<SkinnedMeshRenderer, Mesh>> saved)
++    {
++        for (int i = 0; i < saved.Count; i++)
++            if (saved[i].Key != null) saved[i].Key.sharedMesh = saved[i].Value;
++    }
++
++    static void Shoot(SkiViewGame game, Camera cam, string dir, string prefix, StringBuilder shots)
++    {
++        var anim = game.rig.animator;
++        var head = anim.GetBoneTransform(HumanBodyBones.Head);
++        var neck = anim.GetBoneTransform(HumanBodyBones.Neck);
++        if (head == null) return;
++        Vector3 flatFwd = head.forward; flatFwd.y = 0f;
++        if (flatFwd.sqrMagnitude < 1e-4f) flatFwd = Vector3.forward;
++        flatFwd.Normalize();
++        Vector3 side = Vector3.Cross(Vector3.up, flatFwd);
++        SkiViewCharacterCapture125.Frame(cam, head);
++        One(cam, dir, prefix + "_front", shots);
++        Aim(cam, head.position, side, 0.94f);
++        One(cam, dir, prefix + "_side", shots);
++        Aim(cam, head.position, -flatFwd, 0.94f);
++        One(cam, dir, prefix + "_rear", shots);
++        Vector3 collar = neck != null ? Vector3.Lerp(neck.position, head.position, 0.35f) : head.position + Vector3.down * 0.12f;
++        Aim(cam, collar, flatFwd + Vector3.up * 0.15f, 1.55f);
++        One(cam, dir, prefix + "_collar", shots);
++    }
++
++    static void Aim(Camera cam, Vector3 aim, Vector3 dir, float dist)
++    {
++        if (dir.sqrMagnitude < 1e-6f) dir = Vector3.forward;
++        dir.Normalize();
++        Vector3 pos = aim + dir * dist;
++        cam.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(aim - pos, Vector3.up));
++    }
++
++    static void One(Camera cam, string dir, string name, StringBuilder shots)
++    {
++        uint hash; float mean, stdev; int bytes;
++        string err = SkiViewCharacterCapture125.Render(cam, Path.Combine(dir, name + ".png"), out hash, out mean, out stdev, out bytes);
++        if (shots.Length > 0) shots.Append(",\n");
++        shots.Append("    {\"name\": \"").Append(name).Append("\", \"bytes\": ").Append(bytes).Append(", \"error\": \"").Append(err ?? "").Append("\"}");
++    }
++}
+diff --git a/Assets/SkiView/Editor/SkiViewBodyHeadCoverageCapture.cs.meta b/Assets/SkiView/Editor/SkiViewBodyHeadCoverageCapture.cs.meta
+new file mode 100644
+index 0000000..452748f
+--- /dev/null
++++ b/Assets/SkiView/Editor/SkiViewBodyHeadCoverageCapture.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: f6b9d3e72c14815eef0a8c24637915e4
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Editor/SkiViewCharacterCapture125Test.cs b/Assets/SkiView/Editor/SkiViewCharacterCapture125Test.cs
+index da085da..77aa0a7 100644
+--- a/Assets/SkiView/Editor/SkiViewCharacterCapture125Test.cs
++++ b/Assets/SkiView/Editor/SkiViewCharacterCapture125Test.cs
+@@ -39,6 +39,8 @@ public static class SkiViewCharacterCapture125Test
+         Check(SkiViewCharacterCapture125Logic.VestContentLabel(SkiViewCharacterCapture125Logic.ExpectedOriginalVestSha256) == "original", "original vest hash");
+         Check(SkiViewCharacterCapture125Logic.VestContentLabel("8d8dd716" + new string('a', 52) + "6283") == "r6", "r6 hash span");
+         Check(SkiViewCharacterCapture125Logic.VestContentLabel(SkiViewCharacterCapture125Logic.ExpectedOriginalVestSha256) != "r6", "a vest file name is not the label");
++        Check(SkiViewBodyHeadCoverage.InHeadIsland(0.7f, 0.8f) && !SkiViewBodyHeadCoverage.InHeadIsland(0.2f, 0.8f) && !SkiViewBodyHeadCoverage.InHeadIsland(0.7f, 0.2f), "body head island is the authored UV window");
++        Check(SkiViewBodyHeadCoverage.DropTriangle(true, false, false) && !SkiViewBodyHeadCoverage.DropTriangle(false, false, false), "an island corner drops the triangle");
+         var dups = SkiViewCharacterCapture125Logic.EnabledDuplicateIds(new[] { -13886, 44948, 7 }, new[] { "Vest_LOD0", "Vest_LOD0", "Body_LOD0" }, new[] { true, true, true });
+         Check(dups.Count == 2 && dups[0] == -13886 && dups[1] == 44948, "two enabled vests are the duplicate pair");
+         Check(SkiViewCharacterCapture125Logic.EnabledDuplicateIds(new[] { 1, 2 }, new[] { "Vest_LOD0", "Vest_LOD0" }, new[] { true, false }).Count == 0, "a disabled twin is not a duplicate surface");
+diff --git a/Assets/SkiView/Scripts/SkiViewBodyHeadCoverage.cs b/Assets/SkiView/Scripts/SkiViewBodyHeadCoverage.cs
+new file mode 100644
+index 0000000..74001ac
+--- /dev/null
++++ b/Assets/SkiView/Scripts/SkiViewBodyHeadCoverage.cs
+@@ -0,0 +1,175 @@
++using System;
++using Unity.Collections;
++using UnityEngine;
++using UnityEngine.Rendering;
++
++namespace SkiView
++{
++    /// <summary>
++    /// Removes the body head/neck UV island that Face125 replaces.
++    /// The window is the one EnsureFace125 already names: u in [0.505, 0.892] and v above 0.505.
++    /// A runtime mesh copy is assigned. The imported asset, the face, and the vest are not written.
++    /// </summary>
++    public static class SkiViewBodyHeadCoverage
++    {
++        public const float UMin = 0.505f;
++        public const float UMax = 0.892f;
++        public const float VMin = 0.505f;
++        public const string ClippedSuffix = "_HeadClipped";
++
++        public static bool InHeadIsland(float u, float v)
++        {
++            return u >= UMin && u <= UMax && v > VMin;
++        }
++
++        /// <summary>A triangle draws an island vertex when any corner is inside the window.</summary>
++        public static bool DropTriangle(bool a, bool b, bool c)
++        {
++            return a || b || c;
++        }
++
++        public static int Apply(Transform root)
++        {
++            if (root == null) return 0;
++            int removed = 0;
++            foreach (var smr in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
++            {
++                if (smr == null || smr.sharedMesh == null) continue;
++                if (smr.name.IndexOf("Body_LOD", StringComparison.Ordinal) < 0) continue;
++                if (smr.sharedMesh.name.EndsWith(ClippedSuffix, StringComparison.Ordinal)) continue;
++                Mesh clipped;
++                int dropped;
++                if (!TryClip(smr.sharedMesh, out clipped, out dropped)) continue;
++                smr.sharedMesh = clipped;
++                removed += dropped;
++            }
++            return removed;
++        }
++
++        static void Gather<T>(NativeArray<T> raw, int submesh, Mesh.MeshData srcData, int vc, bool[] inside, System.Collections.Generic.List<int> kept, int[] subStart, int[] subCountOut, MeshTopology[] topo, ref int droppedTriangles) where T : struct
++        {
++            var desc = srcData.GetSubMesh(submesh);
++            topo[submesh] = desc.topology;
++            subStart[submesh] = kept.Count;
++            int begin = desc.indexStart;
++            int end = begin + desc.indexCount;
++            int step = desc.topology == MeshTopology.Triangles ? 3 : 1;
++            for (int t = begin; t + step <= end; t += step)
++            {
++                if (step == 3)
++                {
++                    int a = Index(raw, t) + desc.baseVertex;
++                    int b = Index(raw, t + 1) + desc.baseVertex;
++                    int c = Index(raw, t + 2) + desc.baseVertex;
++                    bool da = a >= 0 && a < vc && inside[a];
++                    bool db = b >= 0 && b < vc && inside[b];
++                    bool dc = c >= 0 && c < vc && inside[c];
++                    if (DropTriangle(da, db, dc)) { droppedTriangles++; continue; }
++                    kept.Add(a);
++                    kept.Add(b);
++                    kept.Add(c);
++                }
++                else kept.Add(Index(raw, t) + desc.baseVertex);
++            }
++            subCountOut[submesh] = kept.Count - subStart[submesh];
++        }
++
++        static int Index<T>(NativeArray<T> raw, int i) where T : struct
++        {
++            object v = raw[i];
++            if (v is int n) return n;
++            if (v is ushort u) return u;
++            return Convert.ToInt32(v);
++        }
++
++        public static bool TryClip(Mesh src, out Mesh clipped, out int droppedTriangles)
++        {
++            clipped = null;
++            droppedTriangles = 0;
++            if (src == null) return false;
++            Mesh.MeshDataArray read = default(Mesh.MeshDataArray);
++            Mesh.MeshDataArray write = default(Mesh.MeshDataArray);
++            bool haveRead = false, haveWrite = false;
++            try
++            {
++                read = Mesh.AcquireReadOnlyMeshData(src);
++                haveRead = true;
++                var srcData = read[0];
++                int vc = srcData.vertexCount;
++                if (vc == 0 || !srcData.HasVertexAttribute(VertexAttribute.TexCoord0)) return false;
++                var uv = new NativeArray<Vector2>(vc, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
++                srcData.GetUVs(0, uv);
++                var inside = new bool[vc];
++                int marked = 0;
++                for (int i = 0; i < vc; i++)
++                {
++                    if (!InHeadIsland(uv[i].x, uv[i].y)) continue;
++                    inside[i] = true;
++                    marked++;
++                }
++                uv.Dispose();
++                if (marked == 0) return false;
++
++                int subCount = srcData.subMeshCount;
++                bool src32 = srcData.indexFormat == IndexFormat.UInt32;
++                var kept = new System.Collections.Generic.List<int>();
++                int[] subStart = new int[subCount];
++                int[] subCountOut = new int[subCount];
++                MeshTopology[] topo = new MeshTopology[subCount];
++                if (src32)
++                {
++                    var raw = srcData.GetIndexData<int>();
++                    for (int s = 0; s < subCount; s++)
++                        Gather(raw, s, srcData, vc, inside, kept, subStart, subCountOut, topo, ref droppedTriangles);
++                }
++                else
++                {
++                    var raw = srcData.GetIndexData<ushort>();
++                    for (int s = 0; s < subCount; s++)
++                        Gather(raw, s, srcData, vc, inside, kept, subStart, subCountOut, topo, ref droppedTriangles);
++                }
++                if (droppedTriangles == 0) return false;
++                int[] packed = kept.ToArray();
++
++                write = Mesh.AllocateWritableMeshData(1);
++                haveWrite = true;
++                var dst = write[0];
++                var layout = src.GetVertexAttributes();
++                dst.SetVertexBufferParams(vc, layout);
++                int streams = srcData.vertexBufferCount;
++                for (int stream = 0; stream < streams; stream++)
++                {
++                    var from = srcData.GetVertexData<byte>(stream);
++                    var to = dst.GetVertexData<byte>(stream);
++                    if (from.Length != to.Length) return false;
++                    NativeArray<byte>.Copy(from, to);
++                }
++                dst.SetIndexBufferParams(packed.Length, IndexFormat.UInt32);
++                var ib = dst.GetIndexData<int>();
++                for (int i = 0; i < packed.Length; i++) ib[i] = packed[i];
++                dst.subMeshCount = subCount;
++                for (int s = 0; s < subCount; s++)
++                    dst.SetSubMesh(s, new SubMeshDescriptor(subStart[s], subCountOut[s], topo[s]), MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
++
++                clipped = new Mesh { name = src.name + ClippedSuffix, hideFlags = HideFlags.HideAndDontSave };
++                Mesh.ApplyAndDisposeWritableMeshData(write, clipped, MeshUpdateFlags.DontRecalculateBounds);
++                haveWrite = false;
++                clipped.bindposes = src.bindposes;
++                clipped.bounds = src.bounds;
++                read.Dispose();
++                haveRead = false;
++                return true;
++            }
++            catch (Exception ex)
++            {
++                Debug.LogError("[HeadCoverage] " + src.name + " " + ex.Message);
++                return false;
++            }
++            finally
++            {
++                if (haveWrite) write.Dispose();
++                if (haveRead) read.Dispose();
++            }
++        }
++    }
++}
+diff --git a/Assets/SkiView/Scripts/SkiViewBodyHeadCoverage.cs.meta b/Assets/SkiView/Scripts/SkiViewBodyHeadCoverage.cs.meta
+new file mode 100644
+index 0000000..2e17b20
+--- /dev/null
++++ b/Assets/SkiView/Scripts/SkiViewBodyHeadCoverage.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: e5a8c2d61b03704dde9f7b13526804d3
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+--- a/Assets/SkiView/Scripts/SkiViewGame.Athletes.cs	2026-11-07 03:42:18.030999651 +0000
++++ b/Assets/SkiView/Scripts/SkiViewGame.Athletes.cs	2026-11-07 03:42:18.050999675 +0000
+@@ -103,6 +103,7 @@
+                         if (bm != null && bm.HasProperty("_ClipHeadUV")) bm.SetFloat("_ClipHeadUV", 1f);
+                 }
+                 hc.Apply();
++                SkiViewBodyHeadCoverage.Apply(root);
+             }
+             RebuildSkierLodWithFaces(root);
+             if (faceMale125 != null) faceMale125.SetActive(false);
