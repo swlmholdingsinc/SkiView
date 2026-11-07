@@ -44,14 +44,46 @@ public static class SkiViewBuild
         if (imp.textureType != TextureImporterType.Default || imp.mipmapEnabled || imp.npotScale != TextureImporterNPOTScale.None) { imp.textureType = TextureImporterType.Default; imp.mipmapEnabled = false; imp.npotScale = TextureImporterNPOTScale.None; imp.textureCompression = TextureImporterCompression.Uncompressed; imp.SaveAndReimport(); }
         var icon = AssetDatabase.LoadAssetAtPath<Texture2D>(P + "icon-512.png"); var clear = AssetDatabase.LoadAssetAtPath<Texture2D>(P + "icon-fg-clear.png");
         PlayerSettings.SetIcons(UnityEditor.Build.NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
-        var tgt = UnityEditor.Build.NamedBuildTarget.Android;
-        foreach (var kind in new[] { UnityEditor.Android.AndroidPlatformIconKind.Legacy, UnityEditor.Android.AndroidPlatformIconKind.Round, UnityEditor.Android.AndroidPlatformIconKind.Adaptive })
+        if (AssignPlatformIcons(BuildTargetGroup.Android, BuildTarget.Android, UnityEditor.Build.NamedBuildTarget.Android,
+                SkiViewBuildIconModule.AndroidKindType, SkiViewBuildIconModule.AndroidDll, SkiViewBuildIconModule.AndroidKinds, icon, clear))
+            Debug.Log("[SkiView] app icons set from Branding/icon-512.png (legacy / round / adaptive)");
+    }
+
+    static bool AssignPlatformIcons(BuildTargetGroup group, BuildTarget target, UnityEditor.Build.NamedBuildTarget named, string kindType, string dllRelative, string[] members, Texture2D icon, Texture2D clear)
+    {
+        bool supported = BuildPipeline.IsBuildTargetSupported(group, target);
+        var loaded = SkiViewBuildIconModule.FindLoaded(kindType);
+        if (loaded == null && supported) loaded = LoadExtension(dllRelative, kindType);
+        var availability = SkiViewBuildIconModule.Decide(supported, loaded != null);
+        if (availability == SkiViewBuildIconModule.Availability.ModuleAbsent)
         {
-            var icons = PlayerSettings.GetPlatformIcons(tgt, kind);
-            foreach (var ic in icons) { if (kind == UnityEditor.Android.AndroidPlatformIconKind.Adaptive) ic.SetTextures(icon, clear); else ic.SetTexture(icon); }
-            PlayerSettings.SetPlatformIcons(tgt, kind, icons);
+            Debug.Log("[SkiView] " + group + " build support is not installed. " + kindType + " icons skipped.");
+            return false;
         }
-        Debug.Log("[SkiView] app icons set from Branding/icon-512.png (legacy / round / adaptive)");
+        if (availability == SkiViewBuildIconModule.Availability.TypeMissing)
+            throw new InvalidOperationException(group + " build support is installed but " + kindType + " did not load from " + dllRelative);
+        for (int i = 0; i < members.Length; i++)
+        {
+            var kind = SkiViewBuildIconModule.StaticMember(loaded, members[i]) as PlatformIconKind;
+            if (kind == null) throw new InvalidOperationException(kindType + "." + members[i] + " is not a PlatformIconKind");
+            var icons = PlayerSettings.GetPlatformIcons(named, kind);
+            bool two = SkiViewBuildIconModule.TwoLayers(members[i]);
+            for (int k = 0; k < icons.Length; k++)
+            {
+                if (two) icons[k].SetTextures(icon, clear);
+                else icons[k].SetTexture(icon);
+            }
+            PlayerSettings.SetPlatformIcons(named, kind, icons);
+        }
+        return true;
+    }
+
+    static Type LoadExtension(string dllRelative, string kindType)
+    {
+        string path = Path.Combine(EditorApplication.applicationContentsPath, dllRelative);
+        if (!File.Exists(path)) return null;
+        var asm = System.Reflection.Assembly.LoadFrom(path);
+        return asm.GetType(kindType, false);
     }
 
     static void Report(string what, BuildReport r, string outPath)
