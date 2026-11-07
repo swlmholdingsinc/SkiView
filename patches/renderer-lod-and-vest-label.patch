@@ -76,18 +76,10 @@ index 060a252..da085da 100644
          Check(dups.Count == 2 && dups[0] == -13886 && dups[1] == 44948, "two enabled vests are the duplicate pair");
          Check(SkiViewCharacterCapture125Logic.EnabledDuplicateIds(new[] { 1, 2 }, new[] { "Vest_LOD0", "Vest_LOD0" }, new[] { true, false }).Count == 0, "a disabled twin is not a duplicate surface");
 diff --git a/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs b/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs
-index 03516dd..d7c3356 100644
+index 03516dd..281016c 100644
 --- a/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs
 +++ b/Assets/SkiView/Editor/SkiViewNativeEvidence125.cs
-@@ -5,7 +5,6 @@ using System.IO;
- using System.Reflection;
- using System.Security.Cryptography;
- using System.Text;
--using UnityEditor;
- using UnityEditor.SceneManagement;
- using UnityEngine;
- using SkiView;
-@@ -61,6 +60,7 @@ public static class SkiViewNativeEvidence125
+@@ -61,6 +61,7 @@ public static class SkiViewNativeEvidence125
          if (setGear != null) Invoke(setGear, game, new object[] { game.jumpMode }, ref driverError);
  
          int last = SkiViewCharacterCapture125Logic.LastCoreFrame();
@@ -95,7 +87,7 @@ index 03516dd..d7c3356 100644
          var frames = new StringBuilder();
          int written = 0;
          var baked = new Mesh { name = "NativeEvBake" };
-@@ -70,7 +70,7 @@ public static class SkiViewNativeEvidence125
+@@ -70,7 +71,7 @@ public static class SkiViewNativeEvidence125
              if (gear != null) Invoke(gear, game, null, ref driverError);
              if (!SkiViewCharacterCapture125Logic.IsCoreFrame(i)) continue;
              if (written > 0) frames.Append('\n');
@@ -104,7 +96,7 @@ index 03516dd..d7c3356 100644
              written++;
          }
          UnityEngine.Object.DestroyImmediate(baked);
-@@ -102,16 +102,22 @@ public static class SkiViewNativeEvidence125
+@@ -102,16 +103,22 @@ public static class SkiViewNativeEvidence125
          sb.Append("  \"skinWeights\": ").Append((int)QualitySettings.skinWeights).Append(",\n");
          sb.Append("  \"animatorLossyScale\": "); Vec(sb, anim.lossyScale); sb.Append(",\n");
          sb.Append("  \"skierLossyScale\": "); Vec(sb, game.skier.lossyScale); sb.Append(",\n");
@@ -132,7 +124,7 @@ index 03516dd..d7c3356 100644
      {
          var anim = game.rig.animator;
          var sb = new StringBuilder();
-@@ -124,13 +130,13 @@ public static class SkiViewNativeEvidence125
+@@ -124,13 +131,13 @@ public static class SkiViewNativeEvidence125
          sb.Append(", \"meshes\": [");
          var seen = new HashSet<int>();
          bool any = false;
@@ -149,7 +141,7 @@ index 03516dd..d7c3356 100644
      {
          if (root == null) return any;
          foreach (var sm in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-@@ -140,17 +146,18 @@ public static class SkiViewNativeEvidence125
+@@ -140,17 +147,18 @@ public static class SkiViewNativeEvidence125
              if (role == "other" || role == "otherVest") continue;
              if (any) sb.Append(", ");
              any = true;
@@ -170,7 +162,7 @@ index 03516dd..d7c3356 100644
          sb.Append(", \"name\": \"").Append(Esc(sm.name)).Append("\"");
          sb.Append(", \"mesh\": \"").Append(Esc(mesh.name)).Append("\"");
          sb.Append(", \"enabled\": ").Append(sm.enabled ? "true" : "false");
-@@ -212,25 +219,6 @@ public static class SkiViewNativeEvidence125
+@@ -212,25 +220,6 @@ public static class SkiViewNativeEvidence125
          sb.Append("]}");
      }
  

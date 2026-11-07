@@ -5,6 +5,7 @@ using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using SkiView;
