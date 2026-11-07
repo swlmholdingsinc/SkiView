@@ -125,6 +125,11 @@ public static class SkiViewRendererInventory125
                 Shot(cam, dir, "hide_" + dups[i], shots);
                 hide.enabled = savedEnabled[dups[i]];
             }
+            HideMatching(renderers, savedEnabled, r => BodyLod(r, 1), cam, dir, "hide_body_lod1", shots);
+            HideMatching(renderers, savedEnabled, r => BodyLod(r, 2), cam, dir, "hide_body_lod2", shots);
+            HideMatching(renderers, savedEnabled, r => BodyLod(r, 1) || BodyLod(r, 2), cam, dir, "hide_body_lod1_lod2", shots);
+            HideMatching(renderers, savedEnabled, r => !BodyOf(r), cam, dir, "body_only", shots);
+            HideMatching(renderers, savedEnabled, r => !FaceOf(r), cam, dir, "face_only", shots);
         }
         finally
         {
@@ -147,6 +152,10 @@ public static class SkiViewRendererInventory125
         sb.Append("  \"updateGear125Invoked\": false,\n");
         sb.Append("  \"driveInvoked\": false,\n");
         sb.Append("  \"staticCaptureOrientation\": true,\n");
+        sb.Append("  \"lodGating\": \"edit-mode SetAthlete builds one LODGroup and leaves Renderer.enabled true on every LOD. Play mode would let that group draw one LOD. This capture does not enter play mode, so enabled LOD0+LOD1+LOD2 is not player visibility.\",\n");
+        sb.Append("  \"lodGroups\": ");
+        WriteLodGroups(sb, game);
+        sb.Append(",\n");
         sb.Append("  \"clearance\": \"not evaluated\",\n");
         sb.Append("  \"sceneSaved\": false,\n");
         sb.Append("  \"beforeSetAthlete\": ");
@@ -163,6 +172,46 @@ public static class SkiViewRendererInventory125
         return 0;
     }
 
+    static void HideMatching(List<Renderer> renderers, Dictionary<int, bool> saved, System.Func<Renderer, bool> match, Camera cam, string dir, string name, StringBuilder shots)
+    {
+        var hide = new List<Renderer>();
+        foreach (var r in renderers) if (r != null && match(r) && r.enabled) hide.Add(r);
+        if (hide.Count == 0)
+        {
+            if (shots.Length > 0) shots.Append(",\n");
+            shots.Append("    {\"name\": \"").Append(name).Append("\", \"skipped\": true, \"hidden\": 0}");
+            return;
+        }
+        for (int i = 0; i < hide.Count; i++) hide[i].enabled = false;
+        Shot(cam, dir, name, shots);
+        for (int i = 0; i < hide.Count; i++)
+        {
+            bool was;
+            if (saved.TryGetValue(hide[i].GetInstanceID(), out was)) hide[i].enabled = was;
+        }
+    }
+
+    static bool BodyLod(Renderer r, int lod)
+    {
+        var sm = r as SkinnedMeshRenderer;
+        string mesh = sm != null && sm.sharedMesh != null ? sm.sharedMesh.name : "";
+        return SkiViewCharacterCapture125Logic.IsBodyLod(r.name, mesh, lod);
+    }
+
+    static bool BodyOf(Renderer r)
+    {
+        var sm = r as SkinnedMeshRenderer;
+        string mesh = sm != null && sm.sharedMesh != null ? sm.sharedMesh.name : "";
+        return SkiViewCharacterCapture125Logic.IsBody(r.name, mesh);
+    }
+
+    static bool FaceOf(Renderer r)
+    {
+        var sm = r as SkinnedMeshRenderer;
+        string mesh = sm != null && sm.sharedMesh != null ? sm.sharedMesh.name : "";
+        return SkiViewCharacterCapture125Logic.IsFace(r.name, mesh);
+    }
+
     static void Shot(Camera cam, string dir, string name, StringBuilder shots)
     {
         uint hash; float mean, stdev; int bytes;
@@ -177,7 +226,7 @@ public static class SkiViewRendererInventory125
         public int id;
         public string name, mesh, path, role;
         public bool enabled, active, receive;
-        public int verts, shapes;
+        public int verts, shapes, lod;
         public ShadowCastingMode cast;
         public string materials;
     }
@@ -219,6 +268,7 @@ public static class SkiViewRendererInventory125
                 receive = r.receiveShadows,
                 verts = sm != null && sm.sharedMesh != null ? sm.sharedMesh.vertexCount : 0,
                 shapes = sm != null && sm.sharedMesh != null ? sm.sharedMesh.blendShapeCount : 0,
+                lod = SkiViewCharacterCapture125Logic.LodIndex(r.name, mesh),
                 cast = r.shadowCastingMode,
                 materials = mb.ToString()
             });
@@ -256,12 +306,56 @@ public static class SkiViewRendererInventory125
             sb.Append(", \"active\": ").Append(r.active ? "true" : "false");
             sb.Append(", \"shadowCasting\": \"").Append(r.cast).Append("\"");
             sb.Append(", \"receiveShadows\": ").Append(r.receive ? "true" : "false");
+            sb.Append(", \"lod\": ").Append(r.lod);
             sb.Append(", \"verts\": ").Append(r.verts);
             sb.Append(", \"shapes\": ").Append(r.shapes);
             sb.Append(", \"materials\": \"").Append(Esc(r.materials)).Append("\"");
             if (before != null) sb.Append(", \"createdBySetAthlete\": ").Append(before.Contains(r.id) ? "false" : "true");
             sb.Append("}");
         }
+        sb.Append("\n  ]");
+    }
+
+    static void WriteLodGroups(StringBuilder sb, SkiViewGame game)
+    {
+        sb.Append("[\n");
+        var seen = new HashSet<int>();
+        bool any = false;
+        void One(Transform root)
+        {
+            if (root == null) return;
+            foreach (var lg in root.GetComponentsInChildren<LODGroup>(true))
+            {
+                if (lg == null || !seen.Add(lg.GetInstanceID())) continue;
+                if (any) sb.Append(",\n");
+                any = true;
+                var lods = lg.GetLODs();
+                sb.Append("    {\"name\": \"").Append(Esc(lg.name)).Append("\"");
+                sb.Append(", \"enabled\": ").Append(lg.enabled ? "true" : "false");
+                sb.Append(", \"playMode\": false");
+                sb.Append(", \"lodCount\": ").Append(lods == null ? 0 : lods.Length);
+                sb.Append(", \"slots\": [");
+                if (lods != null)
+                {
+                    for (int i = 0; i < lods.Length; i++)
+                    {
+                        if (i > 0) sb.Append(", ");
+                        sb.Append("{\"lod\": ").Append(i).Append(", \"renderers\": [");
+                        var rs = lods[i].renderers;
+                        if (rs != null)
+                            for (int k = 0; k < rs.Length; k++)
+                            {
+                                if (k > 0) sb.Append(", ");
+                                sb.Append(rs[k] != null ? rs[k].GetInstanceID() : 0);
+                            }
+                        sb.Append("]}");
+                    }
+                }
+                sb.Append("]}");
+            }
+        }
+        One(game.skier);
+        if (game.rig != null && game.rig.animator != null) One(game.rig.animator.transform);
         sb.Append("\n  ]");
     }
 

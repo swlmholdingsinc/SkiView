@@ -18,6 +18,11 @@ namespace SkiView
         public const float HeadCanonicalY = 1.555778f;
         /// <summary>Canonical neck world height.</summary>
         public const float NeckCanonicalY = 1.448865f;
+        /// <summary>Bytes of the original slalom vest FBX. Identity is this hash, not the file name.</summary>
+        public const string ExpectedOriginalVestSha256 = "5da6f811dbabb50ddd4b94b79a40864fef4417948b1dddcd7b75a3b09f0406d5";
+        /// <summary>Published r6 digest span from the fit report (8d8dd716…6283). The file name is not the identity.</summary>
+        public const string ExpectedR6Sha256Prefix = "8d8dd716";
+        public const string ExpectedR6Sha256Suffix = "6283";
         public const float PoseLeft = 35f;
         public const float PoseRight = -35f;
 
@@ -174,6 +179,41 @@ namespace SkiView
 
         public const bool BakeUseScale = false;
         public const string BakeSpace = "SkinnedMeshRenderer local. BakeMesh useScale=false, so lossyScale is not in the vertices. localToWorldMatrix.MultiplyPoint3x4 applies that scale once. Do not multiply by lossyScale again.";
+
+        public static string VestContentLabel(string sha256)
+        {
+            if (string.IsNullOrEmpty(sha256)) return "missing";
+            if (string.Equals(sha256, ExpectedOriginalVestSha256, StringComparison.OrdinalIgnoreCase)) return "original";
+            if (sha256.Length == 64
+                && sha256.StartsWith(ExpectedR6Sha256Prefix, StringComparison.OrdinalIgnoreCase)
+                && sha256.EndsWith(ExpectedR6Sha256Suffix, StringComparison.OrdinalIgnoreCase)) return "r6";
+            return "unlisted";
+        }
+
+        public static int LodIndex(string rendererName, string meshName)
+        {
+            string s = ((rendererName ?? "") + " " + (meshName ?? "")).ToLowerInvariant();
+            if (s.Contains("lod2")) return 2;
+            if (s.Contains("lod1")) return 1;
+            if (s.Contains("lod0")) return 0;
+            return -1;
+        }
+
+        public static bool IsBody(string rendererName, string meshName)
+        {
+            return ((rendererName ?? "") + " " + (meshName ?? "")).ToLowerInvariant().Contains("body");
+        }
+
+        public static bool IsFace(string rendererName, string meshName)
+        {
+            string s = ((rendererName ?? "") + " " + (meshName ?? "")).ToLowerInvariant();
+            return s.Contains("face") && !s.Contains("body");
+        }
+
+        public static bool IsBodyLod(string rendererName, string meshName, int lod)
+        {
+            return IsBody(rendererName, meshName) && LodIndex(rendererName, meshName) == lod;
+        }
 
         public static string MeshRole(string rendererName, string meshName)
         {

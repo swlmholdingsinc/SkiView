@@ -5,7 +5,6 @@ using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using SkiView;
@@ -61,6 +60,7 @@ public static class SkiViewNativeEvidence125
         if (setGear != null) Invoke(setGear, game, new object[] { game.jumpMode }, ref driverError);
 
         int last = SkiViewCharacterCapture125Logic.LastCoreFrame();
+        string vestLabel = SkiViewCharacterCapture125Logic.VestContentLabel(ShaFile(VestFbx));
         var frames = new StringBuilder();
         int written = 0;
         var baked = new Mesh { name = "NativeEvBake" };
@@ -70,7 +70,7 @@ public static class SkiViewNativeEvidence125
             if (gear != null) Invoke(gear, game, null, ref driverError);
             if (!SkiViewCharacterCapture125Logic.IsCoreFrame(i)) continue;
             if (written > 0) frames.Append('\n');
-            frames.Append(Frame(game, i, gear != null, baked));
+            frames.Append(Frame(game, i, gear != null, baked, vestLabel));
             written++;
         }
         UnityEngine.Object.DestroyImmediate(baked);
@@ -102,16 +102,22 @@ public static class SkiViewNativeEvidence125
         sb.Append("  \"skinWeights\": ").Append((int)QualitySettings.skinWeights).Append(",\n");
         sb.Append("  \"animatorLossyScale\": "); Vec(sb, anim.lossyScale); sb.Append(",\n");
         sb.Append("  \"skierLossyScale\": "); Vec(sb, game.skier.lossyScale); sb.Append(",\n");
+        string vestSha = ShaFile(VestFbx);
+        string vestLabel = SkiViewCharacterCapture125Logic.VestContentLabel(vestSha);
         sb.Append("  \"bodySha256\": \"").Append(ShaFile(BodyFbx)).Append("\",\n");
-        sb.Append("  \"originalVestSha256\": \"").Append(ShaFile(VestFbx)).Append("\",\n");
-        sb.Append("  \"r6Files\": ");
-        R6Files(sb);
-        sb.Append(",\n  \"driverError\": \"").Append(Esc(driverError)).Append("\",\n");
+        sb.Append("  \"vestSha256\": \"").Append(vestSha).Append("\",\n");
+        sb.Append("  \"vestSlotPath\": \"").Append(Esc(VestFbx)).Append("\",\n");
+        sb.Append("  \"vestSlotLabel\": \"").Append(vestLabel).Append("\",\n");
+        sb.Append("  \"expectedOriginalVestSha256\": \"").Append(SkiViewCharacterCapture125Logic.ExpectedOriginalVestSha256).Append("\",\n");
+        sb.Append("  \"expectedR6Sha256\": \"").Append(SkiViewCharacterCapture125Logic.ExpectedR6Sha256Prefix).Append("...").Append(SkiViewCharacterCapture125Logic.ExpectedR6Sha256Suffix).Append("\",\n");
+        sb.Append("  \"originalVestSha256\": \"").Append(vestSha).Append("\",\n");
+        sb.Append("  \"originalVestSha256Meaning\": \"same bytes as vestSha256. vestSlotLabel is the hash identity, not the file name\",\n");
+        sb.Append("  \"driverError\": \"").Append(Esc(driverError)).Append("\",\n");
         sb.Append("  \"sceneSaved\": false\n}\n");
         return sb.ToString();
     }
 
-    static string Frame(SkiViewGame game, int index, bool driver, Mesh baked)
+    static string Frame(SkiViewGame game, int index, bool driver, Mesh baked, string vestLabel)
     {
         var anim = game.rig.animator;
         var sb = new StringBuilder();
@@ -124,13 +130,13 @@ public static class SkiViewNativeEvidence125
         sb.Append(", \"meshes\": [");
         var seen = new HashSet<int>();
         bool any = false;
-        any = AppendMeshes(sb, game.skier, baked, seen, any);
-        if (game.rig.animator != null) any = AppendMeshes(sb, game.rig.animator.transform, baked, seen, any);
+        any = AppendMeshes(sb, game.skier, baked, seen, any, vestLabel);
+        if (game.rig.animator != null) any = AppendMeshes(sb, game.rig.animator.transform, baked, seen, any, vestLabel);
         sb.Append("]}");
         return sb.ToString();
     }
 
-    static bool AppendMeshes(StringBuilder sb, Transform root, Mesh baked, HashSet<int> seen, bool any)
+    static bool AppendMeshes(StringBuilder sb, Transform root, Mesh baked, HashSet<int> seen, bool any, string vestLabel)
     {
         if (root == null) return any;
         foreach (var sm in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
@@ -140,17 +146,18 @@ public static class SkiViewNativeEvidence125
             if (role == "other" || role == "otherVest") continue;
             if (any) sb.Append(", ");
             any = true;
-            WriteMesh(sb, sm, role, baked);
+            WriteMesh(sb, sm, role, baked, vestLabel);
         }
         return any;
     }
 
-    static void WriteMesh(StringBuilder sb, SkinnedMeshRenderer sm, string role, Mesh baked)
+    static void WriteMesh(StringBuilder sb, SkinnedMeshRenderer sm, string role, Mesh baked, string vestLabel)
     {
         var mesh = sm.sharedMesh;
         bool bake = SkiViewCharacterCapture125Logic.BakeRole(role, sm.name, mesh.name);
         sb.Append("{\"id\": ").Append(sm.GetInstanceID());
         sb.Append(", \"role\": \"").Append(role).Append("\"");
+        if (role == "originalVest" || role == "otherVest") sb.Append(", \"contentLabel\": \"").Append(vestLabel).Append("\"");
         sb.Append(", \"name\": \"").Append(Esc(sm.name)).Append("\"");
         sb.Append(", \"mesh\": \"").Append(Esc(mesh.name)).Append("\"");
         sb.Append(", \"enabled\": ").Append(sm.enabled ? "true" : "false");
@@ -210,25 +217,6 @@ public static class SkiViewNativeEvidence125
         sb.Append("], \"normals\": [");
         for (int i = 0; i < norms.Length; i++) { if (i > 0) sb.Append(", "); Vec(sb, norms[i]); }
         sb.Append("]}");
-    }
-
-    static void R6Files(StringBuilder sb)
-    {
-        sb.Append("[");
-        bool any = false;
-        string[] guids = AssetDatabase.FindAssets("r6");
-        for (int i = 0; i < guids.Length; i++)
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-            if (string.IsNullOrEmpty(path)) continue;
-            string low = path.ToLowerInvariant();
-            if (low.IndexOf("r6") < 0) continue;
-            if (!low.EndsWith(".fbx") && !low.EndsWith(".asset")) continue;
-            if (any) sb.Append(", ");
-            any = true;
-            sb.Append("{\"path\": \"").Append(Esc(path)).Append("\", \"sha256\": \"").Append(ShaFile(path)).Append("\"}");
-        }
-        sb.Append("]");
     }
 
     static bool Invoke(MethodInfo method, object target, object[] args, ref string error)

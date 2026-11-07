@@ -32,7 +32,13 @@ public static class SkiViewCharacterCapture125Test
         Check(SkiViewCharacterCapture125Logic.IsCoreFrame(2322) && SkiViewCharacterCapture125Logic.IsCoreFrame(1903) && !SkiViewCharacterCapture125Logic.IsCoreFrame(0) && !SkiViewCharacterCapture125Logic.IsCoreFrame(2399), "core tier excludes the extended ends");
         Check(SkiViewCharacterCapture125Logic.IncludeReadWeight(true) && !SkiViewCharacterCapture125Logic.IncludeReadWeight(false), "a read zero is kept and an unread weight is not written");
         Check(SkiViewCharacterCapture125Logic.BakeUseScale == false && SkiViewCharacterCapture125Logic.BakeSpace.Contains("useScale=false") && SkiViewCharacterCapture125Logic.BakeSpace.Contains("Do not multiply by lossyScale again"), "bake space is documented once");
-        Check(SkiViewCharacterCapture125Logic.BakeRole("body", "Body_LOD0", "Body_LOD0") && !SkiViewCharacterCapture125Logic.BakeRole("body", "Body_LOD1", "Body_LOD1") && SkiViewCharacterCapture125Logic.BakeRole("r6", "Vest_r6", "Vest_r6"), "body LOD0, r6, and not body LOD1 are baked");
+        Check(SkiViewCharacterCapture125Logic.BakeRole("body", "Body_LOD0", "Body_LOD0") && !SkiViewCharacterCapture125Logic.BakeRole("body", "Body_LOD1", "Body_LOD1"), "body LOD0 is baked and body LOD1 is not");
+        Check(SkiViewCharacterCapture125Logic.EnabledDuplicateIds(new[] { 1, 2, 3 }, new[] { "Body_LOD0", "Body_LOD1", "Body_LOD2" }, new[] { true, true, true }).Count == 0, "distinct LOD names are not same-mesh duplicates");
+        Check(SkiViewCharacterCapture125Logic.IsBodyLod("INTERNAL_ONLY_125_Body_LOD1", "Body_LOD1", 1) && SkiViewCharacterCapture125Logic.IsBodyLod("INTERNAL_ONLY_125_Body_LOD2", "Body_LOD2", 2) && !SkiViewCharacterCapture125Logic.IsBodyLod("Body_LOD0", "Body_LOD0", 1), "body LOD slots are named apart");
+        Check(SkiViewCharacterCapture125Logic.IsFace("SkiView_Face_Male_V1", "Face") && !SkiViewCharacterCapture125Logic.IsFace("Body_LOD0", "Body_LOD0"), "face is not the body");
+        Check(SkiViewCharacterCapture125Logic.VestContentLabel(SkiViewCharacterCapture125Logic.ExpectedOriginalVestSha256) == "original", "original vest hash");
+        Check(SkiViewCharacterCapture125Logic.VestContentLabel("8d8dd716" + new string('a', 52) + "6283") == "r6", "r6 hash span");
+        Check(SkiViewCharacterCapture125Logic.VestContentLabel(SkiViewCharacterCapture125Logic.ExpectedOriginalVestSha256) != "r6", "a vest file name is not the label");
         var dups = SkiViewCharacterCapture125Logic.EnabledDuplicateIds(new[] { -13886, 44948, 7 }, new[] { "Vest_LOD0", "Vest_LOD0", "Body_LOD0" }, new[] { true, true, true });
         Check(dups.Count == 2 && dups[0] == -13886 && dups[1] == 44948, "two enabled vests are the duplicate pair");
         Check(SkiViewCharacterCapture125Logic.EnabledDuplicateIds(new[] { 1, 2 }, new[] { "Vest_LOD0", "Vest_LOD0" }, new[] { true, false }).Count == 0, "a disabled twin is not a duplicate surface");
