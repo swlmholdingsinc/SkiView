@@ -53,7 +53,7 @@ public static class SkiViewBodyHeadCoverageCapture
         }
         if (!File.Exists(ScenePath)) { Debug.LogError("[HeadCoverage] missing scene"); return 3; }
         EditorSceneManager.OpenScene(ScenePath);
-        var game = Object.FindFirstObjectByType<SkiViewGame>();
+        var game = UnityEngine.Object.FindFirstObjectByType<SkiViewGame>();
         if (game == null || game.skier == null || game.rig == null || game.rig.animator == null)
         {
             Debug.LogError("[HeadCoverage] no skier rig");
@@ -100,7 +100,7 @@ public static class SkiViewBodyHeadCoverageCapture
             setAthlete.Invoke(game, new object[] { 1 });
             Shoot(game, cam, dir, "female_after", shots);
         }
-        finally { Object.DestroyImmediate(camGo); }
+        finally { UnityEngine.Object.DestroyImmediate(camGo); }
 
         var sb = new StringBuilder();
         sb.Append("{\n");

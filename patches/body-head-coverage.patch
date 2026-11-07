@@ -1,6 +1,6 @@
 diff --git a/Assets/SkiView/Editor/SkiViewBodyHeadCoverageCapture.cs b/Assets/SkiView/Editor/SkiViewBodyHeadCoverageCapture.cs
 new file mode 100644
-index 0000000..3fb2e6a
+index 0000000..03dd938
 --- /dev/null
 +++ b/Assets/SkiView/Editor/SkiViewBodyHeadCoverageCapture.cs
 @@ -0,0 +1,161 @@
@@ -59,7 +59,7 @@ index 0000000..3fb2e6a
 +        }
 +        if (!File.Exists(ScenePath)) { Debug.LogError("[HeadCoverage] missing scene"); return 3; }
 +        EditorSceneManager.OpenScene(ScenePath);
-+        var game = Object.FindFirstObjectByType<SkiViewGame>();
++        var game = UnityEngine.Object.FindFirstObjectByType<SkiViewGame>();
 +        if (game == null || game.skier == null || game.rig == null || game.rig.animator == null)
 +        {
 +            Debug.LogError("[HeadCoverage] no skier rig");
@@ -106,7 +106,7 @@ index 0000000..3fb2e6a
 +            setAthlete.Invoke(game, new object[] { 1 });
 +            Shoot(game, cam, dir, "female_after", shots);
 +        }
-+        finally { Object.DestroyImmediate(camGo); }
++        finally { UnityEngine.Object.DestroyImmediate(camGo); }
 +
 +        var sb = new StringBuilder();
 +        sb.Append("{\n");
