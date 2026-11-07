@@ -508,6 +508,15 @@ namespace SkiView
             return "";
         }
 
+        /// <summary>RESTART PASS / skip pill in jump mode (see SkiView.Logic.JumpRetryRules).</summary>
+        void JumpRetry(SkiView.Logic.JumpRetryAction a)
+        {
+            if (a == SkiView.Logic.JumpRetryAction.Ignore || jumpRamp == null) return;
+            if (a == SkiView.Logic.JumpRetryAction.NewRound) BeginJumpRound();
+            skipTurn = false; turnaround = false; spinSink = false; spinCall = false;
+            BeginJumpRun(false);   // same pass number: a pass is only counted in EndJumpRun / a landing fall
+        }
+
         void EndJumpRun()
         {
             // hand the skier back to the rope pendulum (island turn next); the rope stays at jump length while jump mode is on
