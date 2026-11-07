@@ -1,0 +1,160 @@
+diff -ruN a/Assets/SkiView/Editor/SkiViewBuild.cs b/Assets/SkiView/Editor/SkiViewBuild.cs
+--- a/Assets/SkiView/Editor/SkiViewBuild.cs	2026-11-07 02:26:07.717286305 +0000
++++ b/Assets/SkiView/Editor/SkiViewBuild.cs	2026-11-07 02:26:07.717286305 +0000
+@@ -44,13 +44,9 @@
+         if (imp.textureType != TextureImporterType.Default || imp.mipmapEnabled || imp.npotScale != TextureImporterNPOTScale.None) { imp.textureType = TextureImporterType.Default; imp.mipmapEnabled = false; imp.npotScale = TextureImporterNPOTScale.None; imp.textureCompression = TextureImporterCompression.Uncompressed; imp.SaveAndReimport(); }
+         var icon = AssetDatabase.LoadAssetAtPath<Texture2D>(P + "icon-512.png"); var clear = AssetDatabase.LoadAssetAtPath<Texture2D>(P + "icon-fg-clear.png");
+         PlayerSettings.SetIcons(UnityEditor.Build.NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
+-        var tgt = UnityEditor.Build.NamedBuildTarget.Android;
+-        foreach (var kind in new[] { UnityEditor.Android.AndroidPlatformIconKind.Legacy, UnityEditor.Android.AndroidPlatformIconKind.Round, UnityEditor.Android.AndroidPlatformIconKind.Adaptive })
+-        {
+-            var icons = PlayerSettings.GetPlatformIcons(tgt, kind);
+-            foreach (var ic in icons) { if (kind == UnityEditor.Android.AndroidPlatformIconKind.Adaptive) ic.SetTextures(icon, clear); else ic.SetTexture(icon); }
+-            PlayerSettings.SetPlatformIcons(tgt, kind, icons);
+-        }
++        if (AssignPlatformIcons(BuildTargetGroup.Android, BuildTarget.Android, UnityEditor.Build.NamedBuildTarget.Android,
++                SkiViewBuildIconModule.AndroidKindType, SkiViewBuildIconModule.AndroidDll, SkiViewBuildIconModule.AndroidKinds, icon, clear))
++            Debug.Log("[SkiView] app icons set from Branding/icon-512.png (legacy / round / adaptive)");
+         // Apple App Store: opaque 1024×1024 RGB (no alpha) for every iOSPlatformIconKind including Marketing.
+         const string iosIconPath = P + "icon-1024-ios.png";
+         var iosImp = AssetImporter.GetAtPath(iosIconPath) as TextureImporter;
+@@ -67,23 +63,48 @@
+         var iosIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(iosIconPath);
+         if (iosIcon != null)
+         {
+-            var iosTgt = UnityEditor.Build.NamedBuildTarget.iOS;
+-            foreach (var kind in new[] {
+-                UnityEditor.iOS.iOSPlatformIconKind.Application,
+-                UnityEditor.iOS.iOSPlatformIconKind.Spotlight,
+-                UnityEditor.iOS.iOSPlatformIconKind.Settings,
+-                UnityEditor.iOS.iOSPlatformIconKind.Notification,
+-                UnityEditor.iOS.iOSPlatformIconKind.Marketing
+-            })
++            if (AssignPlatformIcons(BuildTargetGroup.iOS, BuildTarget.iOS, UnityEditor.Build.NamedBuildTarget.iOS,
++                    SkiViewBuildIconModule.IosKindType, SkiViewBuildIconModule.IosDll, SkiViewBuildIconModule.IosKinds, iosIcon, null))
++                Debug.Log("[SkiView] iOS app icons set from Branding/icon-1024-ios.png (Application/Spotlight/Settings/Notification/Marketing)");
++        }
++        else Debug.LogWarning("[SkiView] missing Branding/icon-1024-ios.png — iOS icons not assigned");
++    }
++
++    static bool AssignPlatformIcons(BuildTargetGroup group, BuildTarget target, UnityEditor.Build.NamedBuildTarget named, string kindType, string dllRelative, string[] members, Texture2D icon, Texture2D clear)
++    {
++        bool supported = BuildPipeline.IsBuildTargetSupported(group, target);
++        var loaded = SkiViewBuildIconModule.FindLoaded(kindType);
++        if (loaded == null && supported) loaded = LoadExtension(dllRelative, kindType);
++        var availability = SkiViewBuildIconModule.Decide(supported, loaded != null);
++        if (availability == SkiViewBuildIconModule.Availability.ModuleAbsent)
++        {
++            Debug.Log("[SkiView] " + group + " build support is not installed. " + kindType + " icons skipped.");
++            return false;
++        }
++        if (availability == SkiViewBuildIconModule.Availability.TypeMissing)
++            throw new InvalidOperationException(group + " build support is installed but " + kindType + " did not load from " + dllRelative);
++        for (int i = 0; i < members.Length; i++)
++        {
++            var kind = SkiViewBuildIconModule.StaticMember(loaded, members[i]) as PlatformIconKind;
++            if (kind == null) throw new InvalidOperationException(kindType + "." + members[i] + " is not a PlatformIconKind");
++            var icons = PlayerSettings.GetPlatformIcons(named, kind);
++            bool two = SkiViewBuildIconModule.TwoLayers(members[i]);
++            for (int k = 0; k < icons.Length; k++)
+             {
+-                var icons = PlayerSettings.GetPlatformIcons(iosTgt, kind);
+-                foreach (var ic in icons) ic.SetTexture(iosIcon);
+-                PlayerSettings.SetPlatformIcons(iosTgt, kind, icons);
++                if (two) icons[k].SetTextures(icon, clear);
++                else icons[k].SetTexture(icon);
+             }
+-            Debug.Log("[SkiView] iOS app icons set from Branding/icon-1024-ios.png (Application/Spotlight/Settings/Notification/Marketing)");
++            PlayerSettings.SetPlatformIcons(named, kind, icons);
+         }
+-        else Debug.LogWarning("[SkiView] missing Branding/icon-1024-ios.png — iOS icons not assigned");
+-        Debug.Log("[SkiView] app icons set from Branding/icon-512.png (legacy / round / adaptive)");
++        return true;
++    }
++
++    static Type LoadExtension(string dllRelative, string kindType)
++    {
++        string path = Path.Combine(EditorApplication.applicationContentsPath, dllRelative);
++        if (!File.Exists(path)) return null;
++        var asm = System.Reflection.Assembly.LoadFrom(path);
++        return asm.GetType(kindType, false);
+     }
+ 
+     // code-audit: one version for every store build (Play versionCode / App Store buildNumber must be monotonic)
+diff -ruN a/Assets/SkiView/Editor/SkiViewBuildIconModule.cs b/Assets/SkiView/Editor/SkiViewBuildIconModule.cs
+--- a/Assets/SkiView/Editor/SkiViewBuildIconModule.cs	1970-01-01 00:00:00.000000000 +0000
++++ b/Assets/SkiView/Editor/SkiViewBuildIconModule.cs	2026-11-07 02:26:07.717286305 +0000
+@@ -0,0 +1,58 @@
++using System;
++using System.Reflection;
++
++/// <summary>
++/// Decides whether store icon kinds can be read. Those kinds are static fields on
++/// UnityEditor.Android.Extensions and UnityEditor.iOS.Extensions. An editor-only install
++/// does not contain those assemblies. UNITY_ANDROID is not used: it follows the active
++/// build target, so it would drop icons while the editor is still on Standalone.
++/// </summary>
++public static class SkiViewBuildIconModule
++{
++    public const string AndroidKindType = "UnityEditor.Android.AndroidPlatformIconKind";
++    public const string IosKindType = "UnityEditor.iOS.iOSPlatformIconKind";
++    public const string AndroidDll = "PlaybackEngines/AndroidPlayer/UnityEditor.Android.Extensions.dll";
++    public const string IosDll = "PlaybackEngines/iOSSupport/UnityEditor.iOS.Extensions.dll";
++
++    public static readonly string[] AndroidKinds = { "Legacy", "Round", "Adaptive" };
++    public static readonly string[] IosKinds = { "Application", "Spotlight", "Settings", "Notification", "Marketing" };
++
++    public enum Availability { ModuleAbsent, TypeMissing, Ready }
++
++    public static Availability Decide(bool buildTargetSupported, bool kindTypeLoaded)
++    {
++        if (!buildTargetSupported) return Availability.ModuleAbsent;
++        if (!kindTypeLoaded) return Availability.TypeMissing;
++        return Availability.Ready;
++    }
++
++    public static bool TwoLayers(string member)
++    {
++        return member == "Adaptive";
++    }
++
++    public static object StaticMember(Type type, string name)
++    {
++        if (type == null || string.IsNullOrEmpty(name)) return null;
++        const BindingFlags flags = BindingFlags.Public | BindingFlags.Static;
++        var field = type.GetField(name, flags);
++        if (field != null) return field.GetValue(null);
++        var prop = type.GetProperty(name, flags);
++        if (prop != null) return prop.GetValue(null, null);
++        return null;
++    }
++
++    public static Type FindLoaded(string fullName)
++    {
++        if (string.IsNullOrEmpty(fullName)) return null;
++        var asms = AppDomain.CurrentDomain.GetAssemblies();
++        for (int i = 0; i < asms.Length; i++)
++        {
++            Type found = null;
++            try { found = asms[i].GetType(fullName, false); }
++            catch (Exception) { found = null; }
++            if (found != null) return found;
++        }
++        return null;
++    }
++}
+diff -ruN a/Assets/SkiView/Editor/SkiViewBuildIconModule.cs.meta b/Assets/SkiView/Editor/SkiViewBuildIconModule.cs.meta
+--- a/Assets/SkiView/Editor/SkiViewBuildIconModule.cs.meta	1970-01-01 00:00:00.000000000 +0000
++++ b/Assets/SkiView/Editor/SkiViewBuildIconModule.cs.meta	2026-11-07 02:26:07.721286305 +0000
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: a1c4e8b27d6f4c0e9a5b3d7f1e246809
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
