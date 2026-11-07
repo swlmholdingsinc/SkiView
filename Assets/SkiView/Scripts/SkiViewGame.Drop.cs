@@ -204,13 +204,14 @@ namespace SkiView
         }
         public bool InDropFloat => dropPh >= 2 && mode == Mode.Sink;
 
-        /// <summary>RETRY PASS / RESTART: always the plain set-up, even mid-turnaround.</summary>
+        /// <summary>RESTART PASS. Jump uses the approved jump rules. Trick restarts that pass. Slalom keeps SkipToSetup.</summary>
         public void RetryPass()
         {
-            // jump mode: replay the jump pass (or a new round once it's over) instead of the slalom set-up, which flips
-            // the boat to -passDir and leaves the jump trigger (dir == jumpDir) waiting a whole island loop.
-            var ja = SkiView.Logic.JumpRetryRules.OnRetry(jumpMode, jumpRamp != null, JumpResultsOpen, JumpPassCount, JUMP_PASSES);
-            if (ja != SkiView.Logic.JumpRetryAction.NotJump) { DropReset(); JumpRetry(ja); return; }
+            var kind = SkiView.Logic.ModeRestartRules.Decide(jumpMode, jumpRamp != null, JumpResultsOpen, JumpPassCount, JUMP_PASSES, trickMode);
+            if (kind == SkiView.Logic.ModeRestartKind.JumpReplay) { DropReset(); JumpRetry(SkiView.Logic.JumpRetryAction.ReplayPass); return; }
+            if (kind == SkiView.Logic.ModeRestartKind.JumpNewRound) { DropReset(); JumpRetry(SkiView.Logic.JumpRetryAction.NewRound); return; }
+            if (kind == SkiView.Logic.ModeRestartKind.JumpIgnore) { DropReset(); JumpRetry(SkiView.Logic.JumpRetryAction.Ignore); return; }
+            if (kind == SkiView.Logic.ModeRestartKind.TrickPass) { DropReset(); RestartTrickPass(); return; }
             FlushSlalomSet(); DropReset(); SkipToSetup();
         }
         void DropReset() { dropPh = 0; dwsBlendT = -1f; floatYawSet = false; }

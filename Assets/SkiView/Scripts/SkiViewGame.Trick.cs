@@ -164,6 +164,43 @@ namespace SkiView
             banner = $"TRICKS · PASS 1 · {trickBoatKmh:0} km/h · {trickRopeM:0.0} m"; bannerT = 3f;
         }
 
+        /// <summary>RESTART PASS while trickMode is on. Same pass, that pass's own direction, clock cleared. Pass 1 also clears the round.</summary>
+        public void RestartTrickPass()
+        {
+            if (!trickMode || path == null) return;
+            if (trickPass <= 1)
+            {
+                trickPass = 1;
+                trickLog.Clear(); creditedKeys.Clear(); TrickScore = 0; TrickRoundOver = false;
+            }
+            else
+            {
+                string prefix = trickPass + ":";
+                creditedKeys.RemoveWhere(k => k != null && k.StartsWith(prefix));
+                trickLog.RemoveAll(e => e.pass == trickPass);
+                int score = 0;
+                foreach (var e in trickLog) if (e.credited) score += e.pts;
+                TrickScore = score;
+            }
+            trickYaw = 0f; trickFacingBack = false; trickSpinRemain = 0f; trickSpinCode = null;
+            trickSpinWake = false; trickSpinRev = false; trickSlideT = 0f; trickEdgeHold = 0f; trickCrestWindow = 0f;
+            trickClockStarted = false; TrickClock = 20f; trickFallThisPass = false; trickBeepPrev = 99;
+            trickLastBasicKey = null; trickLastCreditT = -99f; trickPopArmed = false; trickSwipeCount = 0;
+            tphase = TPhase.Approach;
+            int dir = SkiView.Logic.ModeRestartRules.TrickPassDirection(trickPass, StartDir);
+            passDir = dir;
+            mode = Mode.DeepStart; actionT = 0f; dwsPatchDone = false; throttle = 1f;
+            skipTurn = false; turnaround = false; spinSink = false; spinCall = false;
+            float along = trickPass <= 1 ? startProgress : EntryAlongForDir(dir);
+            boatS = path.FindS(dir, along);
+            boatPos = path.Position(boatS); boatFwd = path.Tangent(boatS); prevHeading = Heading(boatFwd);
+            sim.Recover(); sim.ropeM = trickRopeM; ropeTarget = trickRopeM; sim.theta = 0.2f; sim.omega = 0f;
+            PlaceSkier(); skierPrev = skierPos;
+            PlaceTrickBuoys();
+            snapCamNext = true;
+            banner = $"TRICKS · PASS {trickPass} · RESTART"; bannerT = 2.5f;
+        }
+
         void ApplyTrickSki(bool on)
         {
             if (ski == null) return;

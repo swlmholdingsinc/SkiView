@@ -1,0 +1,186 @@
+diff --git a/Assets/SkiView/Scripts/Logic/ModeRestartRules.cs b/Assets/SkiView/Scripts/Logic/ModeRestartRules.cs
+new file mode 100644
+index 0000000..644660f
+--- /dev/null
++++ b/Assets/SkiView/Scripts/Logic/ModeRestartRules.cs
+@@ -0,0 +1,71 @@
++namespace SkiView.Logic
++{
++    public enum ModeRestartKind { SlalomSetup, JumpReplay, JumpNewRound, JumpIgnore, TrickPass }
++
++    /// <summary>
++    /// RESTART PASS for the modes that exist in this tree. Jump stays on JumpRetryRules.
++    /// Slalom stays on SkipToSetup, including its direction flip. Trick does not.
++    /// </summary>
++    public static class ModeRestartRules
++    {
++        public static ModeRestartKind Decide(bool jumpMode, bool hasRamp, bool jumpResultsOpen, int jumpPassCount, int jumpPassesPerRound, bool trickMode)
++        {
++            var jump = JumpRetryRules.OnRetry(jumpMode, hasRamp, jumpResultsOpen, jumpPassCount, jumpPassesPerRound);
++            if (jump == JumpRetryAction.ReplayPass) return ModeRestartKind.JumpReplay;
++            if (jump == JumpRetryAction.NewRound) return ModeRestartKind.JumpNewRound;
++            if (jump == JumpRetryAction.Ignore) return ModeRestartKind.JumpIgnore;
++            if (trickMode) return ModeRestartKind.TrickPass;
++            return ModeRestartKind.SlalomSetup;
++        }
++
++        /// <summary>The direction SkipToSetup already uses. Slalom restart keeps this.</summary>
++        public static int SlalomSetupDirection(int passDir)
++        {
++            int nd = -passDir;
++            if (nd == 0) nd = 1;
++            return nd;
++        }
++
++        /// <summary>Pass 1 uses the round's start direction. Pass 2 uses the opposite. Not a flip of the boat's current direction.</summary>
++        public static int TrickPassDirection(int trickPass, int startDir)
++        {
++            int d = startDir < 0 ? -1 : 1;
++            if (startDir == 0) d = -1;
++            return trickPass <= 1 ? d : -d;
++        }
++    }
++
++    /// <summary>Runs without Unity. Returns the number of failed checks.</summary>
++    public static class ModeRestartHarness
++    {
++        public static int Run(System.Action<string> fail)
++        {
++            int n = 0;
++            void F(bool ok, string m) { if (!ok) { n++; if (fail != null) fail(m); } }
++
++            F(ModeRestartRules.Decide(false, true, false, 0, 3, true) == ModeRestartKind.TrickPass, "TR-07 trick restart is not the slalom setup");
++            F(ModeRestartRules.Decide(false, true, false, 0, 3, false) == ModeRestartKind.SlalomSetup, "slalom restart stays the setup path");
++            F(ModeRestartRules.Decide(true, true, false, 1, 3, false) == ModeRestartKind.JumpReplay, "jump mid-round still replays");
++            F(ModeRestartRules.Decide(true, true, false, 3, 3, false) == ModeRestartKind.JumpNewRound, "jump round done still starts a new round");
++            F(ModeRestartRules.Decide(true, true, true, 1, 3, true) == ModeRestartKind.JumpNewRound, "jump wins when both flags are set");
++            F(ModeRestartRules.Decide(true, false, false, 1, 3, true) == ModeRestartKind.TrickPass, "jump without a ramp falls through to trick");
++
++            int pass1 = ModeRestartRules.TrickPassDirection(1, -1);
++            int pass2 = ModeRestartRules.TrickPassDirection(2, -1);
++            F(pass1 == -1, "trick pass 1 keeps Ski View start direction");
++            F(pass2 == 1, "trick pass 2 is the opposite of the start direction");
++            F(pass1 != ModeRestartRules.SlalomSetupDirection(pass1), "restarting pass 1 does not use the slalom flip");
++            F(pass2 != ModeRestartRules.SlalomSetupDirection(pass2), "restarting pass 2 does not use the slalom flip");
++            F(ModeRestartRules.SlalomSetupDirection(-1) == 1 && ModeRestartRules.SlalomSetupDirection(1) == -1, "slalom flip itself is unchanged");
++
++            // Recorded, not changed: P19 PbFmt. 0 balls at rope index 8 is score 48 and displays as 6 @ 41 OFF.
++            float score = 8 * 6f + 0f;
++            float shownBalls = (score % 6f < 0.01f && score > 0f) ? 6f : score % 6f;
++            int shownRope = (int)System.Math.Floor((score - 0.01f) / 6f);
++            if (shownRope < 0) shownRope = 0;
++            if (shownRope > 8) shownRope = 8;
++            F(score == 48f && shownBalls == 6f && shownRope == 7, "recorded display: 0 at 43 encodes as 6 at rope index 7");
++            return n;
++        }
++    }
++}
+diff --git a/Assets/SkiView/Scripts/Logic/ModeRestartRules.cs.meta b/Assets/SkiView/Scripts/Logic/ModeRestartRules.cs.meta
+new file mode 100644
+index 0000000..884a727
+--- /dev/null
++++ b/Assets/SkiView/Scripts/Logic/ModeRestartRules.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 6c1e8a4b2d7f49e0a5b3c8d91e2f7046
+diff --git a/Assets/SkiView/Scripts/SkiViewGame.Drop.cs b/Assets/SkiView/Scripts/SkiViewGame.Drop.cs
+index 0820b33..2d67586 100644
+--- a/Assets/SkiView/Scripts/SkiViewGame.Drop.cs
++++ b/Assets/SkiView/Scripts/SkiViewGame.Drop.cs
+@@ -204,13 +204,14 @@ namespace SkiView
+         }
+         public bool InDropFloat => dropPh >= 2 && mode == Mode.Sink;
+ 
+-        /// <summary>RETRY PASS / RESTART: always the plain set-up, even mid-turnaround.</summary>
++        /// <summary>RESTART PASS. Jump uses the approved jump rules. Trick restarts that pass. Slalom keeps SkipToSetup.</summary>
+         public void RetryPass()
+         {
+-            // jump mode: replay the jump pass (or a new round once it's over) instead of the slalom set-up, which flips
+-            // the boat to -passDir and leaves the jump trigger (dir == jumpDir) waiting a whole island loop.
+-            var ja = SkiView.Logic.JumpRetryRules.OnRetry(jumpMode, jumpRamp != null, JumpResultsOpen, JumpPassCount, JUMP_PASSES);
+-            if (ja != SkiView.Logic.JumpRetryAction.NotJump) { DropReset(); JumpRetry(ja); return; }
++            var kind = SkiView.Logic.ModeRestartRules.Decide(jumpMode, jumpRamp != null, JumpResultsOpen, JumpPassCount, JUMP_PASSES, trickMode);
++            if (kind == SkiView.Logic.ModeRestartKind.JumpReplay) { DropReset(); JumpRetry(SkiView.Logic.JumpRetryAction.ReplayPass); return; }
++            if (kind == SkiView.Logic.ModeRestartKind.JumpNewRound) { DropReset(); JumpRetry(SkiView.Logic.JumpRetryAction.NewRound); return; }
++            if (kind == SkiView.Logic.ModeRestartKind.JumpIgnore) { DropReset(); JumpRetry(SkiView.Logic.JumpRetryAction.Ignore); return; }
++            if (kind == SkiView.Logic.ModeRestartKind.TrickPass) { DropReset(); RestartTrickPass(); return; }
+             FlushSlalomSet(); DropReset(); SkipToSetup();
+         }
+         void DropReset() { dropPh = 0; dwsBlendT = -1f; floatYawSet = false; }
+diff --git a/Assets/SkiView/Scripts/SkiViewGame.Trick.cs b/Assets/SkiView/Scripts/SkiViewGame.Trick.cs
+index 661041b..879f581 100644
+--- a/Assets/SkiView/Scripts/SkiViewGame.Trick.cs
++++ b/Assets/SkiView/Scripts/SkiViewGame.Trick.cs
+@@ -164,6 +164,43 @@ namespace SkiView
+             banner = $"TRICKS · PASS 1 · {trickBoatKmh:0} km/h · {trickRopeM:0.0} m"; bannerT = 3f;
+         }
+ 
++        /// <summary>RESTART PASS while trickMode is on. Same pass, that pass's own direction, clock cleared. Pass 1 also clears the round.</summary>
++        public void RestartTrickPass()
++        {
++            if (!trickMode || path == null) return;
++            if (trickPass <= 1)
++            {
++                trickPass = 1;
++                trickLog.Clear(); creditedKeys.Clear(); TrickScore = 0; TrickRoundOver = false;
++            }
++            else
++            {
++                string prefix = trickPass + ":";
++                creditedKeys.RemoveWhere(k => k != null && k.StartsWith(prefix));
++                trickLog.RemoveAll(e => e.pass == trickPass);
++                int score = 0;
++                foreach (var e in trickLog) if (e.credited) score += e.pts;
++                TrickScore = score;
++            }
++            trickYaw = 0f; trickFacingBack = false; trickSpinRemain = 0f; trickSpinCode = null;
++            trickSpinWake = false; trickSpinRev = false; trickSlideT = 0f; trickEdgeHold = 0f; trickCrestWindow = 0f;
++            trickClockStarted = false; TrickClock = 20f; trickFallThisPass = false; trickBeepPrev = 99;
++            trickLastBasicKey = null; trickLastCreditT = -99f; trickPopArmed = false; trickSwipeCount = 0;
++            tphase = TPhase.Approach;
++            int dir = SkiView.Logic.ModeRestartRules.TrickPassDirection(trickPass, StartDir);
++            passDir = dir;
++            mode = Mode.DeepStart; actionT = 0f; dwsPatchDone = false; throttle = 1f;
++            skipTurn = false; turnaround = false; spinSink = false; spinCall = false;
++            float along = trickPass <= 1 ? startProgress : EntryAlongForDir(dir);
++            boatS = path.FindS(dir, along);
++            boatPos = path.Position(boatS); boatFwd = path.Tangent(boatS); prevHeading = Heading(boatFwd);
++            sim.Recover(); sim.ropeM = trickRopeM; ropeTarget = trickRopeM; sim.theta = 0.2f; sim.omega = 0f;
++            PlaceSkier(); skierPrev = skierPos;
++            PlaceTrickBuoys();
++            snapCamNext = true;
++            banner = $"TRICKS · PASS {trickPass} · RESTART"; bannerT = 2.5f;
++        }
++
+         void ApplyTrickSki(bool on)
+         {
+             if (ski == null) return;
+diff --git a/Assets/SkiView/Tests/EditMode/ModeRestartRulesTests.cs b/Assets/SkiView/Tests/EditMode/ModeRestartRulesTests.cs
+new file mode 100644
+index 0000000..0d21bcc
+--- /dev/null
++++ b/Assets/SkiView/Tests/EditMode/ModeRestartRulesTests.cs
+@@ -0,0 +1,15 @@
++using NUnit.Framework;
++using SkiView.Logic;
++
++namespace SkiView.Tests
++{
++    public class ModeRestartRulesTests
++    {
++        [Test]
++        public void Harness_Passes()
++        {
++            int n = ModeRestartHarness.Run(m => Assert.Fail(m));
++            Assert.AreEqual(0, n);
++        }
++    }
++}
+diff --git a/Assets/SkiView/Tests/EditMode/ModeRestartRulesTests.cs.meta b/Assets/SkiView/Tests/EditMode/ModeRestartRulesTests.cs.meta
+new file mode 100644
+index 0000000..4b4e8d0
+--- /dev/null
++++ b/Assets/SkiView/Tests/EditMode/ModeRestartRulesTests.cs.meta
+@@ -0,0 +1,2 @@
++fileFormatVersion: 2
++guid: 91ab47c0e5d64f2a8c6b0d3e7f1a2548
