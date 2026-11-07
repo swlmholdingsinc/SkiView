@@ -1,9 +1,10 @@
 diff --git a/Assets/SkiView/Editor/SkiViewBodyHeadCoverageCapture.cs b/Assets/SkiView/Editor/SkiViewBodyHeadCoverageCapture.cs
 new file mode 100644
-index 0000000..3d101f8
+index 0000000..3fb2e6a
 --- /dev/null
 +++ b/Assets/SkiView/Editor/SkiViewBodyHeadCoverageCapture.cs
-@@ -0,0 +1,160 @@
+@@ -0,0 +1,161 @@
++using System;
 +using System.Collections.Generic;
 +using System.IO;
 +using System.Reflection;
