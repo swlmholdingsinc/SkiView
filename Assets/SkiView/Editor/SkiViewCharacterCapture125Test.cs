@@ -39,6 +39,8 @@ public static class SkiViewCharacterCapture125Test
         Check(SkiViewCharacterCapture125Logic.VestContentLabel(SkiViewCharacterCapture125Logic.ExpectedOriginalVestSha256) == "original", "original vest hash");
         Check(SkiViewCharacterCapture125Logic.VestContentLabel("8d8dd716" + new string('a', 52) + "6283") == "r6", "r6 hash span");
         Check(SkiViewCharacterCapture125Logic.VestContentLabel(SkiViewCharacterCapture125Logic.ExpectedOriginalVestSha256) != "r6", "a vest file name is not the label");
+        Check(SkiViewBodyHeadCoverage.InHeadIsland(0.7f, 0.8f) && !SkiViewBodyHeadCoverage.InHeadIsland(0.2f, 0.8f) && !SkiViewBodyHeadCoverage.InHeadIsland(0.7f, 0.2f), "body head island is the authored UV window");
+        Check(SkiViewBodyHeadCoverage.DropTriangle(true, false, false) && !SkiViewBodyHeadCoverage.DropTriangle(false, false, false), "an island corner drops the triangle");
         var dups = SkiViewCharacterCapture125Logic.EnabledDuplicateIds(new[] { -13886, 44948, 7 }, new[] { "Vest_LOD0", "Vest_LOD0", "Body_LOD0" }, new[] { true, true, true });
         Check(dups.Count == 2 && dups[0] == -13886 && dups[1] == 44948, "two enabled vests are the duplicate pair");
         Check(SkiViewCharacterCapture125Logic.EnabledDuplicateIds(new[] { 1, 2 }, new[] { "Vest_LOD0", "Vest_LOD0" }, new[] { true, false }).Count == 0, "a disabled twin is not a duplicate surface");
