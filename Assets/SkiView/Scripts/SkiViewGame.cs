@@ -519,6 +519,10 @@ namespace SkiView
         public void SkipToSetup()
         {
             if (DropSkip()) { SkipCount++; return; }
+            {   // jump mode: the skip pill goes to the next jump approach, never a slalom set-up (jumpMode is already false when leaving jump mode)
+                var ja = SkiView.Logic.JumpRetryRules.OnSkip(jumpMode, jumpRamp != null, JumpResultsOpen, JumpPassCount, JUMP_PASSES);
+                if (ja != SkiView.Logic.JumpRetryAction.NotJump) { SkipCount++; DropReset(); JumpRetry(ja); return; }
+            }
             int nd = -passDir; if (nd == 0) nd = 1; SkipCount++; DropReset();
             mode = Mode.Turn; actionT = 0f; throttle = 1f; skipTurn = false; turnaround = false; spinSink = false; spinCall = false;
             sim.Recover(); sim.ropeM = ropeTarget; sim.theta = 0.05f;
