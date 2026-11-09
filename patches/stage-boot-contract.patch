@@ -221,7 +221,10 @@
  }
 --- a/Assets/SkiView/Editor/SkiViewBuild.cs
 +++ b/Assets/SkiView/Editor/SkiViewBuild.cs
-@@ -1,11 +1,21 @@
+@@ -228,16 +228,26 @@
+         ApplyReleaseVersion();
+         PlayerSettings.WebGL.template = "PROJECT:SkiViewMinimal";
+         var s = UnityEditor.AddressableAssets.AddressableAssetSettingsDefaultObject.Settings;
 -        string aaWebGL = Path.Combine(Root, "Library/com.unity.addressables/aa/WebGL/WebGL/core_home_scenes_all.bundle");
 -        if (s != null && File.Exists(aaWebGL))
 +        string aaDir = Path.Combine(Root, "Library/com.unity.addressables/aa/WebGL");
@@ -246,9 +249,11 @@
 +                EditorUtility.SetDirty(s); AssetDatabase.SaveAssets();
 +            }
          }
---- a/Assets/SkiView/Editor/SkiViewBuild.cs
-+++ b/Assets/SkiView/Editor/SkiViewBuild.cs
-@@ -1,2 +1,7 @@
+         string outp = Path.Combine(Root, "Builds/WebGL");
+         var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+@@ -249,4 +259,9 @@
+         });
+         if (s != null) { s.BuildAddressablesWithPlayerBuild = UnityEditor.AddressableAssets.Settings.AddressableAssetSettings.PlayerBuildOption.BuildWithPlayer; EditorUtility.SetDirty(s); AssetDatabase.SaveAssets(); }
          Report("WebGLFast (gzip + fallback)", r, outp);
 +        var builtAa = SkiViewContent.PlayerBundleCohesion(Path.Combine(outp, "StreamingAssets", "aa"));
 +        if (!builtAa.Proven)
@@ -256,6 +261,7 @@
 +                + (builtAa.Missing.Count > 0 ? " missing " + string.Join(", ", builtAa.Missing) : "")
 +                + " Files were not renamed.");
      }
+
 diff --git a/Assets/SkiView/Editor/SkiViewContent.cs b/Assets/SkiView/Editor/SkiViewContent.cs
 index 2fce1cb..f533045 100644
 --- a/Assets/SkiView/Editor/SkiViewContent.cs
@@ -310,49 +316,84 @@ index c817164..5c38853 100644
              doc = gameObject.AddComponent<UIDocument>(); doc.panelSettings = ps; doc.sortingOrder = 50;
              root = doc.rootVisualElement; root.pickingMode = PickingMode.Ignore;
              foreach (var n in new[] { "sv-tokens", "sv-components", "sv-game" }) { var ss = Resources.Load<StyleSheet>("SkiViewUI/" + n); if (ss != null) root.styleSheets.Add(ss); }
-diff --git a/Assets/WebGLTemplates/SkiViewMinimal/index.html b/Assets/WebGLTemplates/SkiViewMinimal/index.html
-index 7be96b5..44697f9 100644
 --- a/Assets/WebGLTemplates/SkiViewMinimal/index.html
 +++ b/Assets/WebGLTemplates/SkiViewMinimal/index.html
-@@ -13,6 +13,7 @@
+@@ -19,6 +19,7 @@
        #sv-rotate { display: none; position: fixed; inset: 0; z-index: 10; background: #0b1a2a; color: #fff; font: 600 20px -apple-system, sans-serif; align-items: center; justify-content: center; text-align: center; padding: 24px; }
        @media (orientation: portrait) and (pointer: coarse) { #sv-rotate { display: flex; } }
        #sv-err { display: none; position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 11; background: #a3161dee; color: #fff; font: 14px -apple-system, sans-serif; padding: 10px; border-radius: 6px; }
-+      #sv-boot { position: fixed; left: 12px; top: 12px; z-index: 12; max-width: 72vw; background: #000000d1; color: #fff; font: 18px/1.35 -apple-system, sans-serif; padding: 14px 16px; white-space: pre-wrap; }
-       #sv-loading-fill { width: 0; height: 100%; background: #ffffffcc; border-radius: 3px; }
++      #sv-boot { position: fixed; left: 12px; top: 12px; z-index: 13; max-width: 72vw; background: #000000d1; color: #fff; font: 18px/1.35 -apple-system, sans-serif; padding: 14px 16px; white-space: pre-wrap; }
      </style>
    </head>
-@@ -21,10 +22,13 @@
-     <div id="unity-container"><canvas id="unity-canvas" tabindex="-1"></canvas></div>
+   <body>
+@@ -32,9 +33,12 @@
+     </div>
      <div id="sv-rotate">Rotate your phone to landscape</div>
      <div id="sv-err"></div>
 +    <div id="sv-boot">Boot: page loaded. Player files have not reported a step yet.</div>
-     <div id="sv-loading"><div id="sv-loading-fill"></div></div>
      <script>
        var canvas = document.querySelector("#unity-canvas");
 -      function svErr(m) { var e = document.querySelector("#sv-err"); e.textContent = "Error: " + m; e.style.display = "block"; }
 +      function svBoot(m) { var e = document.querySelector("#sv-boot"); if (!e) return; e.style.display = "block"; e.textContent = m; }
 +      window.svBootMark = svBoot;
 +      function svErr(m) { svBoot("Error: " + m + "\nNo red console line is required for this to be a stop."); var e = document.querySelector("#sv-err"); e.textContent = "Error: " + m; e.style.display = "block"; }
+       canvas.addEventListener("webglcontextlost", function (ev) { ev.preventDefault(); svErr("webglcontextlost"); }, false);
+       canvas.addEventListener("webglcontextrestored", function () { svErr("webglcontextrestored"); }, false);
+       var svDiag = document.createElement("div");
+@@ -48,21 +52,21 @@
        var svMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
        var config = {
          arguments: [],
-@@ -53,9 +57,13 @@
-       }
+-        dataUrl: "Build/{{{ DATA_FILENAME }}}?v=r6b4",
+-        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}?v=r6b4",
++        dataUrl: "Build/{{{ DATA_FILENAME }}}?v=r6b17",
++        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}?v=r6b17",
+ #if USE_THREADS
+-        workerUrl: "Build/{{{ WORKER_FILENAME }}}?v=r6b4",
++        workerUrl: "Build/{{{ WORKER_FILENAME }}}?v=r6b17",
+ #endif
+ #if USE_WASM
+-        codeUrl: "Build/{{{ CODE_FILENAME }}}?v=r6b4",
++        codeUrl: "Build/{{{ CODE_FILENAME }}}?v=r6b17",
+ #endif
+ #if SYMBOLS_FILENAME
+-        symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}?v=r6b4",
++        symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}?v=r6b17",
+ #endif
+         streamingAssetsUrl: "StreamingAssets",
+         companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+         productName: "SKI VIEW",
+-        productVersion: "2.0.2-r6b4",
++        productVersion: "2.0.2-r6b17",
+         showBanner: function (msg, type) { if (type === "error") { console.error(msg); svErr(msg); } else console.warn(msg); },
+       };
+       // r6b: crisp native canvas on desktop + mobile (pre-size canvas buffer + cap 2x so 3x phones stay in budget)
+@@ -78,16 +82,23 @@
+       window.addEventListener("resize", svNoteLayout);
+       svNoteLayout();
        var script = document.createElement("script");
-       script.src = "Build/{{{ LOADER_FILENAME }}}";
+-      script.src = "Build/{{{ LOADER_FILENAME }}}?v=r6b4";
++      script.src = "Build/{{{ LOADER_FILENAME }}}?v=r6b17";
 +      script.onerror = function () { svErr("The Unity loader script did not run."); };
        script.onload = function () {
--        createUnityInstance(canvas, config, function (p) { document.querySelector("#sv-loading-fill").style.width = (100 * p) + "%"; })
--          .then(function (inst) { document.querySelector("#sv-loading").remove(); window.unityInstance = inst; })
 +        svBoot("Boot: loader script running.");
 +        var svMarked = false;
 +        window.svBootMark = function (m) { svMarked = true; svBoot(m); if (m.indexOf("lake-ready") >= 0 && m.indexOf("\n") < 0) { var e = document.querySelector("#sv-boot"); if (e) e.style.display = "none"; } };
-+        createUnityInstance(canvas, config, function (p) { document.querySelector("#sv-loading-fill").style.width = (100 * p) + "%"; svBoot("Boot: downloading player files " + Math.round(100 * p) + "%."); })
-+          .then(function (inst) { document.querySelector("#sv-loading").remove(); window.unityInstance = inst; svBoot("Boot: Unity instance created. Waiting for the boot scene."); setTimeout(function () { if (!svMarked) svBoot("Boot: Unity started and has not reported a boot step for 8s.\nNo red browser message is required for this to be a stop."); }, 8000); })
-           .catch(function (m) { console.error(m); svErr(m); });
+         createUnityInstance(canvas, config, function (p) {
+           var pct = Math.round(100 * p);
+           var f = document.querySelector("#sv-loading-fill"); if (f) f.style.width = Math.max(4, pct) + "%";
+           var l = document.querySelector("#sv-loading-pct"); if (l) l.textContent = pct + "%";
++          svBoot("Boot: downloading player files " + pct + "%.");
+         }).then(function (inst) {
+           window.unityInstance = inst;
+           var sp = document.querySelector("#sv-splash");
+           if (sp) { sp.style.opacity = "0"; setTimeout(function(){ sp.remove(); }, 380); }
++          svBoot("Boot: Unity instance created. Waiting for the boot scene.");
++          setTimeout(function () { if (!svMarked) svBoot("Boot: Unity started and has not reported a boot step for 8s.\nNo red browser message is required for this to be a stop."); }, 8000);
+         }).catch(function (m) { console.error(m); svErr(m); });
        };
        document.body.appendChild(script);
+
 --- a/Assets/SkiView/Scripts/SkiViewBootContract.cs
 +++ b/Assets/SkiView/Scripts/SkiViewBootContract.cs
 @@ -0,0 +1,24 @@
