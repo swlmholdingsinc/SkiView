@@ -106,6 +106,35 @@ public static class SkiViewContent
         Debug.Log($"[SkiView] addressables data builder: {s.ActivePlayerDataBuilder?.Name}");
     }
 
+    /// <summary>Exact catalog bundle names against files in one Addressables folder. Does not rename files.</summary>
+    public static CatalogCohesion.Report PlayerBundleCohesion(string dir)
+    {
+        var report = new CatalogCohesion.Report();
+        if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
+        {
+            report.Proven = false;
+            report.Reason = "addressables folder is absent: " + dir + ". The player and StreamingAssets were not found together.";
+            return report;
+        }
+        var settings = Directory.GetFiles(dir, "settings.json", SearchOption.AllDirectories);
+        if (settings.Length == 0)
+        {
+            report.Proven = false;
+            report.Reason = "settings.json is not under " + dir + ". Boot cannot open a catalog that was not packed with this player.";
+            return report;
+        }
+        var catalogs = Directory.GetFiles(dir, "catalog*.json", SearchOption.AllDirectories);
+        if (catalogs.Length == 0)
+        {
+            report.Proven = false;
+            report.Reason = "no catalog json under " + dir + ". A binary catalog was not treated as a match.";
+            return report;
+        }
+        var texts = catalogs.Select(File.ReadAllText);
+        var files = Directory.GetFiles(dir, "*.bundle", SearchOption.AllDirectories);
+        return CatalogCohesion.Check(texts, files);
+    }
+
     /// <summary>Report the built bundle sizes per group (Library/com.unity.addressables/aa/&lt;target&gt;).</summary>
     public static string BundleReport()
     {

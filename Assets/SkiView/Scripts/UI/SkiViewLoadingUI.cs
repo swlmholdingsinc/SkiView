@@ -32,7 +32,8 @@ namespace SkiView.UI
 
         void Start()
         {
-            var ps = Resources.Load<PanelSettings>("SkiViewUI/SV_Panel"); if (ps == null) return;
+            var ps = Resources.Load<PanelSettings>("SkiViewUI/SV_Panel");
+            if (ps == null) { SkiViewBoot.Note("loading-ui-missing", "Resources/SkiViewUI/SV_Panel is missing. The loading screen did not start."); return; }
             doc = gameObject.AddComponent<UIDocument>(); doc.panelSettings = ps; doc.sortingOrder = 50;
             root = doc.rootVisualElement; root.pickingMode = PickingMode.Ignore;
             foreach (var n in new[] { "sv-tokens", "sv-components", "sv-game" }) { var ss = Resources.Load<StyleSheet>("SkiViewUI/" + n); if (ss != null) root.styleSheets.Add(ss); }

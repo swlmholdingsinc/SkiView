@@ -117,6 +117,69 @@ public static class SkiViewBuild
             options = BuildOptions.None
         });
         Report("WebGL (gzip + fallback)", r, outp);
+        RefuseSplitContent(Path.Combine(outp, "StreamingAssets", "aa"));
         SkiViewContent.BundleReport();
+    }
+
+    /// <summary>Same player as WebGL, but a previous Addressables folder is reused only when its catalog names the files on disk.</summary>
+    public static void WebGLFast()
+    {
+        Directory.CreateDirectory(Path.Combine(Root, "Builds/WebGL"));
+        SkiViewBuilder.ConfigureProject();
+        try
+        {
+            var t = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("UnityEditor.WebGL.UserBuildSettings")).FirstOrDefault(x => x != null);
+            var p = t?.GetProperty("codeOptimization");
+            if (p != null) { var e = Enum.Parse(p.PropertyType, "BuildTimes"); p.SetValue(null, e); Debug.Log("[SkiView] WebGL codeOptimization=BuildTimes"); }
+        }
+        catch (Exception ex) { Debug.LogWarning("[SkiView] codeOptimization not set: " + ex.Message); }
+        EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
+        PlayerSettings.WebGL.template = "PROJECT:SkiViewMinimal";
+        var s = UnityEditor.AddressableAssets.AddressableAssetSettingsDefaultObject.Settings;
+        string aaDir = Path.Combine(Root, "Library/com.unity.addressables/aa/WebGL");
+        string aaWebGL = Path.Combine(aaDir, "WebGL/core_home_scenes_all.bundle");
+        var cohesion = SkiViewContent.PlayerBundleCohesion(aaDir);
+        if (s != null && File.Exists(aaWebGL) && cohesion.Proven)
+        {
+            s.BuildAddressablesWithPlayerBuild = UnityEditor.AddressableAssets.Settings.AddressableAssetSettings.PlayerBuildOption.DoNotBuildWithPlayer;
+            EditorUtility.SetDirty(s); AssetDatabase.SaveAssets();
+            Debug.Log("[SkiView] WebGLFast: catalog ids match the bundle file names. Reusing them.");
+        }
+        else
+        {
+            if (File.Exists(aaWebGL))
+                Debug.LogError("[SkiView] WebGLFast refused to reuse bundles. " + cohesion.Reason
+                    + (cohesion.Missing.Count > 0 ? " missing " + string.Join(", ", cohesion.Missing) : ""));
+            SkiViewContent.Setup(); SkiViewContent.SelectBuilder(false);
+            if (s != null)
+            {
+                s.BuildAddressablesWithPlayerBuild = UnityEditor.AddressableAssets.Settings.AddressableAssetSettings.PlayerBuildOption.BuildWithPlayer;
+                EditorUtility.SetDirty(s); AssetDatabase.SaveAssets();
+            }
+        }
+        string outp = Path.Combine(Root, "Builds/WebGL");
+        var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+        {
+            scenes = SkiViewBuilder.BuildScenes(),
+            locationPathName = outp,
+            target = BuildTarget.WebGL,
+            options = BuildOptions.None
+        });
+        if (s != null)
+        {
+            s.BuildAddressablesWithPlayerBuild = UnityEditor.AddressableAssets.Settings.AddressableAssetSettings.PlayerBuildOption.BuildWithPlayer;
+            EditorUtility.SetDirty(s); AssetDatabase.SaveAssets();
+        }
+        Report("WebGLFast (gzip + fallback)", r, outp);
+        RefuseSplitContent(Path.Combine(outp, "StreamingAssets", "aa"));
+    }
+
+    static void RefuseSplitContent(string playerAa)
+    {
+        var built = SkiViewContent.PlayerBundleCohesion(playerAa);
+        if (built.Proven) return;
+        Debug.LogError("[SkiView] player output is not one content set. " + built.Reason
+            + (built.Missing.Count > 0 ? " missing " + string.Join(", ", built.Missing) : "")
+            + " Files were not renamed.");
     }
 }

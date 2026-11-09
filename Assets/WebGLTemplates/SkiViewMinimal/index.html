@@ -13,6 +13,7 @@
       #sv-rotate { display: none; position: fixed; inset: 0; z-index: 10; background: #0b1a2a; color: #fff; font: 600 20px -apple-system, sans-serif; align-items: center; justify-content: center; text-align: center; padding: 24px; }
       @media (orientation: portrait) and (pointer: coarse) { #sv-rotate { display: flex; } }
       #sv-err { display: none; position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 11; background: #a3161dee; color: #fff; font: 14px -apple-system, sans-serif; padding: 10px; border-radius: 6px; }
+      #sv-boot { position: fixed; left: 12px; top: 12px; z-index: 12; max-width: 72vw; background: #000000d1; color: #fff; font: 18px/1.35 -apple-system, sans-serif; padding: 14px 16px; white-space: pre-wrap; }
       #sv-loading-fill { width: 0; height: 100%; background: #ffffffcc; border-radius: 3px; }
     </style>
   </head>
@@ -21,10 +22,13 @@
     <div id="unity-container"><canvas id="unity-canvas" tabindex="-1"></canvas></div>
     <div id="sv-rotate">Rotate your phone to landscape</div>
     <div id="sv-err"></div>
+    <div id="sv-boot">Boot: page loaded. Player files have not reported a step yet.</div>
     <div id="sv-loading"><div id="sv-loading-fill"></div></div>
     <script>
       var canvas = document.querySelector("#unity-canvas");
-      function svErr(m) { var e = document.querySelector("#sv-err"); e.textContent = "Error: " + m; e.style.display = "block"; }
+      function svBoot(m) { var e = document.querySelector("#sv-boot"); if (!e) return; e.style.display = "block"; e.textContent = m; }
+      window.svBootMark = svBoot;
+      function svErr(m) { svBoot("Error: " + m + "\nNo red console line is required for this to be a stop."); var e = document.querySelector("#sv-err"); e.textContent = "Error: " + m; e.style.display = "block"; }
       var svMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
       var config = {
         arguments: [],
@@ -53,9 +57,13 @@
       }
       var script = document.createElement("script");
       script.src = "Build/{{{ LOADER_FILENAME }}}";
+      script.onerror = function () { svErr("The Unity loader script did not run."); };
       script.onload = function () {
-        createUnityInstance(canvas, config, function (p) { document.querySelector("#sv-loading-fill").style.width = (100 * p) + "%"; })
-          .then(function (inst) { document.querySelector("#sv-loading").remove(); window.unityInstance = inst; })
+        svBoot("Boot: loader script running.");
+        var svMarked = false;
+        window.svBootMark = function (m) { svMarked = true; svBoot(m); if (m.indexOf("lake-ready") >= 0 && m.indexOf("\n") < 0) { var e = document.querySelector("#sv-boot"); if (e) e.style.display = "none"; } };
+        createUnityInstance(canvas, config, function (p) { document.querySelector("#sv-loading-fill").style.width = (100 * p) + "%"; svBoot("Boot: downloading player files " + Math.round(100 * p) + "%."); })
+          .then(function (inst) { document.querySelector("#sv-loading").remove(); window.unityInstance = inst; svBoot("Boot: Unity instance created. Waiting for the boot scene."); setTimeout(function () { if (!svMarked) svBoot("Boot: Unity started and has not reported a boot step for 8s.\nNo red browser message is required for this to be a stop."); }, 8000); })
           .catch(function (m) { console.error(m); svErr(m); });
       };
       document.body.appendChild(script);
