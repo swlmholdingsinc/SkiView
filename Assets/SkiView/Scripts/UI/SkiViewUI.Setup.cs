@@ -65,7 +65,7 @@ namespace SkiView.UI
             }
             var act = El("srow srow--setup-act", panelBody);
             // b10.27 T24 D1: phone Done/Choose lake ≥144 (sv-btn--start-tall under .sv-phone)
-            if (!panelTricks) Btn("CHOOSE LAKE", "sv-btn sv-btn--start-tall", act, () => { Save(); lakesFromSetup = true; Open(lakes); });
+            Btn("CHOOSE LAKE", "sv-btn sv-btn--start-tall", act, () => { Save(); lakesFromSetup = true; lakesFromEvent = false; Open(lakes); });
             Btn("START", "sv-btn sv-btn--primary sv-btn--start-tall", act, () => {
                 Save(); game?.ApplySetup();
                 if (panelTricks) game?.BeginTrickRound();

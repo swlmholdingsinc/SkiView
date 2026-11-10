@@ -1,0 +1,614 @@
+--- a/Assets/SkiView/Scripts/SkiViewBoot.cs
++++ b/Assets/SkiView/Scripts/SkiViewBoot.cs
+@@ -1,5 +1,7 @@
++using System;
+ using System.Collections;
+ using System.Linq;
++using System.Runtime.InteropServices;
+ using UnityEngine;
+ using UnityEngine.AddressableAssets;
+ using UnityEngine.ResourceManagement.AsyncOperations;
+@@ -17,6 +19,7 @@
+         public string homeScene = "SkiViewLake";
+         static SkiViewBoot inst;
+         string status = "Loading..."; float progress; bool busy;
++        float phaseSince; bool stallMarked; Camera bootCam;
+         // pass 19 (Julia 16 / 16b-d): state read by SkiViewLoadingUI
+         public static string LoadingKey { get; private set; }
+         public static float Progress => inst != null ? inst.progress : 0f;
+@@ -30,7 +33,7 @@
+         public static void ClearFailed() { DlFailed = false; LoadingKey = null; }
+ 
+         public static bool Active => inst != null;
+-        /// <summary>Last boot step. Stays on screen while the active scene is still SkiViewBoot.</summary>
++        /// <summary>Last boot step. Stays on screen until the lake scene is ready and no fault is set.</summary>
+         public static string Phase { get; private set; } = "awake";
+         public static string Fault { get; private set; }
+ 
+@@ -42,13 +45,26 @@
+             return line;
+         }
+ 
++        public static void Note(string phase, string fault = null) { SetPhase(phase, fault); }
++
+         static void SetPhase(string phase, string fault = null)
+         {
+             Phase = phase;
++            if (inst != null) inst.phaseSince = Time.realtimeSinceStartup;
+             if (fault != null) Fault = fault;
+-            Debug.Log("[SkiView] boot " + phase + (string.IsNullOrEmpty(fault) ? "" : " " + fault));
++            string line = BootLine(phase, SceneManager.GetActiveScene().name, inst != null && inst.busy, Screen.width, Screen.height, Fault);
++            if (string.IsNullOrEmpty(fault)) Debug.Log("[SkiView] " + line);
++            else Debug.LogError("[SkiView] " + line);
++            Page(line);
+         }
+ 
++#if UNITY_WEBGL && !UNITY_EDITOR
++        [DllImport("__Internal")] static extern void SkiViewBootMark(string message);
++        static void Page(string message) { try { SkiViewBootMark(message); } catch (Exception) { } }
++#else
++        static void Page(string message) { if (message == null) return; }
++#endif
++
+         /// <summary>
+         /// Parameterless InitializeAsync releases its handle before a coroutine resumes, so IsValid is false after a successful init.
+         /// Call InitializeAsync(false), then this. A real failure stays failed.
+@@ -57,7 +73,7 @@
+         {
+             if (!handleValid)
+             {
+-                fault = "invalid handle";
++                fault = "invalid handle. InitializeAsync was released before this step read it. No catalog request is proof that this step did not run.";
+                 return false;
+             }
+             if (!succeeded)
+@@ -73,13 +89,60 @@
+         {
+             if (inst != null) { Destroy(gameObject); return; }
+             inst = this; DontDestroyOnLoad(gameObject);
+-            gameObject.AddComponent<SkiView.UI.SkiViewLoadingUI>();   // pass 19: Julia's loading / pack screens (replaces the IMGUI bar)
+-            // pass 17: landscape either way round (matches PlayerSettings; also set at runtime in case a device starts in portrait)
++            phaseSince = Time.realtimeSinceStartup;
++            EnsureBootCamera();
++            SetPhase("awake");
++            try { gameObject.AddComponent<SkiView.UI.SkiViewLoadingUI>(); }
++            catch (Exception ex) { SetPhase("loading-ui-threw", ex.GetType().Name + ": " + ex.Message); }
+             if (Application.isMobilePlatform) { Application.targetFrameRate = 60; Screen.autorotateToPortrait = false; Screen.autorotateToPortraitUpsideDown = false; Screen.autorotateToLandscapeLeft = true; Screen.autorotateToLandscapeRight = true; Screen.orientation = ScreenOrientation.AutoRotation; }
+         }
+ 
++        void EnsureBootCamera()
++        {
++            if (bootCam != null) return;
++            var found = Camera.main;
++            if (found == null)
++            {
++                var go = new GameObject("BootCamera");
++                go.transform.SetParent(transform, false);
++                bootCam = go.AddComponent<Camera>();
++                bootCam.clearFlags = CameraClearFlags.SolidColor;
++                bootCam.backgroundColor = new Color(0.05f, 0.07f, 0.09f);
++                bootCam.depth = -100f;
++                go.tag = "MainCamera";
++            }
++            else bootCam = found;
++        }
++
++        void Update()
++        {
++            if (stallMarked) return;
++            if (!SkiViewBootContract.Stalled(Phase, Time.realtimeSinceStartup - phaseSince)) return;
++            stallMarked = true;
++            Fault = SkiViewBootContract.StallFault(Phase);
++            Debug.LogError("[SkiView] " + Fault);
++            Page(BootLine(Phase, SceneManager.GetActiveScene().name, busy, Screen.width, Screen.height, Fault));
++        }
++
+         IEnumerator Start()
+         {
++            var body = BootBody();
++            while (true)
++            {
++                bool more;
++                try { more = body.MoveNext(); }
++                catch (Exception ex)
++                {
++                    SetPhase("boot-threw", ex.GetType().Name + ": " + ex.Message);
++                    yield break;
++                }
++                if (!more) yield break;
++                yield return body.Current;
++            }
++        }
++
++        IEnumerator BootBody()
++        {
+             SetPhase("addressables-init");
+             var init = Addressables.InitializeAsync(false);
+             yield return init;
+@@ -99,11 +162,9 @@
+             yield return LoadRoutine(string.IsNullOrEmpty(lake) || lake == "skiview" ? homeScene : "SkiViewLake_" + lake);
+         }
+ 
+-        // ---------- pass 19: lake packs for the lake-select screen (Julia's 03 / 03b / 03c / 03d) ----------
+         public class Pack { public string key; public long size = -1; public float progress; public long got; public bool sizing, downloading, failed; public AsyncOperationHandle handle; }
+         static readonly System.Collections.Generic.Dictionary<string, Pack> packs = new System.Collections.Generic.Dictionary<string, Pack>();
+         public static string SceneKey(string lakeId) => string.IsNullOrEmpty(lakeId) || lakeId == "skiview" ? (inst != null ? inst.homeScene : "SkiViewLake") : "SkiViewLake_" + lakeId;
+-        /// <summary>Pack state for a lake (size 0 = installed / included; -1 = still asking). Starts the size query on first call.</summary>
+         public static Pack PackInfo(string lakeId)
+         {
+             string key = SceneKey(lakeId);
+@@ -130,7 +191,7 @@
+         {
+             p.handle = Addressables.DownloadDependenciesAsync(p.key, false);
+             while (p.handle.IsValid() && !p.handle.IsDone && p.downloading) { var ds = p.handle.GetDownloadStatus(); p.progress = ds.Percent; p.got = ds.DownloadedBytes; yield return null; }
+-            if (!p.downloading) yield break;   // cancelled
++            if (!p.downloading) yield break;
+             bool ok = p.handle.IsValid() && p.handle.Status == AsyncOperationStatus.Succeeded;
+             if (p.handle.IsValid()) Addressables.Release(p.handle);
+             p.downloading = false; p.failed = !ok; if (ok) { p.size = 0; p.progress = 1f; }
+@@ -140,13 +201,12 @@
+ 
+         static string StartLakeArg()
+         {
+-            var lk = SkiViewArgs.Get("lake"); if (!string.IsNullOrEmpty(lk)) return lk;   // pass 19: shared URL / command-line parser
++            var lk = SkiViewArgs.Get("lake"); if (!string.IsNullOrEmpty(lk)) return lk;
+             var a = System.Environment.GetCommandLineArgs();
+             for (int i = 0; i < a.Length - 1; i++) if (a[i] == "-lake") return a[i + 1];
+             return null;
+         }
+ 
+-        /// <summary>Load a lake scene by its address (= scene name). Called by the HUD LAKE button.</summary>
+         public static bool Load(string sceneName)
+         {
+             if (inst == null || inst.busy) return false;
+@@ -177,14 +237,14 @@
+             LoadingKey = key; DlFailed = false; DlGot = 0; DlTotal = bytes; cancelDl = false;
+             SetPhase("bytes " + key + " " + bytes);
+             if (bytes > 0)
+-            {   // pass 19: fetch the pack first (cancellable, its own screen), then load the scene from the cache
+-                if (Offline) { DlFailed = true; busy = false; SetPhase("offline " + key, "internet not reachable"); Debug.Log($"[SkiView] pack {key}: offline"); yield break; }
++            {
++                if (Offline) { DlFailed = true; busy = false; SetPhase("offline " + key, "internet not reachable"); yield break; }
+                 Downloading = true;
+                 var dl = Addressables.DownloadDependenciesAsync(key, false);
+                 while (!dl.IsDone && !cancelDl) { var ds0 = dl.GetDownloadStatus(); DlGot = ds0.DownloadedBytes; if (ds0.TotalBytes > 0) DlTotal = ds0.TotalBytes; progress = ds0.Percent; yield return null; }
+                 bool ok = !cancelDl && dl.Status == AsyncOperationStatus.Succeeded; Addressables.Release(dl); Downloading = false;
+-                if (cancelDl) { busy = false; LoadingKey = null; SetPhase("download-cancelled " + key); Debug.Log($"[SkiView] pack {key}: cancelled"); yield break; }
+-                if (!ok) { DlFailed = true; busy = false; SetPhase("download-failed " + key, "dependency download failed"); Debug.Log($"[SkiView] pack {key}: download FAILED"); yield break; }
++                if (cancelDl) { busy = false; LoadingKey = null; SetPhase("download-cancelled " + key); yield break; }
++                if (!ok) { DlFailed = true; busy = false; SetPhase("download-failed " + key, "dependency download failed"); yield break; }
+                 var pk = packs.Values.FirstOrDefault(x => x.key == key); if (pk != null) pk.size = 0;
+             }
+             SetPhase("load-scene " + key);
+@@ -205,7 +265,6 @@
+             {
+                 string why = h.OperationException != null ? h.OperationException.ToString() : "load scene failed";
+                 SetPhase("load-failed " + key, why);
+-                Debug.LogError($"[SkiView] lake load FAILED {key}: {h.OperationException}");
+             }
+             busy = false; LoadingKey = null;
+         }
+@@ -213,17 +272,22 @@
+         void OnGUI()
+         {
+             var scene = SceneManager.GetActiveScene();
+-            if (scene.name == "SkiViewBoot" || !string.IsNullOrEmpty(Fault))
++            bool ready = Phase != null && Phase.IndexOf("lake-ready", StringComparison.Ordinal) >= 0 && string.IsNullOrEmpty(Fault);
++            if (!ready)
+             {
+-                var line = new GUIStyle(GUI.skin.label) { fontSize = 16, wordWrap = true, normal = { textColor = Color.white } };
+-                GUI.Label(new Rect(8f, 8f, Mathf.Max(240f, Screen.width * 0.55f), 96f), BootLine(Phase, scene.name, busy, Screen.width, Screen.height, Fault), line);
++                float boxW = Mathf.Max(320f, Screen.width * 0.72f);
++                GUI.color = new Color(0f, 0f, 0f, 0.82f);
++                GUI.DrawTexture(new Rect(12f, 12f, boxW, 150f), Texture2D.whiteTexture);
++                GUI.color = Color.white;
++                var line = new GUIStyle(GUI.skin.label) { fontSize = 22, wordWrap = true, normal = { textColor = Color.white } };
++                GUI.Label(new Rect(24f, 20f, boxW - 24f, 134f), BootLine(Phase, scene.name, busy, Screen.width, Screen.height, Fault), line);
+             }
+-            if (!busy || SkiView.UI.SkiViewLoadingUI.Ready) return;   // pass 19: the kit loading screen draws instead
+-            float w = Screen.width, hh = Screen.height;
+-            GUI.color = new Color(0, 0, 0, 0.6f); GUI.DrawTexture(new Rect(0, 0, w, hh), Texture2D.whiteTexture); GUI.color = Color.white;
++            if (!busy || SkiView.UI.SkiViewLoadingUI.Ready) return;
++            float sw = Screen.width, hh = Screen.height;
++            GUI.color = new Color(0, 0, 0, 0.6f); GUI.DrawTexture(new Rect(0, 0, sw, hh), Texture2D.whiteTexture); GUI.color = Color.white;
+             var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(hh / 28f), alignment = TextAnchor.MiddleCenter };
+-            GUI.Label(new Rect(0, hh * 0.42f, w, hh * 0.08f), status, st);
+-            GUI.DrawTexture(new Rect(w * 0.3f, hh * 0.52f, w * 0.4f * Mathf.Clamp01(progress), 6), Texture2D.whiteTexture);
++            GUI.Label(new Rect(0, hh * 0.42f, sw, hh * 0.08f), status, st);
++            GUI.DrawTexture(new Rect(sw * 0.3f, hh * 0.52f, sw * 0.4f * Mathf.Clamp01(progress), 6), Texture2D.whiteTexture);
+         }
+     }
+ }
+--- a/Assets/SkiView/Editor/SkiViewBuild.cs
++++ b/Assets/SkiView/Editor/SkiViewBuild.cs
+@@ -228,16 +228,26 @@
+         ApplyReleaseVersion();
+         PlayerSettings.WebGL.template = "PROJECT:SkiViewMinimal";
+         var s = UnityEditor.AddressableAssets.AddressableAssetSettingsDefaultObject.Settings;
+-        string aaWebGL = Path.Combine(Root, "Library/com.unity.addressables/aa/WebGL/WebGL/core_home_scenes_all.bundle");
+-        if (s != null && File.Exists(aaWebGL))
++        string aaDir = Path.Combine(Root, "Library/com.unity.addressables/aa/WebGL");
++        string aaWebGL = Path.Combine(aaDir, "WebGL/core_home_scenes_all.bundle");
++        var cohesion = SkiViewContent.PlayerBundleCohesion(aaDir);
++        if (s != null && File.Exists(aaWebGL) && cohesion.Proven)
+         {
+             s.BuildAddressablesWithPlayerBuild = UnityEditor.AddressableAssets.Settings.AddressableAssetSettings.PlayerBuildOption.DoNotBuildWithPlayer;
+             EditorUtility.SetDirty(s); AssetDatabase.SaveAssets();
+-            Debug.Log("[SkiView] WebGLFast: reusing existing WebGL Addressables bundles!");
++            Debug.Log("[SkiView] WebGLFast: catalog ids match the bundle file names. Reusing them.");
+         }
+         else
+         {
++            if (File.Exists(aaWebGL))
++                Debug.LogError("[SkiView] WebGLFast refused to reuse bundles. " + cohesion.Reason
++                    + (cohesion.Missing.Count > 0 ? " missing " + string.Join(", ", cohesion.Missing) : ""));
+             SkiViewContent.Setup(); SkiViewContent.SelectBuilder(false);
++            if (s != null)
++            {
++                s.BuildAddressablesWithPlayerBuild = UnityEditor.AddressableAssets.Settings.AddressableAssetSettings.PlayerBuildOption.BuildWithPlayer;
++                EditorUtility.SetDirty(s); AssetDatabase.SaveAssets();
++            }
+         }
+         string outp = Path.Combine(Root, "Builds/WebGL");
+         var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+@@ -249,4 +259,9 @@
+         });
+         if (s != null) { s.BuildAddressablesWithPlayerBuild = UnityEditor.AddressableAssets.Settings.AddressableAssetSettings.PlayerBuildOption.BuildWithPlayer; EditorUtility.SetDirty(s); AssetDatabase.SaveAssets(); }
+         Report("WebGLFast (gzip + fallback)", r, outp);
++        var builtAa = SkiViewContent.PlayerBundleCohesion(Path.Combine(outp, "StreamingAssets", "aa"));
++        if (!builtAa.Proven)
++            Debug.LogError("[SkiView] player output is not one content set. " + builtAa.Reason
++                + (builtAa.Missing.Count > 0 ? " missing " + string.Join(", ", builtAa.Missing) : "")
++                + " Files were not renamed.");
+     }
+
+diff --git a/Assets/SkiView/Editor/SkiViewContent.cs b/Assets/SkiView/Editor/SkiViewContent.cs
+index 2fce1cb..f533045 100644
+--- a/Assets/SkiView/Editor/SkiViewContent.cs
++++ b/Assets/SkiView/Editor/SkiViewContent.cs
+@@ -106,6 +106,35 @@ public static class SkiViewContent
+         Debug.Log($"[SkiView] addressables data builder: {s.ActivePlayerDataBuilder?.Name}");
+     }
+ 
++    /// <summary>Exact catalog bundle names against files in one Addressables folder. Does not rename files.</summary>
++    public static CatalogCohesion.Report PlayerBundleCohesion(string dir)
++    {
++        var report = new CatalogCohesion.Report();
++        if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
++        {
++            report.Proven = false;
++            report.Reason = "addressables folder is absent: " + dir + ". The player and StreamingAssets were not found together.";
++            return report;
++        }
++        var settings = Directory.GetFiles(dir, "settings.json", SearchOption.AllDirectories);
++        if (settings.Length == 0)
++        {
++            report.Proven = false;
++            report.Reason = "settings.json is not under " + dir + ". Boot cannot open a catalog that was not packed with this player.";
++            return report;
++        }
++        var catalogs = Directory.GetFiles(dir, "catalog*.json", SearchOption.AllDirectories);
++        if (catalogs.Length == 0)
++        {
++            report.Proven = false;
++            report.Reason = "no catalog json under " + dir + ". A binary catalog was not treated as a match.";
++            return report;
++        }
++        var texts = catalogs.Select(File.ReadAllText);
++        var files = Directory.GetFiles(dir, "*.bundle", SearchOption.AllDirectories);
++        return CatalogCohesion.Check(texts, files);
++    }
++
+     /// <summary>Report the built bundle sizes per group (Library/com.unity.addressables/aa/&lt;target&gt;).</summary>
+     public static string BundleReport()
+     {
+diff --git a/Assets/SkiView/Scripts/UI/SkiViewLoadingUI.cs b/Assets/SkiView/Scripts/UI/SkiViewLoadingUI.cs
+index c817164..5c38853 100644
+--- a/Assets/SkiView/Scripts/UI/SkiViewLoadingUI.cs
++++ b/Assets/SkiView/Scripts/UI/SkiViewLoadingUI.cs
+@@ -32,7 +32,8 @@ namespace SkiView.UI
+ 
+         void Start()
+         {
+-            var ps = Resources.Load<PanelSettings>("SkiViewUI/SV_Panel"); if (ps == null) return;
++            var ps = Resources.Load<PanelSettings>("SkiViewUI/SV_Panel");
++            if (ps == null) { SkiViewBoot.Note("loading-ui-missing", "Resources/SkiViewUI/SV_Panel is missing. The loading screen did not start."); return; }
+             doc = gameObject.AddComponent<UIDocument>(); doc.panelSettings = ps; doc.sortingOrder = 50;
+             root = doc.rootVisualElement; root.pickingMode = PickingMode.Ignore;
+             foreach (var n in new[] { "sv-tokens", "sv-components", "sv-game" }) { var ss = Resources.Load<StyleSheet>("SkiViewUI/" + n); if (ss != null) root.styleSheets.Add(ss); }
+--- a/Assets/WebGLTemplates/SkiViewMinimal/index.html
++++ b/Assets/WebGLTemplates/SkiViewMinimal/index.html
+@@ -19,6 +19,7 @@
+       #sv-rotate { display: none; position: fixed; inset: 0; z-index: 10; background: #0b1a2a; color: #fff; font: 600 20px -apple-system, sans-serif; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+       @media (orientation: portrait) and (pointer: coarse) { #sv-rotate { display: flex; } }
+       #sv-err { display: none; position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 11; background: #a3161dee; color: #fff; font: 14px -apple-system, sans-serif; padding: 10px; border-radius: 6px; }
++      #sv-boot { position: fixed; left: 12px; top: 12px; z-index: 13; max-width: 72vw; background: #000000d1; color: #fff; font: 18px/1.35 -apple-system, sans-serif; padding: 14px 16px; white-space: pre-wrap; }
+     </style>
+   </head>
+   <body>
+@@ -32,9 +33,12 @@
+     </div>
+     <div id="sv-rotate">Rotate your phone to landscape</div>
+     <div id="sv-err"></div>
++    <div id="sv-boot">Boot: page loaded. Player files have not reported a step yet.</div>
+     <script>
+       var canvas = document.querySelector("#unity-canvas");
+-      function svErr(m) { var e = document.querySelector("#sv-err"); e.textContent = "Error: " + m; e.style.display = "block"; }
++      function svBoot(m) { var e = document.querySelector("#sv-boot"); if (!e) return; e.style.display = "block"; e.textContent = m; }
++      window.svBootMark = svBoot;
++      function svErr(m) { svBoot("Error: " + m + "\nNo red console line is required for this to be a stop."); var e = document.querySelector("#sv-err"); e.textContent = "Error: " + m; e.style.display = "block"; }
+       canvas.addEventListener("webglcontextlost", function (ev) { ev.preventDefault(); svErr("webglcontextlost"); }, false);
+       canvas.addEventListener("webglcontextrestored", function () { svErr("webglcontextrestored"); }, false);
+       var svDiag = document.createElement("div");
+@@ -48,21 +52,21 @@
+       var svMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+       var config = {
+         arguments: [],
+-        dataUrl: "Build/{{{ DATA_FILENAME }}}?v=r6b4",
+-        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}?v=r6b4",
++        dataUrl: "Build/{{{ DATA_FILENAME }}}?v=r6b17",
++        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}?v=r6b17",
+ #if USE_THREADS
+-        workerUrl: "Build/{{{ WORKER_FILENAME }}}?v=r6b4",
++        workerUrl: "Build/{{{ WORKER_FILENAME }}}?v=r6b17",
+ #endif
+ #if USE_WASM
+-        codeUrl: "Build/{{{ CODE_FILENAME }}}?v=r6b4",
++        codeUrl: "Build/{{{ CODE_FILENAME }}}?v=r6b17",
+ #endif
+ #if SYMBOLS_FILENAME
+-        symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}?v=r6b4",
++        symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}?v=r6b17",
+ #endif
+         streamingAssetsUrl: "StreamingAssets",
+         companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+         productName: "SKI VIEW",
+-        productVersion: "2.0.2-r6b4",
++        productVersion: "2.0.2-r6b17",
+         showBanner: function (msg, type) { if (type === "error") { console.error(msg); svErr(msg); } else console.warn(msg); },
+       };
+       // r6b: crisp native canvas on desktop + mobile (pre-size canvas buffer + cap 2x so 3x phones stay in budget)
+@@ -78,16 +82,23 @@
+       window.addEventListener("resize", svNoteLayout);
+       svNoteLayout();
+       var script = document.createElement("script");
+-      script.src = "Build/{{{ LOADER_FILENAME }}}?v=r6b4";
++      script.src = "Build/{{{ LOADER_FILENAME }}}?v=r6b17";
++      script.onerror = function () { svErr("The Unity loader script did not run."); };
+       script.onload = function () {
++        svBoot("Boot: loader script running.");
++        var svMarked = false;
++        window.svBootMark = function (m) { svMarked = true; svBoot(m); if (m.indexOf("lake-ready") >= 0 && m.indexOf("\n") < 0) { var e = document.querySelector("#sv-boot"); if (e) e.style.display = "none"; } };
+         createUnityInstance(canvas, config, function (p) {
+           var pct = Math.round(100 * p);
+           var f = document.querySelector("#sv-loading-fill"); if (f) f.style.width = Math.max(4, pct) + "%";
+           var l = document.querySelector("#sv-loading-pct"); if (l) l.textContent = pct + "%";
++          svBoot("Boot: downloading player files " + pct + "%.");
+         }).then(function (inst) {
+           window.unityInstance = inst;
+           var sp = document.querySelector("#sv-splash");
+           if (sp) { sp.style.opacity = "0"; setTimeout(function(){ sp.remove(); }, 380); }
++          svBoot("Boot: Unity instance created. Waiting for the boot scene.");
++          setTimeout(function () { if (!svMarked) svBoot("Boot: Unity started and has not reported a boot step for 8s.\nNo red browser message is required for this to be a stop."); }, 8000);
+         }).catch(function (m) { console.error(m); svErr(m); });
+       };
+       document.body.appendChild(script);
+
+--- a/Assets/SkiView/Scripts/SkiViewBootContract.cs
++++ b/Assets/SkiView/Scripts/SkiViewBootContract.cs
+@@ -0,0 +1,24 @@
++using System;
++
++namespace SkiView
++{
++    /// <summary>Boot decisions that do not need Addressables. A blank canvas is not a successful start.</summary>
++    public static class SkiViewBootContract
++    {
++        public const float StallSeconds = 8f;
++
++        public static bool Stalled(string phase, float secondsInPhase)
++        {
++            if (secondsInPhase < StallSeconds) return false;
++            if (string.IsNullOrEmpty(phase)) return true;
++            return phase.IndexOf("lake-ready", StringComparison.Ordinal) < 0;
++        }
++
++        public static string StallFault(string phase)
++        {
++            return "stalled at " + (string.IsNullOrEmpty(phase) ? "(none)" : phase)
++                + ". No later boot step ran for " + StallSeconds.ToString("0")
++                + "s. No red browser message is required for this to be a stop.";
++        }
++    }
++}
+--- a/Assets/SkiView/Scripts/SkiViewBootContract.cs.meta
++++ b/Assets/SkiView/Scripts/SkiViewBootContract.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: 4b8e2c1a9d7046f0b3a5e7c81d2f9046
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+--- a/Assets/SkiView/Scripts/CatalogCohesion.cs
++++ b/Assets/SkiView/Scripts/CatalogCohesion.cs
+@@ -0,0 +1,48 @@
++using System;
++using System.Collections.Generic;
++using System.IO;
++using System.Text.RegularExpressions;
++
++namespace SkiView
++{
++    /// <summary>Exact catalog bundle names against files on disk. Does not rename anything.</summary>
++    public static class CatalogCohesion
++    {
++        static readonly Regex BundleId = new Regex(@"[A-Za-z0-9_.+\-]+\.bundle", RegexOptions.Compiled);
++
++        public sealed class Report
++        {
++            public bool Proven;
++            public string Reason;
++            public readonly List<string> Missing = new List<string>();
++        }
++
++        public static Report Check(IEnumerable<string> catalogTexts, IEnumerable<string> fileNames)
++        {
++            var wanted = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
++            if (catalogTexts != null)
++                foreach (var text in catalogTexts)
++                    if (!string.IsNullOrEmpty(text))
++                        foreach (Match m in BundleId.Matches(text))
++                            wanted.Add(Path.GetFileName(m.Value));
++            var report = new Report();
++            if (wanted.Count == 0)
++            {
++                report.Proven = false;
++                report.Reason = "no catalog .bundle ids. Reuse is not proven. Files were not renamed.";
++                return report;
++            }
++            var have = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
++            if (fileNames != null)
++                foreach (var f in fileNames)
++                    if (!string.IsNullOrEmpty(f)) have.Add(Path.GetFileName(f));
++            foreach (var id in wanted)
++                if (!have.Contains(id)) report.Missing.Add(id);
++            report.Proven = report.Missing.Count == 0;
++            report.Reason = report.Proven
++                ? "catalog ids match those exact file names"
++                : "catalog ids are absent on disk. A hashed name is not the same file as the unhashed name. Files were not renamed.";
++            return report;
++        }
++    }
++}
+--- a/Assets/SkiView/Scripts/CatalogCohesion.cs.meta
++++ b/Assets/SkiView/Scripts/CatalogCohesion.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: 7c3d9e0b1a624f58b6c4d2e80a1b3579
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+--- a/Assets/Plugins/WebGL/SkiViewBoot.jslib
++++ b/Assets/Plugins/WebGL/SkiViewBoot.jslib
+@@ -0,0 +1,11 @@
++mergeInto(LibraryManager.library, {
++  SkiViewBootMark: function (ptr) {
++    var msg = UTF8ToString(ptr);
++    var el = document.getElementById("sv-boot");
++    if (el) {
++      el.style.display = "block";
++      el.textContent = msg;
++    }
++    if (window.svBootMark) window.svBootMark(msg);
++  }
++});
+--- a/Assets/Plugins/WebGL/SkiViewBoot.jslib.meta
++++ b/Assets/Plugins/WebGL/SkiViewBoot.jslib.meta
+@@ -0,0 +1,26 @@
++fileFormatVersion: 2
++guid: 5e9c1b7a3d4f4a6e8c2b0d1f6a7e3948
++PluginImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  iconMap: {}
++  executionOrder: {}
++  defineConstraints: []
++  isPreloaded: 0
++  isOverridable: 0
++  isExplicitlyReferenced: 0
++  validateReferences: 1
++  platformData:
++  - first:
++      Any: 
++    second:
++      enabled: 0
++      settings: {}
++  - first:
++      WebGL: WebGL
++    second:
++      enabled: 1
++      settings: {}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+--- a/Assets/Plugins.meta
++++ b/Assets/Plugins.meta
+@@ -0,0 +1,8 @@
++fileFormatVersion: 2
++guid: 1a2b3c4d5e6f478890a1b2c3d4e5f607
++folderAsset: yes
++DefaultImporter:
++  externalObjects: {}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+--- a/Assets/Plugins/WebGL.meta
++++ b/Assets/Plugins/WebGL.meta
+@@ -0,0 +1,8 @@
++fileFormatVersion: 2
++guid: 9f8e7d6c5b4a4321a0b9c8d7e6f50413
++folderAsset: yes
++DefaultImporter:
++  externalObjects: {}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+--- a/Assets/SkiView/Editor/StageContractTests.cs
++++ b/Assets/SkiView/Editor/StageContractTests.cs
+@@ -0,0 +1,30 @@
++using System;
++using SkiView;
++
++/// <summary>Boot and catalog checks. Run() returns the failure count. No Unity player is started.</summary>
++public static class StageContractTests
++{
++    public static int Run(Action<string> fail)
++    {
++        int n = 0;
++        Action<bool, string> F = (ok, m) => { if (!ok) { n++; if (fail != null) fail(m); } };
++
++        F(!SkiViewBootContract.Stalled("addressables-init", 7f), "init under 8s is not yet a stall");
++        F(SkiViewBootContract.Stalled("addressables-init", 8f), "init with no later step is a stall");
++        F(!SkiViewBootContract.Stalled("lake-ready SkiViewLake", 30f), "a ready lake is not a stall");
++        F(SkiViewBootContract.StallFault("addressables-init").IndexOf("addressables-init", StringComparison.Ordinal) >= 0, "stall names the phase");
++        F(SkiViewBootContract.StallFault("addressables-init").IndexOf("No red browser message", StringComparison.Ordinal) >= 0, "stall does not require a red console line");
++
++        var hashed = CatalogCohesion.Check(
++            new[] { "\"core_home_scenes_all_0123456789abcdef0123456789abcdef.bundle\"" },
++            new[] { "core_home_scenes_all.bundle" });
++        F(!hashed.Proven && hashed.Missing.Count == 1, "a hashed catalog id is not the unhashed file");
++        var exact = CatalogCohesion.Check(
++            new[] { "core_home_scenes_all.bundle" },
++            new[] { "aa/core_home_scenes_all.bundle" });
++        F(exact.Proven, "the same file name is a match");
++        var none = CatalogCohesion.Check(new[] { "no ids here" }, new[] { "core_home_scenes_all.bundle" });
++        F(!none.Proven, "no catalog ids is not a proven reuse");
++        return n;
++    }
++}
+--- a/Assets/SkiView/Editor/StageContractTests.cs.meta
++++ b/Assets/SkiView/Editor/StageContractTests.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: 8d4a1f6e2c5940b7a9e3d5c70b1a4826
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 

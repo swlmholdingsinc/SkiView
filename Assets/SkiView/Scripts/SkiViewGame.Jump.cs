@@ -52,7 +52,7 @@ namespace SkiView
         // pass 14: player control. CUT = tap (Space / click / touch) on the far side starts the progressive cut to the ramp: a later,
         // harder cut means more speed and a steeper crossing angle; no cut by -2.6 s = missed the ramp. POP = tap on the ramp:
         // best in the last ~third (0.78-0.95), early = tips high (sat back), late = tips low (out the front).
-        public float jumpCutAt = float.NaN, jumpPopAt = float.NaN;   // capture / debug: run time of the cut press, ramp fraction of the pop press
+        public float jumpCutAt = float.NaN, jumpPopAt = float.NaN;   // capture / debug: run time of the cut press, ramp fraction of the pop press. NaN = not scripted. Exact 0 is also not scripted (see JumpMarkOverrides).
         public bool jumpCam = true; public static bool jumpDebug = false;                                  // shore / side camera for the ramp, flight and ride-out
         public float JumpCutT { get; private set; } = float.NaN;
         public float JumpPopT { get; private set; } = -1f;
@@ -68,6 +68,32 @@ namespace SkiView
         /// <summary>Jump mode, press before the approach has started: cut at the ideal moment of the coming run.</summary>
         public void JumpArm() { if (jumpMode) cutArmed = true; }
         bool cutArmed; const float ASSIST_CUT = -3.9f;
+        JPhase jumpLogPhase; bool jumpLogCut, jumpLogMiss; float jumpLogNext = -1f;
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit)]
+        struct FloatBits { [System.Runtime.InteropServices.FieldOffset(0)] public float f; [System.Runtime.InteropServices.FieldOffset(0)] public uint u; }
+        /// <summary>True when <paramref name="mark"/> is a capture/script time that replaces the player and the assist.
+        /// Scenes store this as NaN. A WebGL/IL2CPP scene load can turn that NaN into 0, and 0 is past the cut window
+        /// (-6.4 to -2.6), so treating 0 as scripted suppresses every cut: the skier holds wide, misses the ramp, and
+        /// never reaches Flight, Landing or results. Non-finite values and exact 0 stay "not scripted". 99 (the
+        /// no-cut capture) and a real time such as −4.3 still override.</summary>
+        public static bool JumpMarkOverrides(float mark)
+        {
+            uint bits = new FloatBits { f = mark }.u;
+            if ((bits & 0x7F800000u) == 0x7F800000u) return false;
+            return mark != 0f;
+        }
+        /// <summary>Whether this step should start the cut. <paramref name="cutArmed"/> is set when the press lands before the window.</summary>
+        public static bool WantJumpCut(ref bool cutArmed, float runT, float jumpCutAt, bool autopilot, bool playerDown, bool alreadyCut)
+        {
+            if (alreadyCut) return false;
+            bool press = playerDown;
+            if (press && runT < CUT_OPEN) { cutArmed = true; press = false; }
+            if (cutArmed && runT >= AUTO_CUT) press = true;
+            if (JumpMarkOverrides(jumpCutAt)) press = runT >= jumpCutAt;
+            else if (autopilot) press = runT >= AUTO_CUT;
+            else if (runT >= ASSIST_CUT) press = true;
+            return press && runT >= CUT_OPEN && runT < CUT_LATE;
+        }
         public float JumpT => jT;
         public float JumpRunT => runT;
         public float JumpDistance { get; private set; }
@@ -311,6 +337,7 @@ namespace SkiView
         void JumpStep(float dt)
         {
             jT += dt; runT = RunTime();
+            MaybeJumpLog();
             float g = 9.81f, sinA = RampSinA, cosA = Mathf.Sqrt(1f - sinA * sinA);
             skierPrev = skierPos;
             switch (jphase)
@@ -321,11 +348,9 @@ namespace SkiView
                     // a press before the cut window opens is kept (it used to be thrown away, so an early tap meant a miss), and
                     // the cut goes at the ideal moment; no press at all -> assisted cut a little after the ideal moment, so the skier
                     // always makes the double-wake cut to the ramp
-                    if (press && !cutOn && runT < CUT_OPEN) { cutArmed = true; press = false; }
-                    if (cutArmed && runT >= AUTO_CUT) press = true;
-                    if (!float.IsNaN(jumpCutAt)) press = runT >= jumpCutAt; else if (autopilot) press = runT >= AUTO_CUT;
-                    else if (runT >= ASSIST_CUT) press = true;
-                    if (!cutOn && press && runT >= CUT_OPEN && runT < CUT_LATE) BeginCut(runT);
+                    bool armed = cutArmed;
+                    if (WantJumpCut(ref armed, runT, jumpCutAt, autopilot, press, cutOn)) BeginCut(runT);
+                    cutArmed = armed;
                     if (!cutOn && runT >= CUT_LATE)
                     {
                         // never cut: swing back in behind the boat, past the ramp
@@ -366,7 +391,7 @@ namespace SkiView
                     rampS += rampV * dt; rampLat += rampLatV * dt;
                     float tau = Mathf.Clamp01(rampS / rampLenOut);
                     bool pp = jumpPress; jumpPress = false;
-                    if (!float.IsNaN(jumpPopAt)) pp = tau >= jumpPopAt; else if (autopilot) pp = tau >= AUTO_POP;
+                    if (JumpMarkOverrides(jumpPopAt)) pp = tau >= jumpPopAt; else if (autopilot) pp = tau >= AUTO_POP;
                     if (!popped && pp) { popped = true; JumpPopT = tau; }
                     jumpCrouch = tau < 0.67f ? Mathf.Lerp(0.60f, 0.58f, tau / 0.67f) : Mathf.Lerp(0.58f, 0.93f, Mathf.InverseLerp(0.67f, 1f, tau));   // compressed, then standing up in the last third
                     jumpPitch = 4f; jumpHandleIn = 0.6f; jumpTip = 0f; jumpSink = 0f;
@@ -392,7 +417,7 @@ namespace SkiView
                     jPost = Mathf.MoveTowards(jPost, jT < 0.12f ? 0f : 1f, 2.5f * dt);
                     {
                         bool lp = jumpPress; jumpPress = false;
-                        if (!float.IsNaN(jumpPopAt) && jumpPopAt > 1f) lp = jT >= (jumpPopAt - 1f) * 0.3f;
+                        if (JumpMarkOverrides(jumpPopAt) && jumpPopAt > 1f) lp = jT >= (jumpPopAt - 1f) * 0.3f;
                         if (!popped && lp && jT < 0.15f) { popped = true; JumpPopT = 1f + jT / 0.3f; PopEffect(JumpPopT, out float ldv, out landPitchWant); jVel.y += ldv; if (jCrash) landPitchWant = -4f; Debug.Log($"[SkiView] jump: late pop {jT:0.00} s after the lip -> landing pitch {landPitchWant:0.0}"); }
                     }
                     int sub = 4; float h = dt / sub;
@@ -520,6 +545,27 @@ namespace SkiView
             if (jMissed) RegisterJumpPass("BALK", 0f);
             else if (JumpResult == "SCORED" || JumpResult == "RIDE OUT") RegisterJumpPass("SCORED", JumpDistance);
             if (!jumpMode) SetJumpGear(false);
+            MaybeJumpLog();
+        }
+
+        static string MarkText(float v)
+        {
+            uint bits = new FloatBits { f = v }.u;
+            string n = float.IsNaN(v) ? "NaN" : float.IsInfinity(v) ? "Inf" : v.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+            return "0x" + bits.ToString("X8") + "=" + n;
+        }
+        /// <summary>Browser console trace for a WebGL stall. On with ?jumplog=1. One line on phase / cut / miss changes and every 0.5 s of sim.</summary>
+        void MaybeJumpLog()
+        {
+            if (!SkiViewArgs.On("jumplog")) return;
+            bool changed = jphase != jumpLogPhase || cutOn != jumpLogCut || jMissed != jumpLogMiss;
+            if (!changed && simTime < jumpLogNext) return;
+            jumpLogPhase = jphase; jumpLogCut = cutOn; jumpLogMiss = jMissed; jumpLogNext = simTime + 0.5f;
+            Debug.Log(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "[SkiView] jumplog phase={0} runT={1:0.00} jT={2:0.00} cut={3} missed={4} pop={5} ramp={6:0.00} result={7} boatKmh={8:0.0} frameDt={9:0.000} udt={10:0.000} acc={11:0.000} timeScale={12:0.00} gameScale={13:0.00} focus={14} bg={15} cutAt={16} popAt={17}",
+                jphase, runT, jT, cutOn ? 1 : 0, jMissed ? 1 : 0, popped ? 1 : 0, RampProgress, JumpResult ?? "",
+                jumpBoatKmh, lastFrameDt, Time.unscaledDeltaTime, acc, Time.timeScale, timeScale,
+                Application.isFocused ? 1 : 0, Application.runInBackground ? 1 : 0, MarkText(jumpCutAt), MarkText(jumpPopAt)));
         }
 
         /// <summary>Called every FixedStep after the boat moved: jump-lane offset and the run trigger.</summary>

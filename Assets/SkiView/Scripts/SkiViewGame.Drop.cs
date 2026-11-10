@@ -204,6 +204,20 @@ namespace SkiView
         }
         public bool InDropFloat => dropPh >= 2 && mode == Mode.Sink;
 
+        /// <summary>
+        /// Pause → RESTART PASS. A trick pass restarts that pass. Jump and slalom stay on <see cref="RetryPass"/>
+        /// (the jump round is fix/jump-retry; slalom still flips direction in SkipToSetup).
+        /// </summary>
+        public void RestartFromPause()
+        {
+            if (SkiView.Logic.PassRestart.Choose(jumpMode, trickMode) == SkiView.Logic.PauseRestart.TrickPass)
+            {
+                RestartTrickPass();
+                return;
+            }
+            RetryPass();
+        }
+
         /// <summary>RETRY PASS / RESTART: always the plain set-up, even mid-turnaround.</summary>
         public void RetryPass() { FlushSlalomSet(); DropReset(); SkipToSetup(); }
         void DropReset() { dropPh = 0; dwsBlendT = -1f; floatYawSet = false; }

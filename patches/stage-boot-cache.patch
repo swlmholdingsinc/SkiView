@@ -1,0 +1,173 @@
+diff --git a/Assets/Plugins/WebGL/SkiViewBoot.jslib b/Assets/Plugins/WebGL/SkiViewBoot.jslib
+index 4095698..902b894 100644
+--- a/Assets/Plugins/WebGL/SkiViewBoot.jslib
++++ b/Assets/Plugins/WebGL/SkiViewBoot.jslib
+@@ -7,5 +7,17 @@ mergeInto(LibraryManager.library, {
+       el.textContent = msg;
+     }
+     if (window.svBootMark) window.svBootMark(msg);
++  },
++
++  SkiViewPrepareWebLoad: function () {
++    var secure = window.isSecureContext === true && typeof window.caches !== "undefined";
++    if (secure) return 1;
++    if (typeof Module === "undefined") return 0;
++    Module.cacheControl = function () { return "no-store"; };
++    Module.cachedFetch = function (resource, init) {
++      if (typeof Module.fetchWithProgress === "function") return Module.fetchWithProgress(resource, init);
++      return fetch(resource, init);
++    };
++    return 0;
+   }
+ });
+diff --git a/Assets/SkiView/Editor/StageContractTests.cs b/Assets/SkiView/Editor/StageContractTests.cs
+index 343e366..3d04080 100644
+--- a/Assets/SkiView/Editor/StageContractTests.cs
++++ b/Assets/SkiView/Editor/StageContractTests.cs
+@@ -26,6 +26,19 @@ public static class StageContractTests
+         F(106805050L >= CatalogCohesion.MaxBundleBytes, "the shared bundle is over 100 MiB");
+         F(104857599L < CatalogCohesion.MaxBundleBytes, "one byte under 100 MiB is inside the cap");
+ 
++        F(!SkiViewBootContract.BrowserCacheSupported(false, false), "plain HTTP on a LAN IP has no Cache API");
++        F(!SkiViewBootContract.BrowserCacheSupported(false, true), "an insecure origin does not keep UnityCache");
++        F(SkiViewBootContract.BrowserCacheSupported(true, true), "127.0.0.1 and https keep the Cache API");
++        string settings = SkiViewBootContract.SettingsUrl("http://192.168.1.155:8095/StreamingAssets");
++        F(settings == "http://192.168.1.155:8095/StreamingAssets/aa/settings.json", "runtime data is settings.json under StreamingAssets/aa");
++        F(SkiViewBootContract.CacheControl(false, false, settings) == "no-store", "a LAN origin fetches settings.json directly");
++        F(SkiViewBootContract.CacheControl(true, true, "http://127.0.0.1:8095/Build/player.data") == "must-revalidate", "a secure origin still caches the player data file");
++        F(SkiViewBootContract.CacheControl(true, true, "http://127.0.0.1:8095/aa/core_shared.bundle") == "must-revalidate", "a secure origin still caches bundles");
++        F(SkiViewBootContract.CacheControl(true, true, settings) == "no-store", "settings.json is not put in UnityCache");
++        string named = SkiViewBootContract.DescribeInitFailure("Addressables - Unable to load runtime data at location ResourceManagerRuntimeData.", false, settings);
++        F(named.IndexOf("Cache API", StringComparison.Ordinal) >= 0 && named.IndexOf(settings, StringComparison.Ordinal) >= 0, "init failure names the cache step and the settings url");
++        F(SkiViewBootContract.DescribeInitFailure("load scene failed", false, settings) == "load scene failed", "a later load error stays a load error");
++
+         var hashed = CatalogCohesion.Check(
+             new[] { "\"core_home_scenes_all_0123456789abcdef0123456789abcdef.bundle\"" },
+             new[] { "core_home_scenes_all.bundle" });
+diff --git a/Assets/SkiView/Scripts/SkiViewBoot.cs b/Assets/SkiView/Scripts/SkiViewBoot.cs
+index 34b05da..76fb9f4 100644
+--- a/Assets/SkiView/Scripts/SkiViewBoot.cs
++++ b/Assets/SkiView/Scripts/SkiViewBoot.cs
+@@ -65,11 +65,28 @@ namespace SkiView
+ 
+ #if UNITY_WEBGL && !UNITY_EDITOR
+         [DllImport("__Internal")] static extern void SkiViewBootMark(string message);
++        [DllImport("__Internal")] static extern int SkiViewPrepareWebLoad();
+         static void Page(string message) { try { SkiViewBootMark(message); } catch (Exception) { } }
++        static bool PrepareWebLoad() { try { return SkiViewPrepareWebLoad() != 0; } catch (Exception) { return false; } }
+ #else
+         static void Page(string message) { if (message == null) return; }
++        static bool PrepareWebLoad() { return true; }
+ #endif
+ 
++        static string Flatten(Exception ex)
++        {
++            if (ex == null) return null;
++            string text = null;
++            int guard = 0;
++            while (ex != null && guard++ < 6)
++            {
++                if (!string.IsNullOrEmpty(ex.Message))
++                    text = text == null ? ex.Message : text + " | " + ex.Message;
++                ex = ex.InnerException;
++            }
++            return text;
++        }
++
+         /// <summary>
+         /// Parameterless InitializeAsync releases its handle before a coroutine resumes, so IsValid is false after a successful init.
+         /// Call InitializeAsync(false), then this. A real failure stays failed.
+@@ -148,16 +165,20 @@ namespace SkiView
+ 
+         IEnumerator BootBody()
+         {
+-            SetPhase("addressables-init");
++            bool cacheSupported = PrepareWebLoad();
++            string settingsUrl = SkiViewBootContract.SettingsUrl(Application.streamingAssetsPath);
++            SetPhase("addressables-init " + (cacheSupported ? "cache=browser" : "cache=direct") + " " + settingsUrl);
+             var init = Addressables.InitializeAsync(false);
+             yield return init;
+             bool valid = init.IsValid();
+             bool succeeded = valid && init.Status == AsyncOperationStatus.Succeeded;
+-            string exceptionMessage = valid && init.OperationException != null ? init.OperationException.Message : null;
++            string exceptionMessage = Flatten(valid ? init.OperationException : null);
+             if (valid) Addressables.Release(init);
+             string fault;
+             if (!InitAllowsLoad(valid, succeeded, exceptionMessage, out fault))
+             {
++                if (!succeeded)
++                    fault = SkiViewBootContract.DescribeInitFailure(fault, cacheSupported, settingsUrl);
+                 SetPhase("init-failed", fault);
+                 yield break;
+             }
+diff --git a/Assets/SkiView/Scripts/SkiViewBootContract.cs b/Assets/SkiView/Scripts/SkiViewBootContract.cs
+index 9e22e5d..feb0142 100644
+--- a/Assets/SkiView/Scripts/SkiViewBootContract.cs
++++ b/Assets/SkiView/Scripts/SkiViewBootContract.cs
+@@ -39,5 +39,45 @@ namespace SkiView
+             if (string.IsNullOrEmpty(phase) || phase.IndexOf("lake-ready", StringComparison.Ordinal) < 0) return false;
+             return string.IsNullOrEmpty(fault) || IsStall(fault);
+         }
++
++        /// <summary>Chrome exposes the Cache API only in a secure context. http://127.0.0.1 is one. A LAN IP on plain HTTP is not.</summary>
++        public static bool BrowserCacheSupported(bool secureContext, bool cacheApiPresent)
++        {
++            return secureContext && cacheApiPresent;
++        }
++
++        /// <summary>must-revalidate only where the Cache API exists. settings.json and catalogs stay no-store.</summary>
++        public static string CacheControl(bool secureContext, bool cacheApiPresent, string url)
++        {
++            if (!BrowserCacheSupported(secureContext, cacheApiPresent)) return "no-store";
++            if (string.IsNullOrEmpty(url)) return "no-store";
++            if (url.IndexOf(".data", StringComparison.Ordinal) >= 0 || url.IndexOf(".bundle", StringComparison.Ordinal) >= 0)
++                return "must-revalidate";
++            return "no-store";
++        }
++
++        public static string SettingsUrl(string streamingAssetsPath)
++        {
++            if (string.IsNullOrEmpty(streamingAssetsPath)) return "StreamingAssets/aa/settings.json";
++            string root = streamingAssetsPath.TrimEnd('/');
++            if (root.EndsWith("/aa", StringComparison.Ordinal)) return root + "/settings.json";
++            return root + "/aa/settings.json";
++        }
++
++        public static string DescribeInitFailure(string addressablesMessage, bool cacheSupported, string settingsUrl)
++        {
++            string msg = addressablesMessage ?? "";
++            bool runtimeData = msg.IndexOf("Unable to load runtime data", StringComparison.Ordinal) >= 0
++                || msg.IndexOf("ResourceManagerRuntimeData", StringComparison.Ordinal) >= 0
++                || msg.IndexOf("Invalid path in TextDataProvider", StringComparison.Ordinal) >= 0
++                || msg.IndexOf("unable to load from url", StringComparison.OrdinalIgnoreCase) >= 0;
++            if (!runtimeData) return msg;
++            string where = string.IsNullOrEmpty(settingsUrl) ? "(no settings url)" : settingsUrl;
++            if (!cacheSupported)
++                return "runtime data was not loaded from " + where
++                    + ". This origin is plain HTTP, so the browser does not provide the Cache API. UnityCache stopped the request before settings.json was fetched. Direct fetch is required. Addressables said: "
++                    + msg;
++            return "runtime data was not loaded from " + where + ". Addressables said: " + msg;
++        }
+     }
+ }
+diff --git a/Assets/WebGLTemplates/SkiViewMinimal/index.html b/Assets/WebGLTemplates/SkiViewMinimal/index.html
+index 5c93e7b..ce2c9bd 100644
+--- a/Assets/WebGLTemplates/SkiViewMinimal/index.html
++++ b/Assets/WebGLTemplates/SkiViewMinimal/index.html
+@@ -50,8 +50,16 @@
+         svDiag.textContent = "css " + Math.round(r.width) + "x" + Math.round(r.height) + " buf " + canvas.width + "x" + canvas.height + " dpr " + (window.devicePixelRatio || 1);
+       }
+       var svMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
++      function svCacheControl(url) {
++        var secure = window.isSecureContext === true && typeof window.caches !== "undefined";
++        if (!secure) return "no-store";
++        url = url || "";
++        if (url.indexOf(".data") >= 0 || url.indexOf(".bundle") >= 0) return "must-revalidate";
++        return "no-store";
++      }
+       var config = {
+         arguments: [],
++        cacheControl: svCacheControl,
+         dataUrl: "Build/{{{ DATA_FILENAME }}}?v=r6b17",
+         frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}?v=r6b17",
+ #if USE_THREADS

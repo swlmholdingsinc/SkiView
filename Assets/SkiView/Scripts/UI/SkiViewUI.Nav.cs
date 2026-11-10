@@ -6,7 +6,7 @@ namespace SkiView.UI
     /// arrow, Esc, Android back) always goes up one level; nothing dead-ends. Lake select has a TITLE button; pause MAIN MENU goes to the title.</summary>
     public partial class SkiViewUI
     {
-        bool lakesFromSetup, pauseReturn;
+        bool lakesFromSetup, lakesFromEvent, pauseReturn;
         bool TitleFlow => runSetup != null && IsOpen(runSetup);
         static bool IsOpen(VisualElement m) => m != null && m.ClassListContains("sv-menu--open");
 
@@ -14,8 +14,14 @@ namespace SkiView.UI
 
         public void NavBack()
         {
-            if (IsOpen(lakes)) { if (lakesFromSetup) OpenRunSetup(); else Open(pause); return; }
-            if (IsOpen(runSetup)) { ToTitle(); OpenEventPanel(panelJump, panelTricks); return; }
+            if (IsOpen(lakes))
+            {
+                if (lakesFromSetup) OpenRunSetup();
+                else if (lakesFromEvent) { lakesFromEvent = false; Open(title); OpenEventPanel(panelJump, panelTricks, panelChallenge); }
+                else Open(pause);
+                return;
+            }
+            if (IsOpen(runSetup)) { ToTitle(); OpenEventPanel(panelJump, panelTricks, panelChallenge); return; }
             if (IsOpen(credits)) { Open(settings); return; }
             if ((IsOpen(settings) || IsOpen(help) || IsOpen(recordsMenu)) && pauseReturn && !titleReturn) { pauseReturn = false; Open(pause); return; }
             pauseReturn = false; CloseMenus();

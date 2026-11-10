@@ -1,0 +1,455 @@
+diff --git a/Assets/SkiView/Editor/StageContractTests.cs b/Assets/SkiView/Editor/StageContractTests.cs
+index 3d04080..90f922c 100644
+--- a/Assets/SkiView/Editor/StageContractTests.cs
++++ b/Assets/SkiView/Editor/StageContractTests.cs
+@@ -39,6 +39,14 @@ public static class StageContractTests
+         F(named.IndexOf("Cache API", StringComparison.Ordinal) >= 0 && named.IndexOf(settings, StringComparison.Ordinal) >= 0, "init failure names the cache step and the settings url");
+         F(SkiViewBootContract.DescribeInitFailure("load scene failed", false, settings) == "load scene failed", "a later load error stays a load error");
+ 
++        F(SkiViewLakeChoice.BuiltLakeIds.Length == 10, "the menu lists ten built lakes");
++        F(System.Array.IndexOf(SkiViewLakeChoice.BuiltLakeIds, "skiview") == 0, "Ski View Lake is in the list");
++        F(System.Array.IndexOf(SkiViewLakeChoice.BuiltLakeIds, "heronmarsh") > 0, "Heron Marsh is in the list");
++        F(SkiViewLakeChoice.Selectable(true, "heronmarsh", false, false, 14800000, false), "a WebGL lake bundle stays selectable");
++        F(!SkiViewLakeChoice.Selectable(false, "heronmarsh", false, false, 14800000, false), "a phone pack that is not on the device is not yet selectable");
++        F(SkiViewLakeChoice.Selectable(false, "skiview", false, false, 0, true), "the home lake stays selectable");
++        F(SkiViewLakeChoice.Selectable(false, "cedarbend", false, false, 0, true), "an installed phone pack stays selectable offline");
++
+         var hashed = CatalogCohesion.Check(
+             new[] { "\"core_home_scenes_all_0123456789abcdef0123456789abcdef.bundle\"" },
+             new[] { "core_home_scenes_all.bundle" });
+diff --git a/Assets/SkiView/Resources/Branding/SWLMLogoMark.png.meta b/Assets/SkiView/Resources/Branding/SWLMLogoMark.png.meta
+new file mode 100644
+index 0000000..c8d05ff
+--- /dev/null
++++ b/Assets/SkiView/Resources/Branding/SWLMLogoMark.png.meta
+@@ -0,0 +1,130 @@
++fileFormatVersion: 2
++guid: e4b7c2a91f6d4c38b5e0a7d31c9f84b6
++TextureImporter:
++  internalIDToNameTable: []
++  externalObjects: {}
++  serializedVersion: 13
++  mipmaps:
++    mipMapMode: 0
++    enableMipMap: 0
++    sRGBTexture: 1
++    linearTexture: 0
++    fadeOut: 0
++    borderMipMap: 0
++    mipMapsPreserveCoverage: 0
++    alphaTestReferenceValue: 0.5
++    mipMapFadeDistanceStart: 1
++    mipMapFadeDistanceEnd: 3
++  bumpmap:
++    convertToNormalMap: 0
++    externalNormalMap: 0
++    heightScale: 0.25
++    normalMapFilter: 0
++    flipGreenChannel: 0
++  isReadable: 0
++  streamingMipmaps: 0
++  streamingMipmapsPriority: 0
++  vTOnly: 0
++  ignoreMipmapLimit: 0
++  grayScaleToAlpha: 0
++  generateCubemap: 6
++  cubemapConvolution: 0
++  seamlessCubemap: 0
++  textureFormat: 1
++  maxTextureSize: 2048
++  textureSettings:
++    serializedVersion: 2
++    filterMode: 1
++    aniso: 1
++    mipBias: 0
++    wrapU: 1
++    wrapV: 1
++    wrapW: 1
++  nPOTScale: 0
++  lightmap: 0
++  compressionQuality: 50
++  spriteMode: 1
++  spriteExtrude: 1
++  spriteMeshType: 1
++  alignment: 0
++  spritePivot: {x: 0.5, y: 0.5}
++  spritePixelsToUnits: 100
++  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
++  spriteGenerateFallbackPhysicsShape: 0
++  alphaUsage: 1
++  alphaIsTransparency: 1
++  spriteTessellationDetail: -1
++  textureType: 8
++  textureShape: 1
++  singleChannelComponent: 0
++  flipbookRows: 1
++  flipbookColumns: 1
++  maxTextureSizeSet: 0
++  compressionQualitySet: 0
++  textureFormatSet: 0
++  ignorePngGamma: 0
++  applyGammaDecoding: 0
++  swizzle: 50462976
++  cookieLightType: 0
++  platformSettings:
++  - serializedVersion: 4
++    buildTarget: DefaultTexturePlatform
++    maxTextureSize: 2048
++    resizeAlgorithm: 0
++    textureFormat: -1
++    textureCompression: 0
++    compressionQuality: 50
++    crunchedCompression: 0
++    allowsAlphaSplitting: 0
++    overridden: 0
++    ignorePlatformSupport: 0
++    androidETC2FallbackOverride: 0
++    forceMaximumCompressionQuality_BC6H_BC7: 0
++  - serializedVersion: 4
++    buildTarget: Standalone
++    maxTextureSize: 2048
++    resizeAlgorithm: 0
++    textureFormat: -1
++    textureCompression: 0
++    compressionQuality: 50
++    crunchedCompression: 0
++    allowsAlphaSplitting: 0
++    overridden: 0
++    ignorePlatformSupport: 0
++    androidETC2FallbackOverride: 0
++    forceMaximumCompressionQuality_BC6H_BC7: 0
++  - serializedVersion: 4
++    buildTarget: WebGL
++    maxTextureSize: 2048
++    resizeAlgorithm: 0
++    textureFormat: -1
++    textureCompression: 0
++    compressionQuality: 50
++    crunchedCompression: 0
++    allowsAlphaSplitting: 0
++    overridden: 0
++    ignorePlatformSupport: 0
++    androidETC2FallbackOverride: 0
++    forceMaximumCompressionQuality_BC6H_BC7: 0
++  spriteSheet:
++    serializedVersion: 2
++    sprites: []
++    outline: []
++    customData: 
++    physicsShape: []
++    bones: []
++    spriteID: 5e8c1a4b7d9f4e02a6c3b8d01f47e295
++    internalID: 0
++    vertices: []
++    indices: 
++    edges: []
++    weights: []
++    secondaryTextures: []
++    spriteCustomMetadata:
++      entries: []
++    nameFileIdTable: {}
++  mipmapLimitGroupName: 
++  pSDRemoveMatte: 0
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Scripts/SkiViewLakeChoice.cs b/Assets/SkiView/Scripts/SkiViewLakeChoice.cs
+new file mode 100644
+index 0000000..de411f3
+--- /dev/null
++++ b/Assets/SkiView/Scripts/SkiViewLakeChoice.cs
+@@ -0,0 +1,22 @@
++using System;
++
++namespace SkiView
++{
++    /// <summary>Which lakes the menus may offer, and when Select is the action. WebGL ships the lake bundles in the build.</summary>
++    public static class SkiViewLakeChoice
++    {
++        public static readonly string[] BuiltLakeIds =
++        {
++            "skiview", "cedarbend", "saltwhite", "villaserena", "tallpine",
++            "heronmarsh", "harrowpond", "gulfwind", "saguaro", "marrowind"
++        };
++
++        public static bool Selectable(bool webgl, string id, bool downloading, bool failed, long sizeBytes, bool offline)
++        {
++            if (downloading || failed) return false;
++            if (id == "skiview" || webgl) return true;
++            if (sizeBytes <= 0) return true;
++            return !offline && sizeBytes < 0;
++        }
++    }
++}
+diff --git a/Assets/SkiView/Scripts/SkiViewLakeChoice.cs.meta b/Assets/SkiView/Scripts/SkiViewLakeChoice.cs.meta
+new file mode 100644
+index 0000000..a87da63
+--- /dev/null
++++ b/Assets/SkiView/Scripts/SkiViewLakeChoice.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: 6c1e9a47b2d84f05a8e3c7d91b04f6a2
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Scripts/UI/SkiViewUI.Nav.cs b/Assets/SkiView/Scripts/UI/SkiViewUI.Nav.cs
+index 5b707e4..6170bd5 100644
+--- a/Assets/SkiView/Scripts/UI/SkiViewUI.Nav.cs
++++ b/Assets/SkiView/Scripts/UI/SkiViewUI.Nav.cs
+@@ -6,7 +6,7 @@ namespace SkiView.UI
+     /// arrow, Esc, Android back) always goes up one level; nothing dead-ends. Lake select has a TITLE button; pause MAIN MENU goes to the title.</summary>
+     public partial class SkiViewUI
+     {
+-        bool lakesFromSetup, pauseReturn;
++        bool lakesFromSetup, lakesFromEvent, pauseReturn;
+         bool TitleFlow => runSetup != null && IsOpen(runSetup);
+         static bool IsOpen(VisualElement m) => m != null && m.ClassListContains("sv-menu--open");
+ 
+@@ -14,8 +14,14 @@ namespace SkiView.UI
+ 
+         public void NavBack()
+         {
+-            if (IsOpen(lakes)) { if (lakesFromSetup) OpenRunSetup(); else Open(pause); return; }
+-            if (IsOpen(runSetup)) { ToTitle(); OpenEventPanel(panelJump, panelTricks); return; }
++            if (IsOpen(lakes))
++            {
++                if (lakesFromSetup) OpenRunSetup();
++                else if (lakesFromEvent) { lakesFromEvent = false; Open(title); OpenEventPanel(panelJump, panelTricks, panelChallenge); }
++                else Open(pause);
++                return;
++            }
++            if (IsOpen(runSetup)) { ToTitle(); OpenEventPanel(panelJump, panelTricks, panelChallenge); return; }
+             if (IsOpen(credits)) { Open(settings); return; }
+             if ((IsOpen(settings) || IsOpen(help) || IsOpen(recordsMenu)) && pauseReturn && !titleReturn) { pauseReturn = false; Open(pause); return; }
+             pauseReturn = false; CloseMenus();
+diff --git a/Assets/SkiView/Scripts/UI/SkiViewUI.P19.cs b/Assets/SkiView/Scripts/UI/SkiViewUI.P19.cs
+index 65554eb..2e4f886 100644
+--- a/Assets/SkiView/Scripts/UI/SkiViewUI.P19.cs
++++ b/Assets/SkiView/Scripts/UI/SkiViewUI.P19.cs
+@@ -75,9 +75,14 @@ namespace SkiView.UI
+             if (id == "skiview") return PackState.Included;
+             if (!SkiViewBoot.Active) return id == game?.lakeId ? PackState.Installed : PackState.Unknown;
+             var p = SkiViewBoot.PackInfo(id); size = p.size; pct = p.progress; got = p.got;
+-            if (p.downloading) return PackState.Downloading; if (p.failed) return PackState.Failed;
+-            if (p.size < 0) return PackState.Unknown; if (p.size == 0) return PackState.Installed;
+-            return Application.internetReachability == NetworkReachability.NotReachable ? PackState.Offline : PackState.NotDownloaded;
++            if (p.downloading) return PackState.Downloading;
++            if (p.failed) return PackState.Failed;
++            bool web = Application.platform == RuntimePlatform.WebGLPlayer;
++            bool offline = Application.internetReachability == NetworkReachability.NotReachable;
++            if (!SkiViewLakeChoice.Selectable(web, id, false, false, p.size, offline))
++                return offline ? PackState.Offline : PackState.NotDownloaded;
++            if (!web && p.size < 0) return PackState.Unknown;
++            return PackState.Installed;
+         }
+         static string Mb(long b) => (b / 1000000f).ToString("0.0") + " MB";
+ 
+@@ -116,6 +121,8 @@ namespace SkiView.UI
+                 else if (st == PackState.NotDownloaded) { Key(chip, null, "download").AddToClassList("sv-lakes19__ok"); Lb(Mb(size), "t-micro", chip); }
+                 else Lb("…", "t-micro", chip);
+             }
++            var crumb = lakes.Q<Label>(className: "t-micro");
++            if (crumb != null) crumb.text = "STEP 2 OF 3 · " + (panelChallenge ? "CHALLENGE" : panelTricks ? "TRICKS" : panelJump ? "JUMP" : "SLALOM");
+             var l = LAKES[lakeSel]; lakeCard.Clear(); var s = State(l.id, out float p0, out long sz, out long got);
+             var img = El("sv-lakes19__img", lakeCard); var tex = Resources.Load<Texture2D>("SkiViewUI/Lakes/" + l.id); if (tex != null) img.style.backgroundImage = new StyleBackground(tex);
+             var chips = El("sv-lakes19__chips", img); Lb("SLALOM", "sv-lakes19__ev", chips); Lb(!l.jump ? "NO JUMP RAMP" : l.id == "gulfwind" ? "JUMP MODE · NORTH BULGE" : "JUMP", "sv-lakes19__ev", chips);
+@@ -146,7 +153,7 @@ namespace SkiView.UI
+             }
+         }
+         static string Title(string n) => System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(n.ToLowerInvariant());
+-        public void OpenLakes() { lakesFromSetup = TitleFlow; Open(lakes); }
++        public void OpenLakes() { lakesFromEvent = false; lakesFromSetup = TitleFlow; Open(lakes); }
+         void Select(string id)
+         {
+             CloseMenus();
+@@ -171,7 +178,7 @@ namespace SkiView.UI
+             Btn("SETTINGS", "sv-btn", col, () => { pauseReturn = true; Open(settings); }, "settings");
+             Btn("CONTROLS HELP", "sv-btn", col, () => { pauseReturn = true; Open(help); }, "controls");
+             pauseJump = Btn("JUMP MODE: OFF", "sv-btn", col, () => { game?.ToggleJumpMode(); CloseMenus(); }, "jump-distance");
+-            Btn("CHANGE LAKE", "sv-btn", col, () => { lakesFromSetup = false; Open(lakes); }, "back");
++            Btn("CHANGE LAKE", "sv-btn", col, () => { lakesFromSetup = false; lakesFromEvent = false; Open(lakes); }, "back");
+             Btn("WORLD RECORDS", "sv-btn", col, () =>
+             {
+                 pauseReturn = true; titleReturn = false;
+diff --git a/Assets/SkiView/Scripts/UI/SkiViewUI.Setup.cs b/Assets/SkiView/Scripts/UI/SkiViewUI.Setup.cs
+index 744a4bb..b8ff4c7 100644
+--- a/Assets/SkiView/Scripts/UI/SkiViewUI.Setup.cs
++++ b/Assets/SkiView/Scripts/UI/SkiViewUI.Setup.cs
+@@ -65,7 +65,7 @@ namespace SkiView.UI
+             }
+             var act = El("srow srow--setup-act", panelBody);
+             // b10.27 T24 D1: phone Done/Choose lake ≥144 (sv-btn--start-tall under .sv-phone)
+-            if (!panelTricks) Btn("CHOOSE LAKE", "sv-btn sv-btn--start-tall", act, () => { Save(); lakesFromSetup = true; Open(lakes); });
++            Btn("CHOOSE LAKE", "sv-btn sv-btn--start-tall", act, () => { Save(); lakesFromSetup = true; lakesFromEvent = false; Open(lakes); });
+             Btn("START", "sv-btn sv-btn--primary sv-btn--start-tall", act, () => {
+                 Save(); game?.ApplySetup();
+                 if (panelTricks) game?.BeginTrickRound();
+diff --git a/Assets/SkiView/Scripts/UI/SkiViewUI.Title.cs b/Assets/SkiView/Scripts/UI/SkiViewUI.Title.cs
+index 7ef06d8..e83821e 100644
+--- a/Assets/SkiView/Scripts/UI/SkiViewUI.Title.cs
++++ b/Assets/SkiView/Scripts/UI/SkiViewUI.Title.cs
+@@ -9,7 +9,7 @@ namespace SkiView.UI
+     /// Skipped for captures / deep links: ?clean, ?title=0, ?ui=, ?mode=, ?at=.</summary>
+     public partial class SkiViewUI
+     {
+-        VisualElement title, titlePanel, soonToast; Label soonText, panelName, lastSetup; bool titleReturn, panelJump, panelTricks;
++        VisualElement title, titlePanel, soonToast; Label soonText, panelName, lastSetup; bool titleReturn, panelJump, panelTricks, panelChallenge;
+         IVisualElementScheduledItem soonJob; static bool skipTitleOnce;
+         public bool TitleOpen => title != null && title.ClassListContains("sv-menu--open");
+ 
+@@ -31,23 +31,36 @@ namespace SkiView.UI
+             var hero = title.Q("hero"); string hp = SkiViewBranding.TitleHeroPath(aspect);
+             var ht = hp != null ? Resources.Load<Texture2D>(hp) : null;
+             if (ht != null) hero.style.backgroundImage = new StyleBackground(ht); else hero.style.display = DisplayStyle.None;
+-            // Scott Oct 24 ~11:54: title = jagged SWLM wordmark; no Wade hero. Hex Holdings is HUD-only.
++            // Title mark is the SWLM hexagon plus the company name. No crest and no tagline.
+             title.Q("rights-tag").style.display = DisplayStyle.None;
+             hero.style.display = DisplayStyle.None;
+             title.Q("watermark").style.display = SkiViewBranding.Flag.wadeLicenseSigned ? DisplayStyle.None : DisplayStyle.Flex;
+             var logoEl = title.Q("logo");
+-            string titleMark = SkiViewBranding.CompanyLogoPath("wordmark") ?? "Branding/slots/wordmark";
+-            var logoTex = Resources.Load<Texture2D>(titleMark);
++            var mark = Resources.Load<Texture2D>("Branding/SWLMLogoMark");
+             if (logoEl != null)
+             {
+-                if (logoTex != null)
++                logoEl.AddToClassList("sv-swlm-mark");
++                logoEl.style.width = 63;
++                logoEl.style.height = 80;
++                if (mark != null)
+                 {
+-                    logoEl.style.backgroundImage = new StyleBackground(logoTex);
++                    logoEl.style.backgroundImage = new StyleBackground(mark);
+                     logoEl.style.display = DisplayStyle.Flex;
+                 }
+                 else logoEl.style.display = DisplayStyle.None;
+             }
+-            // Hide text SKI VIEW wordmark — jagged SWLM image is the title mark
++            var company = title.Q<Label>("swlm-name");
++            if (company == null)
++            {
++                company = new Label("SWLM Holdings Inc.");
++                company.name = "swlm-name";
++                company.AddToClassList("sv-swlm-name");
++                title.Q("title-root").Add(company);
++            }
++            company.text = "SWLM Holdings Inc.";
++            var copy = title.Q<Label>("copyright");
++            if (copy != null) copy.text = "\u00a9 2026 SWLM Holdings Inc.";
++            HideTitleCrest(title);
+             var wm = title.Q<Label>("ski-view-wordmark");
+             if (wm != null) wm.style.display = DisplayStyle.None;
+ 
+@@ -64,13 +77,15 @@ namespace SkiView.UI
+                 clinicBtn.clicked += () => OpenClinicList();
+                 clinicBtn.SetEnabled(true);
+             }
+-            title.Q<Button>("sec-beat").clicked += () => SoonToast("CHALLENGE · COMING SOON", title.Q("sec-row"));
++            title.Q<Button>("sec-beat").clicked += () => OpenEventPanel(false, false, true);
+             title.Q<Button>("sec-settings").clicked += () => { titleReturn = true; Open(settings); };
+             title.Q<Button>("sec-credits").clicked += () => { titleReturn = true; Open(credits); };
+             var recordsBtn = title.Q<Button>("sec-records");
+             if (recordsBtn != null) recordsBtn.clicked += () => { titleReturn = true; pauseReturn = false; OpenRecords(SkiViewRecords.Discipline.Slalom, "TITLE"); };
+             title.Q<Button>("quick-start").clicked += QuickStart;
+             title.Q<Button>("setup").clicked += () => { StartEvent(); OpenRunSetup(); };   // b9: ski / rope / speed first
++            var choose = title.Q<Button>("choose-lake");
++            if (choose != null) choose.clicked += ChooseLakeFromEvent;
+             if (game != null && game.jumpRamp == null) title.Q("ev-jump").SetEnabled(false);
+             // b10.11 Phase A: enable Tricks (remove Coming soon)
+             var trBtn = title.Q("ev-tricks");
+@@ -102,15 +117,47 @@ namespace SkiView.UI
+             title.Q("ev-slalom").Focus();
+         }
+ 
+-        void OpenEventPanel(bool jump, bool tricks = false)
++        void OpenEventPanel(bool jump, bool tricks = false, bool challenge = false)
+         {
+-            panelJump = jump && !tricks; panelTricks = tricks;
+-            title.Q("ev-slalom").EnableInClassList("sv-event--selected", !jump && !tricks);
+-            title.Q("ev-jump").EnableInClassList("sv-event--selected", jump && !tricks);
+-            title.Q("ev-tricks").EnableInClassList("sv-event--selected", tricks);
+-            panelName.text = tricks ? "TRICKS" : jump ? "JUMP" : "SLALOM";
++            panelChallenge = challenge;
++            panelJump = jump && !tricks && !challenge;
++            panelTricks = tricks && !challenge;
++            title.Q("ev-slalom").EnableInClassList("sv-event--selected", !jump && !tricks && !challenge);
++            title.Q("ev-jump").EnableInClassList("sv-event--selected", jump && !tricks && !challenge);
++            title.Q("ev-tricks").EnableInClassList("sv-event--selected", tricks && !challenge);
++            var beat = title.Q("sec-beat"); if (beat != null) beat.EnableInClassList("sv-event--selected", challenge);
++            panelName.text = challenge ? "CHALLENGE" : tricks ? "TRICKS" : jump ? "JUMP" : "SLALOM";
+             lastSetup.text = tricks ? SetupSummaryTricks() : SetupSummary(jump);
+-            titlePanel.AddToClassList("sv-event-panel--open"); title.Q("quick-start").Focus();
++            titlePanel.AddToClassList("sv-event-panel--open");
++            var choose = title.Q<Button>("choose-lake");
++            if (choose != null) choose.Focus(); else title.Q("quick-start").Focus();
++        }
++
++        void ChooseLakeFromEvent()
++        {
++            StartEvent();
++            lakesFromSetup = false;
++            lakesFromEvent = true;
++            Open(lakes);
++        }
++
++        static void HideTitleCrest(VisualElement root)
++        {
++            if (root == null) return;
++            root.Query(className: "sv-crest").ForEach(e => e.style.display = DisplayStyle.None);
++            root.Query(className: "sv-crest-tag").ForEach(e => e.style.display = DisplayStyle.None);
++            foreach (var name in new[] { "crest", "crest-tag", "seeley-crest", "seeley-tagline" })
++            {
++                var e = root.Q(name);
++                if (e != null) e.style.display = DisplayStyle.None;
++            }
++            root.Query<Label>().ForEach(l =>
++            {
++                if (l == null || string.IsNullOrEmpty(l.text)) return;
++                if (l.name == "swlm-name" || l.name == "copyright") return;
++                if (l.text.IndexOf("Seeley", System.StringComparison.Ordinal) >= 0 || l.text.IndexOf("Strive for Perfection", System.StringComparison.Ordinal) >= 0)
++                    l.style.display = DisplayStyle.None;
++            });
+         }
+ 
+         void StartEvent()
+diff --git a/Assets/SkiView/UI/Resources/SkiViewUI/Title/sv-title-t22.uss b/Assets/SkiView/UI/Resources/SkiViewUI/Title/sv-title-t22.uss
+index 30dc196..a28aa2b 100644
+--- a/Assets/SkiView/UI/Resources/SkiViewUI/Title/sv-title-t22.uss
++++ b/Assets/SkiView/UI/Resources/SkiViewUI/Title/sv-title-t22.uss
+@@ -13,6 +13,9 @@
+ .sv-title__left { position: absolute; left: 32px; top: 0; bottom: 0; width: 760px; justify-content: flex-start; }
+ .sv-title--4x3 .sv-title__left { justify-content: center; width: 820px; }   /* 4:3: menu block vertically centred */
+ .sv-logo-plate { position: absolute; left: 24px; top: 16px; width: 420px; height: 140px; background-image: none; -unity-background-scale-mode: scale-to-fit; }
++.sv-swlm-mark { left: 32px; top: 24px; width: 63px; height: 80px; -unity-background-scale-mode: scale-to-fit; }
++.sv-swlm-name { position: absolute; left: 108px; top: 48px; font-size: 22px; color: var(--sv-text); }
++.sv-crest, .sv-crest-tag { display: none; }
+ .sv-event-list { margin-top: 146px; }
+ .sv-title--4x3 .sv-event-list { margin-top: 0; }
+ .sv-event { height: var(--ev-h); margin-bottom: 14px; flex-direction: row; align-items: center; padding: 0 32px;
+diff --git a/Assets/SkiView/UI/Resources/SkiViewUI/Title/sv-title-t22.uxml b/Assets/SkiView/UI/Resources/SkiViewUI/Title/sv-title-t22.uxml
+index 9b7c356..9ad5ee1 100644
+--- a/Assets/SkiView/UI/Resources/SkiViewUI/Title/sv-title-t22.uxml
++++ b/Assets/SkiView/UI/Resources/SkiViewUI/Title/sv-title-t22.uxml
+@@ -33,13 +33,14 @@
+         <ui:VisualElement name="event-panel" class="sv-event-panel">
+             <ui:Label text="SLALOM" /><ui:Label text="READY TO SKI" /><ui:Label name="last-setup" text="Last setup: {LAKE} · {ROPE} off · {SPEED} mph" />
+             <ui:VisualElement style="flex-direction: row; margin-top: 22px;">
+-                <ui:Button name="quick-start" class="sv-btn sv-btn--primary" text="QUICK START"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
++                <ui:Button name="choose-lake" class="sv-btn sv-btn--primary" text="CHOOSE LAKE"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
++                <ui:Button name="quick-start" class="sv-btn" text="QUICK START"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
+                 <ui:Button name="setup" class="sv-btn" text="SETUP"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
+             </ui:VisualElement>
+         </ui:VisualElement>
+         <ui:VisualElement name="soon-toast" class="sv-soon-toast" picking-mode="Ignore"><ui:Label text="TRICKS · COMING SOON" /></ui:VisualElement>
+         <ui:Label name="rights-tag" class="sv-rights-tag" text="WADE PHOTO · SUPPLIED BY SCOTT · RIGHTS TBC · SWAP FOR 3D RENDER" />
+-        <ui:Label name="copyright" class="sv-copyright" text="© 2026 SWLM Holdings Inc" />
++        <ui:Label name="copyright" class="sv-copyright" text="© 2026 SWLM Holdings Inc." />
+         <ui:VisualElement name="watermark" class="sv-watermark" picking-mode="Ignore" />
+     </ui:VisualElement>
+ </ui:UXML>

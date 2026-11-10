@@ -4,59 +4,121 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes">
     <meta name="robots" content="noindex, nofollow, noarchive">
-    <title>{{{ PRODUCT_NAME }}}</title>
+    <title>SKI VIEW</title>
     <style>
-      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0b1a2a; }
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0b1622; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
       #unity-container { position: fixed; inset: 0; }
-      #unity-canvas { width: 100%; height: 100%; display: block; background: #0b1a2a; outline: none; }
-      #sv-loading { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 40vw; height: 6px; background: #ffffff22; border-radius: 3px; }
+      #unity-canvas { width: 100%; height: 100%; display: block; background: #0b1622; outline: none; }
+      #sv-splash { position: fixed; inset: 0; z-index: 5; background: #0b1622 url("StreamingAssets/TitleBg.jpg") center center / cover no-repeat; display: flex; flex-direction: column; justify-content: space-between; padding: 32px 44px; box-sizing: border-box; transition: opacity 0.35s ease; }
+      #sv-splash::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(7,16,28,0.48) 0%, rgba(7,16,28,0.12) 55%, rgba(7,16,28,0.05) 100%); pointer-events: none; }
+      #sv-splash-title { position: relative; color: #fff; font-weight: 800; font-size: clamp(44px, 5.2vw, 88px); letter-spacing: 0.10em; text-transform: uppercase; text-shadow: 0 4px 16px rgba(7,18,32,0.82), 0 2px 4px rgba(0,0,0,0.65); margin: 0; line-height: 1; }
+      #sv-loading-wrap { position: relative; max-width: 460px; width: 100%; background: rgba(11,22,34,0.78); backdrop-filter: blur(6px); padding: 14px 18px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.18); }
+      #sv-loading-label { color: #f4f6f8; font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; }
+      #sv-loading { width: 100%; height: 8px; background: rgba(255,255,255,0.18); border-radius: 4px; overflow: hidden; }
+      #sv-loading-fill { width: 4%; height: 100%; background: linear-gradient(90deg, #2F7BFF, #5CA0FF); border-radius: 4px; transition: width 0.15s ease; }
       #sv-rotate { display: none; position: fixed; inset: 0; z-index: 10; background: #0b1a2a; color: #fff; font: 600 20px -apple-system, sans-serif; align-items: center; justify-content: center; text-align: center; padding: 24px; }
       @media (orientation: portrait) and (pointer: coarse) { #sv-rotate { display: flex; } }
       #sv-err { display: none; position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 11; background: #a3161dee; color: #fff; font: 14px -apple-system, sans-serif; padding: 10px; border-radius: 6px; }
-      #sv-loading-fill { width: 0; height: 100%; background: #ffffffcc; border-radius: 3px; }
+      #sv-boot { position: fixed; left: 12px; top: 12px; z-index: 13; max-width: 72vw; background: #000000d1; color: #fff; font: 18px/1.35 -apple-system, sans-serif; padding: 14px 16px; white-space: pre-wrap; pointer-events: none; }
     </style>
   </head>
   <body>
-    <!-- SkiView minimal template: canvas only, no footer, no third-party logos (Phase 1 review #2) -->
     <div id="unity-container"><canvas id="unity-canvas" tabindex="-1"></canvas></div>
+    <div id="sv-splash">
+      <h1 id="sv-splash-title">SKI VIEW</h1>
+      <div id="sv-loading-wrap">
+        <div id="sv-loading-label"><span>Loading Ski View Lake</span><span id="sv-loading-pct">0%</span></div>
+        <div id="sv-loading"><div id="sv-loading-fill"></div></div>
+      </div>
+    </div>
     <div id="sv-rotate">Rotate your phone to landscape</div>
     <div id="sv-err"></div>
-    <div id="sv-loading"><div id="sv-loading-fill"></div></div>
+    <div id="sv-boot">Boot: page loaded. Player files have not reported a step yet.</div>
     <script>
       var canvas = document.querySelector("#unity-canvas");
-      function svErr(m) { var e = document.querySelector("#sv-err"); e.textContent = "Error: " + m; e.style.display = "block"; }
+      function svBoot(m) { var e = document.querySelector("#sv-boot"); if (!e) return; e.style.display = "block"; e.textContent = m; }
+      window.svBootMark = svBoot;
+      function svErr(m) { svBoot("Error: " + m + "\nNo red console line is required for this to be a stop."); var e = document.querySelector("#sv-err"); e.textContent = "Error: " + m; e.style.display = "block"; }
+      canvas.addEventListener("webglcontextlost", function (ev) { ev.preventDefault(); svErr("webglcontextlost"); }, false);
+      canvas.addEventListener("webglcontextrestored", function () { svErr("webglcontextrestored"); }, false);
+      var svDiag = document.createElement("div");
+      svDiag.id = "sv-diag";
+      svDiag.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:12;color:#fff;font:12px monospace;background:rgba(0,0,0,.55);padding:4px 6px;pointer-events:none";
+      document.body.appendChild(svDiag);
+      function svNoteLayout() {
+        var r = canvas.getBoundingClientRect();
+        svDiag.textContent = "css " + Math.round(r.width) + "x" + Math.round(r.height) + " buf " + canvas.width + "x" + canvas.height + " dpr " + (window.devicePixelRatio || 1);
+      }
       var svMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+      function svCacheControl(url) {
+        var secure = window.isSecureContext === true && typeof window.caches !== "undefined";
+        if (!secure) return "no-store";
+        url = url || "";
+        if (url.indexOf(".data") >= 0 || url.indexOf(".bundle") >= 0) return "must-revalidate";
+        return "no-store";
+      }
       var config = {
         arguments: [],
-        dataUrl: "Build/{{{ DATA_FILENAME }}}",
-        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+        cacheControl: svCacheControl,
+        dataUrl: "Build/{{{ DATA_FILENAME }}}?v=r6b17",
+        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}?v=r6b17",
 #if USE_THREADS
-        workerUrl: "Build/{{{ WORKER_FILENAME }}}",
+        workerUrl: "Build/{{{ WORKER_FILENAME }}}?v=r6b17",
 #endif
 #if USE_WASM
-        codeUrl: "Build/{{{ CODE_FILENAME }}}",
+        codeUrl: "Build/{{{ CODE_FILENAME }}}?v=r6b17",
 #endif
 #if SYMBOLS_FILENAME
-        symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}",
+        symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}?v=r6b17",
 #endif
         streamingAssetsUrl: "StreamingAssets",
         companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
-        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
-        productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+        productName: "SKI VIEW",
+        productVersion: "2.0.2-r6b17",
         showBanner: function (msg, type) { if (type === "error") { console.error(msg); svErr(msg); } else console.warn(msg); },
       };
-      if (svMobile) {
-        config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);   // test build: cap phone render resolution (memory + fill rate)
-        var meta = document.createElement("meta"); meta.name = "viewport";
-        meta.content = "width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes";
-        document.getElementsByTagName("head")[0].appendChild(meta);
+      // r6b: crisp native canvas on desktop + mobile (pre-size canvas buffer + cap 2x so 3x phones stay in budget)
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      function svSyncCanvas() {
+        var cw = Math.max(1, Math.round((window.innerWidth || canvas.clientWidth || 1920) * dpr));
+        var ch = Math.max(1, Math.round((window.innerHeight || canvas.clientHeight || 1080) * dpr));
+        if (canvas.width !== cw) canvas.width = cw;
+        if (canvas.height !== ch) canvas.height = ch;
       }
+      svSyncCanvas();
+      config.matchWebGLToCanvasSize = true;
+      window.addEventListener("resize", svNoteLayout);
+      svNoteLayout();
       var script = document.createElement("script");
-      script.src = "Build/{{{ LOADER_FILENAME }}}";
+      script.src = "Build/{{{ LOADER_FILENAME }}}?v=r6b17";
+      script.onerror = function () { svErr("The Unity loader script did not run."); };
       script.onload = function () {
-        createUnityInstance(canvas, config, function (p) { document.querySelector("#sv-loading-fill").style.width = (100 * p) + "%"; })
-          .then(function (inst) { document.querySelector("#sv-loading").remove(); window.unityInstance = inst; })
-          .catch(function (m) { console.error(m); svErr(m); });
+        svBoot("Boot: loader script running.");
+        var svMarked = false;
+        window.svBootMark = function (m) {
+          svMarked = true;
+          var nl = m.indexOf("\n");
+          var extra = nl < 0 ? "" : m.substring(nl + 1);
+          var realFault = extra.length > 0 && extra.indexOf("stalled at ") !== 0;
+          if (m.indexOf("lake-ready") >= 0 && !realFault) {
+            var e = document.querySelector("#sv-boot");
+            if (e) e.style.display = "none";
+            return;
+          }
+          svBoot(m);
+        };
+        createUnityInstance(canvas, config, function (p) {
+          var pct = Math.round(100 * p);
+          var f = document.querySelector("#sv-loading-fill"); if (f) f.style.width = Math.max(4, pct) + "%";
+          var l = document.querySelector("#sv-loading-pct"); if (l) l.textContent = pct + "%";
+          svBoot("Boot: downloading player files " + pct + "%.");
+        }).then(function (inst) {
+          window.unityInstance = inst;
+          var sp = document.querySelector("#sv-splash");
+          if (sp) { sp.style.opacity = "0"; setTimeout(function(){ sp.remove(); }, 380); }
+          svBoot("Boot: Unity instance created. Waiting for the boot scene.");
+          setTimeout(function () { if (!svMarked) svBoot("Boot: Unity started and has not reported a boot step for 8s.\nNo red browser message is required for this to be a stop."); }, 8000);
+        }).catch(function (m) { console.error(m); svErr(m); });
       };
       document.body.appendChild(script);
     </script>
