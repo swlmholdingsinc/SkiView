@@ -100,7 +100,9 @@ namespace SkiView
             var s = Free(at.HasValue ? pool3 : pool2);
             s.clip = e.clip; s.loop = false; s.pitch = pitch * (1f + Random.Range(-jitter, jitter));
             s.volume = Mathf.Clamp01(Db(srcDb + group)); if (at.HasValue) s.transform.position = at.Value;
-            s.time = Mathf.Clamp(startTime, 0f, e.clip.length - 0.05f); s.Play(); return s;
+            // WebGL throws or stalls if time is set past a clip that has not decoded (length 0 → negative max).
+            float len = e.clip.length; if (len > 0.06f) s.time = Mathf.Clamp(startTime, 0f, len - 0.05f);
+            s.Play(); return s;
         }
         // pass 19: ?mute=boat,skier,amb,ui,music and ?solo=<group> (James's captures)
         static float M(string g) => (SkiViewArgs.Has("solo") && SkiViewArgs.Get("solo") != g) || SkiViewArgs.Listed("mute", g) || SkiViewArgs.Listed("mute", "all") ? -80f : 0f;
@@ -362,8 +364,9 @@ namespace SkiView
                 gatesPrev = sim.gatesCleared;
             }
             // pass 8: rope slap at the jump cut; jump MISSED / crash -> ui_results_sting_alt (T13 decision H)
-            if (!float.IsNaN(game.JumpCutT) && float.IsNaN(cutPrev)) Play("skier_rope_slap_01", sp, -2f, GSkier, 1f, 0.05f, 0f, 0.5f);
-            cutPrev = game.JumpCutT;
+            // Latch before Play: a WebGL audio exception here used to retry every frame for the rest of the pass.
+            if (!float.IsNaN(game.JumpCutT) && float.IsNaN(cutPrev)) { cutPrev = game.JumpCutT; Play("skier_rope_slap_01", sp, -2f, GSkier, 1f, 0.05f, 0f, 0.5f); }
+            else cutPrev = game.JumpCutT;
             string jr = game.JumpResult ?? "";
             if (jr != jResPrev) { if (jr == "MISSED" || jr == "OUT THE FRONT" || jr == "FELL BACK") altStingAt = Time.time + (jr == "MISSED" ? 0.3f : 1.2f); jResPrev = jr; }
             if (game.SkipCount != skipPrev)
