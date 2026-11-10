@@ -1,0 +1,183 @@
+diff --git a/Assets/SkiView/Editor/StageContractTests.cs b/Assets/SkiView/Editor/StageContractTests.cs
+index 837b08f..6f32d5b 100644
+--- a/Assets/SkiView/Editor/StageContractTests.cs
++++ b/Assets/SkiView/Editor/StageContractTests.cs
+@@ -58,6 +58,18 @@ public static class StageContractTests
+         F(!none.Proven, "no catalog ids is not a proven reuse");
+         int rules = SkiView.Logic.PassRulesHarness.Run(m => { n++; if (fail != null) fail(m); });
+         F(rules == 0, "trick restart and 0 at 43 OFF");
++        foreach (int rope in new[] { 0, 8 })
++        {
++            string lab = rope == 0 ? "15 OFF" : "43 OFF";
++            F(SkiView.Logic.EntryGateRules.OfficialScore(rope, -2f, 6f, false, 0f) == 0f, lab + " missed left entry is 0");
++            F(!SkiView.Logic.EntryGateRules.PillFilled(-2f), lab + " missed left entry stays outlined");
++            F(SkiView.Logic.EntryGateRules.OfficialScore(rope, 2f, 6f, false, 0f) == 0f, lab + " missed right entry is 0");
++            F(!SkiView.Logic.EntryGateRules.PillFilled(2f), lab + " missed right entry stays outlined");
++            F(SkiView.Logic.EntryGateRules.OfficialScore(rope, 0f, 6f, true, 0f) == 6f, lab + " entry made and exit made is 6");
++            F(SkiView.Logic.EntryGateRules.PillFilled(0f), lab + " a made entry fills the gate pill");
++            F(SkiView.Logic.EntryGateRules.OfficialScore(rope, 0.5f, 6f, true, 2f) == 6f, lab + " exit missed on the right is 6");
++            F(SkiView.Logic.EntryGateRules.OfficialScore(rope, -0.5f, 6f, true, -2f) == 5.5f, lab + " exit missed on the left is 5.5");
++        }
+         return n;
+     }
+ }
+diff --git a/Assets/SkiView/Scripts/Logic/EntryGateRules.cs b/Assets/SkiView/Scripts/Logic/EntryGateRules.cs
+new file mode 100644
+index 0000000..d5009f1
+--- /dev/null
++++ b/Assets/SkiView/Scripts/Logic/EntryGateRules.cs
+@@ -0,0 +1,39 @@
++namespace SkiView.Logic
++{
++    /// <summary>
++    /// IWWF Tournament Water Ski Rules, Rule 8.08(b) and 8.09, and Rule 8.13 scoring procedure
++    /// (IWWF World Waterski Rules 2026, 1 March 2026, https://iwwf.sport/wp-content/uploads/2026/03/IWWF-World-Waterski-Rules-2026-FINAL.pdf).
++    /// A skier misses the entry or exit gate when the ski centreline passes outside the centre of the gate buoy.
++    /// A missed entry gate is an official 0. Buoys rounded after that miss are not added.
++    /// A missed exit gate, after the entry was made and buoy 6 was reached, is 6 if the skier is outside on the
++    /// right, and 5.5 if outside on the left. The same line is used at every rope length.
++    /// </summary>
++    public static class EntryGateRules
++    {
++        public const float GateHalfM = 1.25f;
++
++        public static bool Made(float absX)
++        {
++            if (float.IsNaN(absX) || float.IsInfinity(absX)) return false;
++            return absX <= GateHalfM;
++        }
++
++        public static bool PillFilled(float xAtGate) => Made(Abs(xAtGate));
++
++        public static float OfficialScore(int rope, float xAtEntry, float buoysIfEntryMade, bool exitJudged, float xAtExit)
++        {
++            if (rope < 0) rope = 0;
++            if (rope > 8) rope = 8;
++            if (!Made(Abs(xAtEntry))) return 0f;
++            float buoys = buoysIfEntryMade;
++            if (float.IsNaN(buoys) || buoys < 0f) buoys = 0f;
++            if (buoys > 6f) buoys = 6f;
++            if (!exitJudged) return buoys;
++            if (Made(Abs(xAtExit))) return buoys;
++            if (buoys < 5.5f) return buoys;
++            return xAtExit > 0f ? 6f : 5.5f;
++        }
++
++        static float Abs(float v) => v < 0f ? -v : v;
++    }
++}
+diff --git a/Assets/SkiView/Scripts/Logic/EntryGateRules.cs.meta b/Assets/SkiView/Scripts/Logic/EntryGateRules.cs.meta
+new file mode 100644
+index 0000000..668e194
+--- /dev/null
++++ b/Assets/SkiView/Scripts/Logic/EntryGateRules.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: f3a8c1d74e2b49b0a6c5d8e17f204b91
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Scripts/SkiViewClinic.cs b/Assets/SkiView/Scripts/SkiViewClinic.cs
+index a92eba8..5194c6d 100644
+--- a/Assets/SkiView/Scripts/SkiViewClinic.cs
++++ b/Assets/SkiView/Scripts/SkiViewClinic.cs
+@@ -164,8 +164,7 @@ namespace SkiView
+             if (!Active) return;
+             if (ActiveLessonId == "deep_water_start") return; // handled by NotifyDeepStartOutcome
+             LastFell = fell; LastBuoys = buoys;
+-            LastGates = gatesCleared || (game != null && game.sim != null && (game.sim.last.exitGate || game.sim.last.clean));
+-            if (!LastGates && buoys >= 1f) LastGates = true; // buoy1 implies gates in our course
++            LastGates = gatesCleared && (game == null || game.sim == null || !game.sim.entryMissed);
+             bool ok = EvaluateComplete(ActiveLessonId, fell, buoys, LastGates, game);
+             LastComplete = ok;
+             if (ok)
+diff --git a/Assets/SkiView/Scripts/SkierSim.cs b/Assets/SkiView/Scripts/SkierSim.cs
+index 0060d18..afc4894 100644
+--- a/Assets/SkiView/Scripts/SkierSim.cs
++++ b/Assets/SkiView/Scripts/SkierSim.cs
+@@ -118,7 +118,7 @@ namespace SkiView
+ 
+         // pass state
+         public bool scoring;
+-        public bool gatesCleared, awaitingExit, fallen, passDone;
++        public bool gatesCleared, entryMissed, awaitingExit, fallen, passDone;
+         public int nextBuoy;
+         public float passBuoys, pendingHalf;
+         public int roundedBalls;   // balls rounded this pass (each worth 0.5 on the round + 0.5 on the cross / exit gate for ball 6)
+@@ -127,8 +127,10 @@ namespace SkiView
+         public PassResult last;
+         public PassResult Finish(bool clean)
+         {
+-            last = new PassResult { buoys = Math.Min(6f, passBuoys), rope = ropeIndex, rounded = roundedBalls, clean = clean && passBuoys >= 5.99f,
+-                exitGate = clean, why = message, id = last.id + 1 };
++            float buoys = entryMissed ? 0f : Math.Min(6f, passBuoys);
++            last = new PassResult { buoys = buoys, rope = ropeIndex, rounded = entryMissed ? 0 : roundedBalls,
++                clean = !entryMissed && clean && buoys >= 5.99f,
++                exitGate = !entryMissed && clean, why = message, id = last.id + 1 };
+             return last;
+         }
+         public static string Fmt(float b) { int w = (int)Math.Floor(b + 1e-3f); return (b - w >= 0.49f ? $"{w}.5" : w.ToString()); }
+@@ -163,7 +165,7 @@ namespace SkiView
+ 
+         public void BeginPass()
+         {
+-            scoring = true; gatesCleared = false; awaitingExit = false; passDone = false; rwLoad = 0f; rwSlack = 0f;
++            scoring = true; gatesCleared = false; entryMissed = false; awaitingExit = false; passDone = false; rwLoad = 0f; rwSlack = 0f;
+             nextBuoy = 0; passBuoys = 0; pendingHalf = 0; roundedBalls = 0; apGatePhase = -1; PreGateGlide = false; z = prevZ = 1e4f; message = "THROUGH THE GATES"; entryMin = exitMin = float.MaxValue; entryAng = exitAng = 0f;
+         }
+ 
+@@ -234,11 +236,20 @@ namespace SkiView
+                 if (z <= GATE_Z + GATE_WIN && prevZ > GATE_Z - GATE_WIN) { entryMin = Math.Min(entryMin, SegMinAbsX(px, prevZ, x, z, GATE_Z + GATE_WIN, GATE_Z - GATE_WIN)); entryAng = Math.Max(entryAng, CrossAngle(px, prevZ, x, z)); }
+                 if (prevZ >= GATE_Z - GATE_WIN && z < GATE_Z - GATE_WIN)
+                 {
+-                    float tolE = GateTol(GATE_ENTRY_HALF + GateExtraM(), entryAng); bool ok = entryMin <= tolE;
+-                    GateLog?.Invoke($"entry gate: closest {entryMin:0.00} m from centre (tolerance {tolE:0.00}, crossing {entryAng:0}°, gate balls ±{GATE_BALL:0.00} at z {GATE_Z:0}) skier now x {x:0.00} z {z:0.00} -> {(ok ? "THROUGH" : "MISSED")}");
+-                    if (ok) { gatesCleared = true; message = "BUOY 1 · RIGHT"; }
+-                    else if (missGatesEnds) { Fall("Missed the entrance gates"); return; }
+-                    else gatesCleared = true;
++                    // IWWF 8.08(b): outside the centre of the gate buoy is a miss. Extra metres and the angled bonus do not count.
++                    bool ok = SkiView.Logic.EntryGateRules.Made(entryMin);
++                    GateLog?.Invoke($"entry gate: closest {entryMin:0.00} m from centre (half {SkiView.Logic.EntryGateRules.GateHalfM:0.00}, crossing {entryAng:0}°, gate balls ±{GATE_BALL:0.00} at z {GATE_Z:0}) skier now x {x:0.00} z {z:0.00} -> {(ok ? "THROUGH" : "MISSED")}");
++                    if (ok) { gatesCleared = true; entryMissed = false; message = "BUOY 1 · RIGHT"; }
++                    else
++                    {
++                        entryMissed = true; gatesCleared = false;
++                        passBuoys = 0f; pendingHalf = 0f; roundedBalls = 0;
++                        message = x >= 0f ? "Missed the entrance gates (right)" : "Missed the entrance gates (left)";
++                        scoring = false;
++                        if (missGatesEnds) { Fall(message); return; }
++                        passDone = true;
++                        return;
++                    }
+                 }
+             }
+             if (gatesCleared && nextBuoy < 6)
+@@ -274,7 +285,7 @@ namespace SkiView
+                 if (z <= EXIT_Z + GATE_WIN && prevZ > EXIT_Z - GATE_WIN) { exitMin = Math.Min(exitMin, SegMinAbsX(px, prevZ, x, z, EXIT_Z + GATE_WIN, EXIT_Z - GATE_WIN)); exitAng = Math.Max(exitAng, CrossAngle(px, prevZ, x, z)); }
+                 if (prevZ >= EXIT_Z - GATE_WIN && z < EXIT_Z - GATE_WIN)
+                 {
+-                    float tolX = GateTol(GATE_EXIT_HALF + GateExtraM(), exitAng); bool ok = exitMin <= tolX;
++                    bool ok = SkiView.Logic.EntryGateRules.Made(exitMin); float tolX = SkiView.Logic.EntryGateRules.GateHalfM;
+                     GateLog?.Invoke($"exit gate: closest {exitMin:0.00} m from centre (tolerance {tolX:0.00}, crossing {exitAng:0}°, gate balls ±{GATE_BALL:0.00} at z {EXIT_Z:0}) skier now x {x:0.00} z {z:0.00} -> {(ok ? "THROUGH" : "MISSED")}, balls {passBuoys + (ok && pendingHalf != 0 ? 0.5f : 0f):0.0}");
+                     if (ok)
+                     {
+diff --git a/Assets/SkiView/Scripts/UI/SkiViewUI.P19.cs b/Assets/SkiView/Scripts/UI/SkiViewUI.P19.cs
+index 2338b2a..164e148 100644
+--- a/Assets/SkiView/Scripts/UI/SkiViewUI.P19.cs
++++ b/Assets/SkiView/Scripts/UI/SkiViewUI.P19.cs
+@@ -596,7 +596,8 @@ namespace SkiView.UI
+             pips.style.display = inPass ? DisplayStyle.Flex : DisplayStyle.None;
+             if (inPass)
+             {
+-                pipEls[0].EnableInClassList("is-cleared", sim.gatesCleared); pipEls[0].EnableInClassList("is-pending", !sim.gatesCleared);
++                bool gateOk = sim.gatesCleared && !sim.entryMissed;
++                pipEls[0].EnableInClassList("is-cleared", gateOk); pipEls[0].EnableInClassList("is-pending", !gateOk);
+                 for (int i = 0; i < 6; i++)
+                 {
+                     var e = pipEls[i + 1]; float got = sim.passBuoys - i;
