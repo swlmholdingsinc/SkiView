@@ -43,7 +43,7 @@ on:
       ios_build_number:
         description: "CFBundleVersion / CURRENT_PROJECT_VERSION. Must be > 202."
         type: string
-        default: "203"
+        default: "205"
       xcode_path:
         description: "Xcode.app to select on the runner"
         type: string
@@ -200,7 +200,7 @@ jobs:
             <key>uploadSymbols</key>
             <true/>
             <key>testFlightInternalTestingOnly</key>
-            <true/>
+            <false/>
             <key>signingStyle</key>
             <string>manual</string>
             <key>signingCertificate</key>
