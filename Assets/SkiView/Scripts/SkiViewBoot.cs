@@ -65,10 +65,27 @@ namespace SkiView
 
 #if UNITY_WEBGL && !UNITY_EDITOR
         [DllImport("__Internal")] static extern void SkiViewBootMark(string message);
+        [DllImport("__Internal")] static extern int SkiViewPrepareWebLoad();
         static void Page(string message) { try { SkiViewBootMark(message); } catch (Exception) { } }
+        static bool PrepareWebLoad() { try { return SkiViewPrepareWebLoad() != 0; } catch (Exception) { return false; } }
 #else
         static void Page(string message) { if (message == null) return; }
+        static bool PrepareWebLoad() { return true; }
 #endif
+
+        static string Flatten(Exception ex)
+        {
+            if (ex == null) return null;
+            string text = null;
+            int guard = 0;
+            while (ex != null && guard++ < 6)
+            {
+                if (!string.IsNullOrEmpty(ex.Message))
+                    text = text == null ? ex.Message : text + " | " + ex.Message;
+                ex = ex.InnerException;
+            }
+            return text;
+        }
 
         /// <summary>
         /// Parameterless InitializeAsync releases its handle before a coroutine resumes, so IsValid is false after a successful init.
@@ -148,16 +165,20 @@ namespace SkiView
 
         IEnumerator BootBody()
         {
-            SetPhase("addressables-init");
+            bool cacheSupported = PrepareWebLoad();
+            string settingsUrl = SkiViewBootContract.SettingsUrl(Application.streamingAssetsPath);
+            SetPhase("addressables-init " + (cacheSupported ? "cache=browser" : "cache=direct") + " " + settingsUrl);
             var init = Addressables.InitializeAsync(false);
             yield return init;
             bool valid = init.IsValid();
             bool succeeded = valid && init.Status == AsyncOperationStatus.Succeeded;
-            string exceptionMessage = valid && init.OperationException != null ? init.OperationException.Message : null;
+            string exceptionMessage = Flatten(valid ? init.OperationException : null);
             if (valid) Addressables.Release(init);
             string fault;
             if (!InitAllowsLoad(valid, succeeded, exceptionMessage, out fault))
             {
+                if (!succeeded)
+                    fault = SkiViewBootContract.DescribeInitFailure(fault, cacheSupported, settingsUrl);
                 SetPhase("init-failed", fault);
                 yield break;
             }

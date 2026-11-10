@@ -26,6 +26,19 @@ public static class StageContractTests
         F(106805050L >= CatalogCohesion.MaxBundleBytes, "the shared bundle is over 100 MiB");
         F(104857599L < CatalogCohesion.MaxBundleBytes, "one byte under 100 MiB is inside the cap");
 
+        F(!SkiViewBootContract.BrowserCacheSupported(false, false), "plain HTTP on a LAN IP has no Cache API");
+        F(!SkiViewBootContract.BrowserCacheSupported(false, true), "an insecure origin does not keep UnityCache");
+        F(SkiViewBootContract.BrowserCacheSupported(true, true), "127.0.0.1 and https keep the Cache API");
+        string settings = SkiViewBootContract.SettingsUrl("http://192.168.1.155:8095/StreamingAssets");
+        F(settings == "http://192.168.1.155:8095/StreamingAssets/aa/settings.json", "runtime data is settings.json under StreamingAssets/aa");
+        F(SkiViewBootContract.CacheControl(false, false, settings) == "no-store", "a LAN origin fetches settings.json directly");
+        F(SkiViewBootContract.CacheControl(true, true, "http://127.0.0.1:8095/Build/player.data") == "must-revalidate", "a secure origin still caches the player data file");
+        F(SkiViewBootContract.CacheControl(true, true, "http://127.0.0.1:8095/aa/core_shared.bundle") == "must-revalidate", "a secure origin still caches bundles");
+        F(SkiViewBootContract.CacheControl(true, true, settings) == "no-store", "settings.json is not put in UnityCache");
+        string named = SkiViewBootContract.DescribeInitFailure("Addressables - Unable to load runtime data at location ResourceManagerRuntimeData.", false, settings);
+        F(named.IndexOf("Cache API", StringComparison.Ordinal) >= 0 && named.IndexOf(settings, StringComparison.Ordinal) >= 0, "init failure names the cache step and the settings url");
+        F(SkiViewBootContract.DescribeInitFailure("load scene failed", false, settings) == "load scene failed", "a later load error stays a load error");
+
         var hashed = CatalogCohesion.Check(
             new[] { "\"core_home_scenes_all_0123456789abcdef0123456789abcdef.bundle\"" },
             new[] { "core_home_scenes_all.bundle" });

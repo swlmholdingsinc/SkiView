@@ -7,5 +7,17 @@ mergeInto(LibraryManager.library, {
       el.textContent = msg;
     }
     if (window.svBootMark) window.svBootMark(msg);
+  },
+
+  SkiViewPrepareWebLoad: function () {
+    var secure = window.isSecureContext === true && typeof window.caches !== "undefined";
+    if (secure) return 1;
+    if (typeof Module === "undefined") return 0;
+    Module.cacheControl = function () { return "no-store"; };
+    Module.cachedFetch = function (resource, init) {
+      if (typeof Module.fetchWithProgress === "function") return Module.fetchWithProgress(resource, init);
+      return fetch(resource, init);
+    };
+    return 0;
   }
 });

@@ -50,8 +50,16 @@
         svDiag.textContent = "css " + Math.round(r.width) + "x" + Math.round(r.height) + " buf " + canvas.width + "x" + canvas.height + " dpr " + (window.devicePixelRatio || 1);
       }
       var svMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+      function svCacheControl(url) {
+        var secure = window.isSecureContext === true && typeof window.caches !== "undefined";
+        if (!secure) return "no-store";
+        url = url || "";
+        if (url.indexOf(".data") >= 0 || url.indexOf(".bundle") >= 0) return "must-revalidate";
+        return "no-store";
+      }
       var config = {
         arguments: [],
+        cacheControl: svCacheControl,
         dataUrl: "Build/{{{ DATA_FILENAME }}}?v=r6b17",
         frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}?v=r6b17",
 #if USE_THREADS
