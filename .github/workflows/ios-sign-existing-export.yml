@@ -1,10 +1,11 @@
 # Sign the private Unity iOS Xcode export and optionally upload to TestFlight.
 # Public repo: never commit the tarball or signing material.
-# upload_to_testflight defaults off. Scott approved a one-time upload of
-# build 203 to internal TestFlight (himself only) once this workflow is
-# dispatched with the input set true.
+# upload_to_testflight defaults off. Scott approved a one-time upload to
+# internal TestFlight (himself only) once this workflow is dispatched with
+# the input set true. The build number comes from the ios_build_number input.
 #
-# Team NGK9AFWK5C, bundle com.swlm.cutline, marketing 2.0.2, build 203.
+# Team NGK9AFWK5C, bundle com.swlm.cutline, marketing 2.0.2.
+# The build number comes from the ios_build_number input.
 # The export is hosted at the unguessable IOS_EXPORT_URL secret (Cloudflare
 # Worker). IOS_EXPORT_GITHUB_TOKEN may stay empty. Download with curl.
 # sha256 62e91ec7032243818f6f8216509d72edfc7db56fb99ef579b21c93511a5b74dc
@@ -47,6 +48,10 @@ on:
         description: "Xcode.app to select on the runner"
         type: string
         default: /Applications/Xcode_26.6.app
+      export_sha256:
+        description: "Expected sha256 of the export tarball; overrides the IOS_EXPORT_SHA256 secret when set"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -79,9 +84,23 @@ jobs:
         env:
           IOS_EXPORT_URL: ${{ secrets.IOS_EXPORT_URL }}
           IOS_EXPORT_SHA256: ${{ secrets.IOS_EXPORT_SHA256 }}
+          EXPORT_SHA256_INPUT: ${{ inputs.export_sha256 }}
           IOS_EXPORT_GITHUB_TOKEN: ${{ secrets.IOS_EXPORT_GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          if [ -n "${EXPORT_SHA256_INPUT}" ]; then
+            case "${EXPORT_SHA256_INPUT}" in
+              *[!0-9a-f]*)
+                echo "export_sha256 must be exactly 64 lowercase hex characters" >&2
+                exit 1
+                ;;
+            esac
+            if [ "${#EXPORT_SHA256_INPUT}" -ne 64 ]; then
+              echo "export_sha256 must be exactly 64 lowercase hex characters" >&2
+              exit 1
+            fi
+            IOS_EXPORT_SHA256="${EXPORT_SHA256_INPUT}"
+          fi
           if [ -z "${IOS_EXPORT_URL}" ] || [ -z "${IOS_EXPORT_SHA256}" ]; then
             echo "IOS_EXPORT_URL and IOS_EXPORT_SHA256 secrets must be set." >&2
             exit 1
