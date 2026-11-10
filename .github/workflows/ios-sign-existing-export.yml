@@ -5,14 +5,21 @@
 # dispatched with the input set true.
 #
 # Team NGK9AFWK5C, bundle com.swlm.cutline, marketing 2.0.2, build 203.
-# Private export (repo stays private):
-#   swlmholdingsinc/skiview-archive-private
-#   release ios-export-2.0.2-203-20261109
-#   asset API https://api.github.com/repos/swlmholdingsinc/skiview-archive-private/releases/assets/730272312
-#   sha256 62e91ec7032243818f6f8216509d72edfc7db56fb99ef579b21c93511a5b74dc
+# The export is hosted at the unguessable IOS_EXPORT_URL secret (Cloudflare
+# Worker). IOS_EXPORT_GITHUB_TOKEN may stay empty. Download with curl.
+# sha256 62e91ec7032243818f6f8216509d72edfc7db56fb99ef579b21c93511a5b74dc
 #
 # Runner: macos-26-intel (free unlimited standard runner on this public repo).
 # Recheck Xcode at run time. Default 26.6 as of runner-images 20260824.0517.1.
+#
+# 2026-11-10: run 42767054659 failed at archive (exit 65) with
+#   "Unity-iPhone" requires a provisioning profile.
+# The p12 and profile imported, but xcodebuild was not given a distribution
+# identity or the app-target profile specifier. Unity-iPhone reads
+# PROVISIONING_PROFILE_APP / PROVISIONING_PROFILE_SPECIFIER_APP, and ships
+# with CODE_SIGN_IDENTITY=iPhone Developer. Do not set a global
+# PROVISIONING_PROFILE_SPECIFIER — UnityFramework and GameAssembly must
+# not receive the App Store app profile.
 
 name: Sign existing iOS Xcode export
 
@@ -110,6 +117,8 @@ jobs:
           fi
           KEYCHAIN="$RUNNER_TEMP/skiview-signing.keychain-db"
           PASS="$(openssl rand -base64 32)"
+          umask 077
+          printf '%s' "$PASS" > "$RUNNER_TEMP/keychain-pass"
           security create-keychain -p "$PASS" "$KEYCHAIN"
           security set-keychain-settings -lut 21600 "$KEYCHAIN"
           security unlock-keychain -p "$PASS" "$KEYCHAIN"
@@ -117,14 +126,38 @@ jobs:
           security import "$RUNNER_TEMP/dist.p12" -k "$KEYCHAIN" -P "$IOS_DISTRIBUTION_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
           security set-key-partition-list -S apple-tool:,apple: -s -k "$PASS" "$KEYCHAIN"
           security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | sed 's/"//g')
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          echo "$IOS_PROFILE_BASE64" | base64 --decode > "$HOME/Library/MobileDevice/Provisioning Profiles/skiview-appstore.mobileprovision"
-          rm -f "$RUNNER_TEMP/dist.p12"
-          echo "KEYCHAIN_PATH=$KEYCHAIN" >> "$GITHUB_ENV"
+          security find-identity -v -p codesigning "$KEYCHAIN"
+          PROFILE_RAW="$RUNNER_TEMP/profile.mobileprovision"
+          echo "$IOS_PROFILE_BASE64" | base64 --decode > "$PROFILE_RAW"
+          security cms -D -i "$PROFILE_RAW" > "$RUNNER_TEMP/profile.plist"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' "$RUNNER_TEMP/profile.plist")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print Name' "$RUNNER_TEMP/profile.plist")
+          if [ -z "$PROFILE_UUID" ] || [ -z "$PROFILE_NAME" ]; then
+            echo "Could not read UUID/Name from the provisioning profile" >&2
+            exit 1
+          fi
+          echo "Installed profile name=$PROFILE_NAME uuid=$PROFILE_UUID"
+          # Xcode 16+ reads UserData; keep the legacy path too.
+          DEST1="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+          DEST2="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$DEST1" "$DEST2"
+          cp "$PROFILE_RAW" "$DEST1/${PROFILE_UUID}.mobileprovision"
+          cp "$PROFILE_RAW" "$DEST2/${PROFILE_UUID}.mobileprovision"
+          rm -f "$RUNNER_TEMP/dist.p12" "$PROFILE_RAW" "$RUNNER_TEMP/profile.plist"
+          {
+            echo "KEYCHAIN_PATH=$KEYCHAIN"
+            echo "KEYCHAIN_PASS_FILE=$RUNNER_TEMP/keychain-pass"
+            echo "PROFILE_UUID=$PROFILE_UUID"
+            echo "PROFILE_NAME=$PROFILE_NAME"
+          } >> "$GITHUB_ENV"
 
       - name: Write ExportOptions.plist
         run: |
           set -euo pipefail
+          if [ -z "${PROFILE_NAME:-}" ]; then
+            echo "PROFILE_NAME was not set by the import step" >&2
+            exit 1
+          fi
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -132,6 +165,8 @@ jobs:
           <dict>
             <key>method</key>
             <string>app-store</string>
+            <key>destination</key>
+            <string>export</string>
             <key>teamID</key>
             <string>${APPLE_TEAM_ID}</string>
             <key>uploadSymbols</key>
@@ -140,6 +175,13 @@ jobs:
             <true/>
             <key>signingStyle</key>
             <string>manual</string>
+            <key>signingCertificate</key>
+            <string>iPhone Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${BUNDLE_ID}</key>
+              <string>${PROFILE_NAME}</string>
+            </dict>
           </dict>
           </plist>
           EOF
@@ -156,9 +198,19 @@ jobs:
             echo "ios_build_number must be greater than 202 (got $IOS_BUILD_NUMBER)" >&2
             exit 1
           fi
+          if [ -z "${PROFILE_UUID:-}" ] || [ -z "${PROFILE_NAME:-}" ]; then
+            echo "PROFILE_UUID / PROFILE_NAME were not set by the import step" >&2
+            exit 1
+          fi
+          if [ -n "${KEYCHAIN_PATH:-}" ] && [ -f "${KEYCHAIN_PASS_FILE:-}" ]; then
+            security unlock-keychain -p "$(cat "$KEYCHAIN_PASS_FILE")" "$KEYCHAIN_PATH"
+          fi
           cd "$PROJECT_DIR"
           xcodebuild -list
           mkdir -p "$RUNNER_TEMP/out"
+          # Unity-iPhone binds the profile through *_APP vars. Do not pass a
+          # global PROVISIONING_PROFILE_SPECIFIER (it would be applied to
+          # UnityFramework / GameAssembly, which cannot use this app profile).
           xcodebuild \
             -project Unity-iPhone.xcodeproj \
             -scheme "$SCHEME" \
@@ -167,8 +219,13 @@ jobs:
             -archivePath "$RUNNER_TEMP/out/SkiView.xcarchive" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="iPhone Distribution" \
+            "CODE_SIGN_IDENTITY[sdk=iphoneos*]=iPhone Distribution" \
+            PROVISIONING_PROFILE_APP="$PROFILE_UUID" \
+            PROVISIONING_PROFILE_SPECIFIER_APP="$PROFILE_NAME" \
             CURRENT_PROJECT_VERSION="$IOS_BUILD_NUMBER" \
             MARKETING_VERSION="$MARKETING_VERSION" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN_PATH" \
             archive
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/out/SkiView.xcarchive" \
@@ -209,3 +266,4 @@ jobs:
           if [ -n "${KEYCHAIN_PATH:-}" ]; then
             security delete-keychain "$KEYCHAIN_PATH" || true
           fi
+          rm -f "${KEYCHAIN_PASS_FILE:-}"
