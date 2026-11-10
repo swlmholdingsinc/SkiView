@@ -1,0 +1,168 @@
+--- a/Assets/SkiView/Scripts/SkierSim.cs
++++ b/Assets/SkiView/Scripts/SkierSim.cs
+@@ -92,6 +92,9 @@
+         /// <summary>Shortline autopilot gain and pre-turn lead (m before the ball where it already aims at the next ball), per rope.</summary>
+         public static readonly float[] RW_AP_K = { 1.5000f, 1.5000f, 0.6000f, 1.0000f, 1.0000f, 3.0000f, 0.3000f, 0.6000f, 1.5000f };
+         public static readonly float[] RW_AP_LEAD = { 0.0000f, 0.0000f, 0.0000f, 0.0000f, 0.0000f, 5.0000f, 0.0000f, 0.0000f, 0.0000f };
++        /// <summary>C3: metres past the ball the autopilot still aims at it. 0 on 38-43 keeps those ropes unchanged. C4 look-ahead is 15 OFF only.</summary>
++        public static readonly float[] AP_APEX_LAG_M = { 4.5f, 5.0f, 6.0f, 4.0f, 3.0f, 0f, 0f, 0f, 0f };
++        public const float AP_LOOK0_S = 0.45f;
+         /// <summary>Accumulated slack / line load this pass (rad). Reset by BeginPass and Recover.</summary>
+         public float rwLoad, rwSlack;
+         float RwTh0 => Math.Max(0.9f, RW_THETA0[RwI] - rwLoad);
+@@ -354,11 +357,13 @@
+                 if (apGatePhase == 1) return 0f;                     // hands off: tall upright glide
+                 target = 13.5f * 0.7f * Sign(BuoyX(0));
+             }
+-            if (inPass && gatesCleared && nextBuoy < 6) target = BuoyX(nextBuoy) / BUOY_OFFSET * 13.5f;
++            int apB = inPass && gatesCleared && nextBuoy > 0 && nextBuoy <= 6 && z > BuoyZ(nextBuoy - 1) - AP_APEX_LAG_M[RwI] ? nextBuoy - 1 : -1;
++            if (inPass && gatesCleared && (apB >= 0 || nextBuoy < 6)) target = BuoyX(apB >= 0 ? apB : nextBuoy) / BUOY_OFFSET * 13.5f;
+             if (inPass && awaitingExit && !float.IsNaN(testExitX)) target = testExitX;   // capture/test: deliberately wide exit
+             float xp = Lateral + LateralVel * 0.3f;
+-            if (ropeIndex > 0 && inPass && gatesCleared && nextBuoy < 6 && !awaitingExit) { int nb = nextBuoy < 5 && z < BuoyZ(nextBuoy) + RW_AP_LEAD[RwI] ? nextBuoy + 1 : nextBuoy; return Clamp(-RW_AP_K[RwI] * (BuoyX(nb) / BUOY_OFFSET * RW_AP_W[RwI] - xp), -1f, 1f); }   // b10.48 shortline autopilot
+-            return Clamp(-0.3f * (target - xp), -1f, 1f);
++            if (ropeIndex > 0 && inPass && gatesCleared && (apB >= 0 || (nextBuoy < 6 && !awaitingExit))) { int nb = apB >= 0 ? apB : (nextBuoy < 5 && z < BuoyZ(nextBuoy) + RW_AP_LEAD[RwI] ? nextBuoy + 1 : nextBuoy); return Clamp(-RW_AP_K[RwI] * (BuoyX(nb) / BUOY_OFFSET * RW_AP_W[RwI] - xp), -1f, 1f); }   // b10.48 shortline autopilot
++            float xp0 = ropeIndex == 0 && inPass && gatesCleared && (apB >= 0 || nextBuoy < 6) ? Lateral + LateralVel * AP_LOOK0_S : xp;
++            return Clamp(-0.3f * (target - xp0), -1f, 1f);
+         }
+ 
+         public string Score() => Fmt(last.buoys) + " @ " + ROPE_LABEL[last.rope];
+--- a/Assets/SkiView/Scripts/SkierRig.cs
++++ b/Assets/SkiView/Scripts/SkierRig.cs
+@@ -184,8 +184,8 @@
+         [Tooltip("#125 GRIP-ELBOW-v1g: R lift timing from ballTau alone (not the L reach phase) before the ball")] public bool rReachOwn = true;
+         [Tooltip("#125 GRIP-ELBOW-v1g: R reach path, 0 = straight line, 1 = swing about the shoulder")] public float rReachArc = 0.5f;
+         [Tooltip("#125 GRIP-ELBOW-v1g: max swing rate of the held R hand target about the shoulder (deg/s, 0 = off); 330 = 11 deg/frame at 29.97")] public float rHoldMaxDegPerS = 330f;
+-        [Tooltip("#125 GRIP-ELBOW-L A2: L-only. L release/re-grab weight rate-limited both ways (lRelRampS); L reach/release targets swung about the L shoulder (no straight-lerp elbow fold); L hand target direction in the chest frame swings at most lMaxDegPerS (330 = 11 deg/frame at 29.97). R untouched.")] public bool lEaseOn = true; public float lRelRampS = 0.58f, lMaxDegPerS = 330f; float lRelW; bool lEaseInit, lDirInit; Vector3 lDir;
+-        [Tooltip("#125 GRIP-ELBOW-L A3: L re-grab (weight going down, after the reach/release peak) ramps over lRegrabRampS; the L tuck pole weight eases at the same rate; held-L before the ball (L weight 0, ballTau>0) is exactly base (plain reach lerp, no swing limit).")] public float lRegrabRampS = 0.7f, lRegrabMaxDegPerS = 235f; float lTuckW; bool lPreHeld, lRegrabbing, lPoleInit; Vector3 lPoleDir;   // A3b: L elbow pole direction (chest frame) gets the same swing limit; during the L re-grab both limits are lRegrabMaxDegPerS
++        [Tooltip("#125 GRIP-ELBOW-L A2: L-only. L release/re-grab weight rate-limited both ways (lRelRampS); L reach/release targets swung about the L shoulder (no straight-lerp elbow fold); L hand target direction in the chest frame swings at most lMaxDegPerS (330 = 11 deg/frame at 29.97). R untouched.")] public bool lEaseOn = true; public float lRelRampS = 0.30f, lMaxDegPerS = 330f; float lRelW; bool lEaseInit, lDirInit; Vector3 lDir;
++        [Tooltip("#125 GRIP-ELBOW-L A3: L re-grab (weight going down, after the reach/release peak) ramps over lRegrabRampS; the L tuck pole weight eases at the same rate; held-L before the ball (L weight 0, ballTau>0) is exactly base (plain reach lerp, no swing limit).")] public float lRegrabRampS = 0.33f, lRegrabMaxDegPerS = 235f; float lTuckW; bool lPreHeld, lRegrabbing, lPoleInit; Vector3 lPoleDir;   // A3b: L elbow pole direction (chest frame) gets the same swing limit; during the L re-grab both limits are lRegrabMaxDegPerS
+         static Vector3 SwingLerp125(Vector3 o, Vector3 a, Vector3 b, float w) { Vector3 a0 = a - o, a1 = b - o; Vector3 h0 = new Vector3(a0.x, 0f, a0.z), h1 = new Vector3(a1.x, 0f, a1.z); if (h0.sqrMagnitude < 1e-5f || h1.sqrMagnitude < 1e-5f) return Vector3.Lerp(a, b, w); Vector3 hd = Vector3.Slerp(h0.normalized, h1.normalized, w) * Mathf.Lerp(h0.magnitude, h1.magnitude, w); return new Vector3(o.x + hd.x, Mathf.Lerp(a.y, b.y, w), o.z + hd.z); }   // Pro horizontal-arc swing (never arcs upward over +Y!)
+         Vector3 rHoldDir; bool rHoldInit;
+         [Tooltip("#125 GRIP-ELBOW-v1g: 1 = ease the R reach back down after the ball too (rReachDownS); 0 = v2.7 drop at the ball (a slow drop puts the R palm into the bar f293-299)")] public float rReachHoldAfter = 0f;
+@@ -327,7 +327,7 @@
+         void ArmDbg125(float armLen) { if (!armDbgInit) { armDbgInit = true; armDbgPath = System.Environment.GetEnvironmentVariable("SKIVIEW_ARMDBG125"); if (!string.IsNullOrEmpty(armDbgPath)) System.IO.File.WriteAllText(armDbgPath, "frame,tau,relL,relR,rhWL,rhWR,armLen,laL,lbL,laR,lbR,shLx,shLy,shLz,tLx,tLy,tLz,hLx,hLy,hLz,shRx,shRy,shRz,tRx,tRy,tRz,hRx,hRy,hRz,dTgtL,dHandL,missL,dTgtR,dHandR,missR,clavL,clavR,clearPrev,clearArmsPrev,rhHoldL,fc_r6,pass_r6,frame_r6,cap_r6,dt_r6,keep_r6,latch_r6,fbN_r6,fbW_r6,hdL_r6,hdR_r6,lim_r6,elbIntL_r6,elbIntR_r6,pullW_r7,side8,rf8,endX8,endY8,endZ8,kpX8,kpY8,kpZ8,axX8,axY8,axZ8,fpPreX8,fpPreY8,fpPreZ8,eX8,eY8,eZ8,tLX8,tLY8,tLZ8,tRX8,tRY8,tRZ8,hRX8,hRY8,hRZ8,palmLX8,palmLY8,palmLZ8,palmRX8,palmRY8,palmRZ8,hdFinR8,hdFinL8,qRx8,qRy8,qRz8,qRw8,hipLX8,hipLY8,hipLZ8,hipRX8,hipRY8,hipRZ8\n"); } if (string.IsNullOrEmpty(armDbgPath) || !lUA || !rUA || !lH || !rH || !lLA || !rLA) return; var ic = System.Globalization.CultureInfo.InvariantCulture; System.Func<Vector3, string> V = v => string.Format(ic, "{0:0.00000},{1:0.00000},{2:0.00000}", v.x, v.y, v.z); System.IO.File.AppendAllText(armDbgPath, string.Format(ic, "{0},{1:0.000},{2:0.000},{3:0.000},{4:0.000},{5:0.000},{6:0.0000},{7:0.0000},{8:0.0000},{9:0.0000},{10:0.0000},", Time.frameCount, ballTau, ReleaseL, ReleaseR, rhWL125, rhWR125, armLen, Vector3.Distance(lUA.position, lLA.position), Vector3.Distance(lLA.position, lH.position), Vector3.Distance(rUA.position, rLA.position), Vector3.Distance(rLA.position, rH.position)) + V(lUA.position) + "," + V(armTL) + "," + V(lH.position) + "," + V(rUA.position) + "," + V(armTR) + "," + V(rH.position) + string.Format(ic, ",{0:0.0000},{1:0.0000},{2:0.0000},{3:0.0000},{4:0.0000},{5:0.0000},{6:0.00},{7:0.00},{8:0.0000},{9:0.0000},{10:0.000}\n", Vector3.Distance(lUA.position, armTL), Vector3.Distance(lUA.position, lH.position), Vector3.Distance(armTL, lH.position), Vector3.Distance(rUA.position, armTR), Vector3.Distance(rUA.position, rH.position), Vector3.Distance(armTR, rH.position), clavicle ? clavicle.LastDegL : 0f, clavicle ? clavicle.LastDegR : 0f, WaterClearance, WaterClearanceArms125, rhHoldL125).TrimEnd('\n') + string.Format(ic, ",{0},{1},{2},{3},{4:0.00000},{5},{6},{7},{8:0.000},{9:0.0000},{10:0.0000},{11},{12:0.00},{13:0.00},{14:0.000}", Time.frameCount, passId125, frameIdx125, capIdx125, driveDt, BarKeep125, barLatch125 ? 1 : 0, fbN125, fbW125, hd6L125, hd6R125, lim6_125, finCurEL125, finCurER125, pullW125) + Dbg8()); }
+         string Dbg8() { var ic = System.Globalization.CultureInfo.InvariantCulture; System.Func<Vector3, string> V = v => string.Format(ic, ",{0:0.00000},{1:0.00000},{2:0.00000}", v.x, v.y, v.z); bool hg = handleGrip && handleGrip.Seated; Vector3 pL = hg ? handleGrip.BarCentreL : Vector3.zero, pR = hg ? handleGrip.BarCentreR : Vector3.zero; float fR = -1f, fL = -1f; if (hg && d8Side != 0) { Vector3 kpN = d8Side > 0 ? pL : pR, axN = handleGrip.BarAxis(d8Side > 0), endN = d8Side > 0 ? kpN + axN * (2f * handHalf) : kpN - axN * (2f * handHalf); if (d8Side > 0) fR = Vector3.Distance(pR, endN); else fL = Vector3.Distance(pL, endN); } Quaternion q = rH ? rH.rotation : Quaternion.identity;
+             return string.Format(ic, ",{0},{1:0.0000}", d8Side, d8Rf) + V(d8End) + V(d8Kp) + V(d8Ax) + V(d8Fp) + V(d8E) + V(d8TL) + V(d8TR) + V(rH ? rH.position : Vector3.zero) + V(pL) + V(pR) + string.Format(ic, ",{0:0.0000},{1:0.0000},{2:0.00000},{3:0.00000},{4:0.00000},{5:0.00000}", fR, fL, q.x, q.y, q.z, q.w) + V(lUL ? lUL.position : Vector3.zero) + V(rUL ? rUL.position : Vector3.zero) + "\n"; }   /* p1: L/R hip (upper-leg) world positions for the leading-hip (L, LeftFootForward) and own-hip pose gates */   /* after the clavicle follow: shoulder, arm target, hand per frame */
+-        [Tooltip("#125 REACH-HANDLE-ARM-v2: arms-only release target -> 0 (re-grab) when ballTau < this (s); 0.20 = f281 in r2_a3c2 (ball f286/287)")] public float regrabDoneTau = 0.20f, freeRelTauStart = 1.25f, regrabTime125 = 0.45f;
++        [Tooltip("#125 REACH-HANDLE-ARM-v2: arms-only release target -> 0 (re-grab) when ballTau < this (s); 0.20 = f281 in r2_a3c2 (ball f286/287)")] public float regrabDoneTau = 0.00f, freeRelTauStart = 0.40f, regrabTime125 = 0.40f;
+         float releaseWLeg; float rReachS; bool rReachInit; bool regrabbing; float regrabFrom, regrabT;
+         public void Drive(float load, float carve, bool isFallen, float dt, Vector3 pylon, float turnReach,
+             RiderAction action = RiderAction.None, float actionT = 0f, float depth = 0f,
+@@ -627,8 +627,8 @@
+                 Vector3 pbH = new Vector3(pb.x, Mathf.Clamp(pb.y * 0.25f, -0.18f, 0.0f), pb.z); if (pbH.sqrMagnitude < 1e-4f) pbH = bh;
+                 Vector3 kL = lUA.position + paH.normalized * (armLen * kLen);
+                 Vector3 kR = rUA.position + pbH.normalized * (armLen * kLen);
+-                kL.y = Mathf.Clamp(kL.y, Mathf.Max(handMinY125, 0.26f), Mathf.Min(lUA.position.y + 0.02f, 0.96f));
+-                kR.y = Mathf.Clamp(kR.y, Mathf.Max(handMinY125, 0.26f), Mathf.Min(rUA.position.y + 0.02f, 0.96f));
++                kL.y = Mathf.Clamp(kL.y, Mathf.Max(handMinY125, 0.26f), Mathf.Min(lUA.position.y + 0.00f, 0.96f));
++                kR.y = Mathf.Clamp(kR.y, Mathf.Max(handMinY125, 0.26f), Mathf.Min(rUA.position.y + 0.00f, 0.96f));
+                 float reachWL = !rh125 ? reachW : hsNow < 0f ? 0f : Mathf.Max(reachW, Mathf.Clamp01(ReleaseR * 4f));
+                 if (rh125 && hsNow > 0f) { float wW = Mathf.Max(reachWL, (ReleaseR > seatRel125 || (!float.IsNaN(ballTau) && ballTau <= 0f && ballTau > -1.5f && !barLatch125)) ? rhHoldL125 : 0f); rhHoldL125 = snapAll ? wW : (holdAll || dt <= 0f) ? rhHoldL125 : Mathf.MoveTowards(rhHoldL125, wW, dt / Mathf.Max(0.01f, wW > rhHoldL125 ? reachRampS125 : holdOutDownS125)); reachWL = Mathf.SmoothStep(0f, 1f, rhHoldL125); }
+                 else if (!holdAll && dt > 0f) rhHoldL125 = 0f;
+@@ -687,7 +687,7 @@
+             DgStage125(0, tL, tR);   /* p4g-diag LOG ONLY: after wake block */
+             if (handleGrip) { handleGrip.leftFootForward = LeftFootForward; handleGrip.Seat(bar, lUA.position, rUA.position, ref tL, ref tR); }
+             DgStage125(1, tL, tR);   /* p4g-diag LOG ONLY: after Seat */
+-            if (reachHandleOn && !J && buoy > 0 && reachStraightLen > 0f) { Vector3 tL0 = tL, tR0 = tR; float sw4 = 1f - Mathf.Clamp01(wakeW125); tL = Straight125(lUA.position, tL, armLen * reachStraightLen, rhWL125 * sw4); tR = Straight125(rUA.position, tR, armLen * reachStraightLen, rhWR125 * sw4); tR += (tL - tL0) * rhWL125 * sw4; tL += (tR - tR0) * rhWR125 * (fSideP4 < 0 && barLatch125 ? 1f - Mathf.Clamp01(wakeWL125) : sw4);   /* p4f 2 */   /* p4 H: the post-latch bend-in is not re-straightened */ } if (reachHandleOn && !J && buoy > 0) { float capL = lUA.position.y + 0.02f, capR = rUA.position.y + 0.02f; if (tL.y > capL) tL.y = capL; if (tR.y > capR) tR.y = capR; } /* r5 Pro Tour: boatward reach y <= shoulder.y + 0.02 */   /* v2-r2b (d): the free hand's re-grab spot moves with the pushed-out holding hand (computed AFTER the push-out); (b) the bar is already coupled: SkiViewGame hangs the handle from the KEPT palm's bar centre after the solve, so it goes out with the hand */   /* #125 REACH-HANDLE-ARM-v2-r2 TRACE: Seat() pulls the WRIST target back by the palm offset (~8 cm, oL along the forearm) and the clavicle follow (15 deg cap, saturated) moves the shoulder after kL is placed; 1.02 x armLen left ~1 cm of slack, so the IK target sat inside reach and the handle arm bent 67-76. Re-extend the holding wrist target AFTER Seat to reachStraightLen x armLen along its own shoulder->target direction, weighted by the handle-arm reach weight. */   // #125 HANDS-GRIP-v3: wrist targets so each palm's bar centre sits on the one bar axis (before the release lerp)
++            if (reachHandleOn && !J && buoy > 0 && reachStraightLen > 0f) { Vector3 tL0 = tL, tR0 = tR; float sw4 = 1f - Mathf.Clamp01(wakeW125); tL = Straight125(lUA.position, tL, armLen * reachStraightLen, rhWL125 * sw4); tR = Straight125(rUA.position, tR, armLen * reachStraightLen, rhWR125 * sw4); tR += (tL - tL0) * rhWL125 * sw4; tL += (tR - tR0) * rhWR125 * (fSideP4 < 0 && barLatch125 ? 1f - Mathf.Clamp01(wakeWL125) : sw4);   /* p4f 2 */   /* p4 H: the post-latch bend-in is not re-straightened */ } if (reachHandleOn && !J && buoy > 0) { float capL = lUA.position.y + 0.00f, capR = rUA.position.y + 0.00f; if (tL.y > capL) tL.y = capL; if (tR.y > capR) tR.y = capR; } /* r5 Pro Tour: boatward reach y <= shoulder.y + 0.02 */   /* v2-r2b (d): the free hand's re-grab spot moves with the pushed-out holding hand (computed AFTER the push-out); (b) the bar is already coupled: SkiViewGame hangs the handle from the KEPT palm's bar centre after the solve, so it goes out with the hand */   /* #125 REACH-HANDLE-ARM-v2-r2 TRACE: Seat() pulls the WRIST target back by the palm offset (~8 cm, oL along the forearm) and the clavicle follow (15 deg cap, saturated) moves the shoulder after kL is placed; 1.02 x armLen left ~1 cm of slack, so the IK target sat inside reach and the handle arm bent 67-76. Re-extend the holding wrist target AFTER Seat to reachStraightLen x armLen along its own shoulder->target direction, weighted by the handle-arm reach weight. */   // #125 HANDS-GRIP-v3: wrist targets so each palm's bar centre sits on the one bar axis (before the release lerp)
+             DgStage125(2, tL, tR);   /* p4g-diag LOG ONLY: after Straight125/coupling */
+             Vector3 boatH = toBoat; boatH.y = 0f; if (boatH.sqrMagnitude > 1e-6f) boatH.Normalize(); else boatH = fwd;
+             Vector3 reachDir = boatH;   // #125: handle arm reaches inward toward the boat at every buoy
+@@ -697,7 +697,7 @@
+             if (Mathf.Abs(wantSide) < 0.05f) wantSide = releaseSide >= 0f ? 1f : -1f;
+             float wantRel = J ? 0f : (buoy > 0 ? (float.IsNaN(ballTau) ? Mathf.Clamp01(ph.free * 1.8f) : Mathf.Clamp01(Mathf.Min((ballTau + 0.12f) / 0.06f, (0.90f - ballTau) / 0.20f))) : Mathf.Clamp01((turnReach - 0.25f) / 0.5f));
+             releaseWLeg = Mathf.Lerp(releaseWLeg, wantRel, snapAll ? 1f : dt <= 0f ? 0f : 1f - Mathf.Exp(-12f * dt));
+-            float wantRelLeg125 = wantRel; if (reachHandleOn && !J && buoy > 0 && !float.IsNaN(ballTau) && ballTau < regrabDoneTau && ballTau > -1.5f) wantRel = 0f; else if (reachHandleOn && !J && buoy > 0 && !float.IsNaN(ballTau) && ballTau >= regrabDoneTau && ballTau < freeRelTauStart) wantRel = 1f;
++            float wantRelLeg125 = wantRel; if (reachHandleOn && !J && buoy > 0 && !float.IsNaN(ballTau) && ballTau < regrabDoneTau && ballTau > -1.5f) wantRel = 0f; else if (reachHandleOn && !J && buoy > 0 && !float.IsNaN(ballTau) && ballTau >= regrabDoneTau && ballTau < freeRelTauStart) wantRel = 1f; else if (reachHandleOn && !J && buoy > 0 && !float.IsNaN(ballTau) && ballTau >= freeRelTauStart) wantRel = 0f;
+             if (dt > 0f && regrabTime > 0f && wantRel < releaseW - 1e-4f)
+             {
+                 if (!regrabbing) { regrabbing = true; regrabFrom = releaseW; regrabT = 0f; }
+@@ -713,7 +713,7 @@
+             bool fr125 = reachHandleOn && !J && buoy > 0;
+             Transform fUL = releaseSide > 0f ? rUL : lUL;
+             Vector3 outH125 = releaseSide > 0f ? rightH125 : -rightH125;
+-            Vector3 p0Free = fUL.position + outH125 * 0.24f + fH * 0.22f + Vector3.up * 0.03f;
++            Vector3 p0Free = fUL.position + outH125 * 0.16f + fH * 0.14f + Vector3.up * 0.03f;
+             Vector3 dvFree = p0Free - frUA.position;
+             float maxFreeDist = armLen * 0.76f;
+             Vector3 free = frUA.position + (dvFree.sqrMagnitude > 1e-6f ? dvFree.normalized : Vector3.down) * Mathf.Min(dvFree.magnitude, maxFreeDist);
+--- a/Assets/SkiView/Scripts/SkierPoses.cs
++++ b/Assets/SkiView/Scripts/SkierPoses.cs
+@@ -39,7 +39,7 @@
+         public float reachKnee = 135f;   // run25 silhouette gate: master B2-REACH head ~0.45 of standing height -> deep knee (was 134, Ray v2.1 side-on)       // #125 Ray v2.1 side-on 131–138
+ 
+         [Header("Slalom hip, included shoulder-hip-knee (180 = straight)")]
+-        public float turnHip = 140f, pullHip = 142f, wakeHip = 142f, edgeHip = 140f, glideHip = 150f, reachHip = 144f;
++        public float turnHip = 155f, pullHip = 142f, wakeHip = 142f, edgeHip = 140f, glideHip = 150f, reachHip = 144f;
+ 
+         [Header("Slalom arms (1 = locked straight) and handle")]
+         public float turnFinishArm = 0.78f;  // elbows bent
+--- a/Assets/SkiView/Scripts/SkiViewGame.cs
++++ b/Assets/SkiView/Scripts/SkiViewGame.cs
+@@ -50,7 +50,8 @@
+         public SkierRig rig;
+         SkiSpray spray; float lastSprayT = -1f;
+         // pass 4: whole-body lean from the force balance on the ski edge (one line from the edge to the shoulders)
+-        float headPrev = float.NaN, headRate, leanRightDeg, rollLimit = 70f;
++        float headPrev = float.NaN, headRate, leanRightDeg, rollLimit = 70f, waterLift125, poseLean125;
++        System.IO.StreamWriter simLog125; int simLogN125;
+         public float LeanDeg => leanRightDeg;       // + = leaning toward the skier's right
+         public float HeadingRate => headRate;        // rad/s, + = turning right
+         public float turnGain = 1.25f, ropePullG = 1.6f, ropeSideFull = 0.45f, maxLeanDeg = 70f;            // Mixamo rider (null = capsule placeholder)
+@@ -713,11 +714,20 @@
+                     float vl = vlean > 0f ? vlean : 1f / 30f;   // #125 (Ray v1 #4): never snap; 9->50 deg used to happen in one frame
+                     float leanRate = mode == Mode.Pass ? 110f : 240f;
+                     if (!visHold) leanRightDeg = Mathf.MoveTowards(leanRightDeg, Mathf.Lerp(leanRightDeg, leanT, 1f - Mathf.Exp(-vl / 0.18f)), leanRate * vl);   // b9.1: <= 4 deg/frame at 60 fps (Holly)
+-                    // keep every body part out of the water: the rig reports its lowest clearance, back the limit off
+-                    if (rig != null && !visHold) rollLimit = rig.WaterClearance < 0.03f ? Mathf.Max(30f, Mathf.Abs(leanRightDeg) - 4f) : Mathf.MoveTowards(rollLimit, maxLeanDeg, 30f * Mathf.Max(vlean, 0.016f));
++                    // Blake grade: the 4 deg/frame water back-off held the visual lean near 43 deg at the reach and 45 deg
++                    // at the ball while the pose asked for 67 / 63. Lift the root by the shortfall so the ski and body stay
++                    // above the surface. sim.lean and the 110 deg/s visual rate are unchanged.
++                    poseLean125 = leanT;
++                    if (rig != null && !visHold)
++                    {
++                        float short125 = 0.03f - rig.WaterClearance;
++                        if (short125 > 0f) waterLift125 = Mathf.Min(0.40f, waterLift125 + short125);
++                        else waterLift125 = Mathf.MoveTowards(waterLift125, 0f, 0.50f * Mathf.Max(vlean, 0.016f));
++                        rollLimit = Mathf.MoveTowards(rollLimit, maxLeanDeg, 30f * Mathf.Max(vlean, 0.016f));
++                    }
+                     float roll = -leanRightDeg;   // positive Euler z tips the body to the skier's left
+                     float pitch = rig != null ? 3f : -12f; // rig: slight tip-up (the stance IK handles hips/shoulders)
+-                    skier.SetPositionAndRotation(skierPos, Quaternion.LookRotation(face) * Quaternion.Euler(pitch, 0, roll));
++                    skier.SetPositionAndRotation(skierPos + Vector3.up * waterLift125, Quaternion.LookRotation(face) * Quaternion.Euler(pitch, 0, roll));
+                 }
+             }
+             PoseJumpSkis();
+@@ -748,6 +758,7 @@
+                 }
+                 else rig.ballTau = float.NaN;
+                 rig.Drive(load, mode == Mode.Jump ? Mathf.Abs(headRate) / 1.5f : Mathf.Abs(sim.omega) / 2.45f, mode == Mode.Fallen, vdt, pyl, reachT, act, mode == Mode.Sink ? 0f : actionT, WaterDepth, poseBuoy, poseReach, poseLat, poseIn);
++                SimLog125(pyl);
+                 LockJumpBoots(vdt);   // #125
+                 UpdateGear125();
+                 UpdateContactShadow125();
+@@ -1033,5 +1044,23 @@
+             rope.SetPosition(0, pyl);
+             rope.SetPosition(1, rig.ToeLoopAnchorWorld125);
+         }
++    
++        void SimLog125(Vector3 pyl)
++        {
++            if (!SkiViewArgs.On("simlog") || rig == null || sim == null) return;
++            if (simLog125 == null)
++            {
++                simLog125 = new System.IO.StreamWriter("skiview-simlog.csv", false);
++                simLog125.WriteLine("frame,t,rope,mph,autopilot,pylonX,pylonY,pylonZ,visLean,poseLean,rollLimit,waterLift,simLean,theta,latVel,rwSlack,handLX,handLY,handLZ,handRX,handRY,handRZ");
++            }
++            float mph = path != null ? path.Speed(boatS) * 2.2369363f : 0f;
++            var ic = System.Globalization.CultureInfo.InvariantCulture;
++            simLog125.WriteLine(string.Format(ic,
++                "{0},{1:0.000},{2},{3:0.00},{4},{5:0.000},{6:0.000},{7:0.000},{8:0.00},{9:0.00},{10:0.00},{11:0.000},{12:0.000},{13:0.000},{14:0.000},{15:0.000},{16:0.000},{17:0.000},{18:0.000},{19:0.000},{20:0.000},{21:0.000}",
++                simLogN125++, simTime, sim.ropeIndex, mph, autopilot ? 1 : 0,
++                pyl.x, pyl.y, pyl.z, leanRightDeg, poseLean125, rollLimit, waterLift125, sim.lean, sim.theta, sim.LateralVel, sim.rwSlack,
++                rig.HandL.x, rig.HandL.y, rig.HandL.z, rig.HandR.x, rig.HandR.y, rig.HandR.z));
++            if ((simLogN125 & 15) == 0) simLog125.Flush();
++        }
+     }
+ }
