@@ -57,6 +57,8 @@ public static class StageContractTests
         F(exact.Proven, "the same file name is a match");
         var none = CatalogCohesion.Check(new[] { "no ids here" }, new[] { "core_home_scenes_all.bundle" });
         F(!none.Proven, "no catalog ids is not a proven reuse");
+        int rules = SkiView.Logic.PassRulesHarness.Run(m => { n++; if (fail != null) fail(m); });
+        F(rules == 0, "trick restart and 0 at 43 OFF");
         return n;
     }
 }

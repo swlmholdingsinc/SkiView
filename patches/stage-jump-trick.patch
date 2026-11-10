@@ -1,0 +1,879 @@
+diff --git a/Assets/SkiView/Editor/SkiViewJumpWebGLTest.cs b/Assets/SkiView/Editor/SkiViewJumpWebGLTest.cs
+new file mode 100644
+index 0000000..649c616
+--- /dev/null
++++ b/Assets/SkiView/Editor/SkiViewJumpWebGLTest.cs
+@@ -0,0 +1,86 @@
++using UnityEngine;
++
++/// <summary>WebGL jump stall: a scripted cut mark of 0 (what a serialized NaN becomes in some player loads)
++/// must still assist-cut and reach the ramp, and a 1 Hz frame clock must not drop the approach.
++/// Run: unity_run.sh SkiViewJumpWebGLTest.Run</summary>
++public static class SkiViewJumpWebGLTest
++{
++    const float DT = 1f / 60f;
++
++    struct End { public bool cut, ramp, missed; public float runT; }
++
++    static End Sim(float mark, float frameDt, float cap, int frames)
++    {
++        float runT = -10.6f, acc = 0f;
++        bool armed = false, cut = false, ramp = false, missed = false;
++        for (int f = 0; f < frames && !ramp; f++)
++        {
++            int n = SkiView.SkiViewGame.CountFixedSteps(ref acc, frameDt, 1f, cap, DT);
++            for (int i = 0; i < n && !ramp; i++)
++            {
++                runT += DT;
++                if (!cut && SkiView.SkiViewGame.WantJumpCut(ref armed, runT, mark, false, false, false)) cut = true;
++                if (!cut && runT >= SkiView.SkiViewGame.CUT_LATE) missed = true;
++                if (cut && !missed && runT >= 0f) ramp = true;
++            }
++        }
++        return new End { cut = cut, ramp = ramp, missed = missed, runT = runT };
++    }
++
++    public static void Run()
++    {
++        int fails = 0;
++        void Check(bool ok, string what) { Debug.Log($"[JumpWebGL] {(ok ? "PASS" : "FAIL")} {what}"); if (!ok) fails++; }
++
++        Check(!SkiView.SkiViewGame.JumpMarkOverrides(float.NaN), "NaN mark is not scripted");
++        Check(!SkiView.SkiViewGame.JumpMarkOverrides(float.PositiveInfinity), "+Inf mark is not scripted");
++        Check(!SkiView.SkiViewGame.JumpMarkOverrides(float.NegativeInfinity), "-Inf mark is not scripted");
++        Check(!SkiView.SkiViewGame.JumpMarkOverrides(0f), "exact 0 mark is not scripted");
++        Check(SkiView.SkiViewGame.JumpMarkOverrides(-4.3f), "capture cut -4.3 is scripted");
++        Check(SkiView.SkiViewGame.JumpMarkOverrides(0.86f), "capture pop 0.86 is scripted");
++        Check(SkiView.SkiViewGame.JumpMarkOverrides(99f), "no-cut capture 99 is scripted");
++
++        bool armed = false;
++        bool early = SkiView.SkiViewGame.WantJumpCut(ref armed, -8f, float.NaN, false, true, false);
++        Check(!early && armed, "press before the window arms the cut");
++        bool atAuto = SkiView.SkiViewGame.WantJumpCut(ref armed, -4.3f, float.NaN, false, false, false);
++        Check(atAuto, "armed cut fires at -4.3");
++
++        armed = false;
++        bool assist = SkiView.SkiViewGame.WantJumpCut(ref armed, -3.9f, 0f, false, false, false);
++        Check(assist && !armed, "mark 0 still assist-cuts at -3.9");
++        bool before = SkiView.SkiViewGame.WantJumpCut(ref armed, -3.95f, 0f, false, false, false);
++        Check(!before, "assist has not fired at -3.95");
++
++        armed = true;
++        bool held = SkiView.SkiViewGame.WantJumpCut(ref armed, -5f, -4.3f, false, false, false);
++        Check(!held, "a real scripted cut time still waits for its own instant");
++
++        var steady = Sim(0f, DT, SkiView.SkiViewGame.SimFrameCap, 800);
++        Check(steady.cut && steady.ramp && !steady.missed, $"60 Hz, mark 0: cut and ramp (runT {steady.runT:0.00})");
++
++        var nanMark = Sim(float.NaN, DT, SkiView.SkiViewGame.SimFrameCap, 800);
++        Check(nanMark.cut && nanMark.ramp && !nanMark.missed, $"60 Hz, mark NaN: cut and ramp (runT {nanMark.runT:0.00})");
++
++        var noCut = Sim(99f, DT, SkiView.SkiViewGame.SimFrameCap, 900);
++        Check(!noCut.cut && noCut.missed && !noCut.ramp, $"scripted 99: miss, no ramp (runT {noCut.runT:0.00})");
++
++        var throttled = Sim(0f, 1f, SkiView.SkiViewGame.SimFrameCap, 30);
++        Check(throttled.cut && throttled.ramp && !throttled.missed, $"1 Hz frames, cap {SkiView.SkiViewGame.SimFrameCap}: ramp within 30 s (runT {throttled.runT:0.00})");
++
++        var oldCap = Sim(0f, 1f, 0.1f, 40);
++        Check(!oldCap.cut && !oldCap.ramp && !oldCap.missed, $"1 Hz frames, old 0.1 cap: still short of the cut after 40 s (runT {oldCap.runT:0.00})");
++
++        float acc = 0.02f;
++        int nanSteps = SkiView.SkiViewGame.CountFixedSteps(ref acc, float.NaN, 1f, SkiView.SkiViewGame.SimFrameCap, DT);
++        Check(nanSteps >= 1 && !float.IsNaN(acc), $"NaN frame dt does not poison the accumulator (steps {nanSteps}, acc {acc})");
++        int negSteps = SkiView.SkiViewGame.CountFixedSteps(ref acc, -1f, 1f, SkiView.SkiViewGame.SimFrameCap, DT);
++        Check(negSteps == 0 && !float.IsNaN(acc), "negative frame dt adds no steps");
++        float acc2 = 0f;
++        int nanScale = SkiView.SkiViewGame.CountFixedSteps(ref acc2, 0.5f, float.NaN, SkiView.SkiViewGame.SimFrameCap, DT);
++        Check(nanScale > 10 && !float.IsNaN(acc2), $"NaN time scale falls back to 1 (steps {nanScale})");
++
++        Debug.Log($"[JumpWebGL] {fails} failure(s)");
++        if (Application.isBatchMode) UnityEditor.EditorApplication.Exit(fails == 0 ? 0 : 3);
++    }
++}
+diff --git a/Assets/SkiView/Editor/SkiViewJumpWebGLTest.cs.meta b/Assets/SkiView/Editor/SkiViewJumpWebGLTest.cs.meta
+new file mode 100644
+index 0000000..5c444f2
+--- /dev/null
++++ b/Assets/SkiView/Editor/SkiViewJumpWebGLTest.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: a7c3e1b94d2f4a6e8b0c5d17f3a94e62
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Editor/StageContractTests.cs b/Assets/SkiView/Editor/StageContractTests.cs
+index 90f922c..4805ad9 100644
+--- a/Assets/SkiView/Editor/StageContractTests.cs
++++ b/Assets/SkiView/Editor/StageContractTests.cs
+@@ -57,6 +57,8 @@ public static class StageContractTests
+         F(exact.Proven, "the same file name is a match");
+         var none = CatalogCohesion.Check(new[] { "no ids here" }, new[] { "core_home_scenes_all.bundle" });
+         F(!none.Proven, "no catalog ids is not a proven reuse");
++        int rules = SkiView.Logic.PassRulesHarness.Run(m => { n++; if (fail != null) fail(m); });
++        F(rules == 0, "trick restart and 0 at 43 OFF");
+         return n;
+     }
+ }
+diff --git a/Assets/SkiView/Scripts/Logic.meta b/Assets/SkiView/Scripts/Logic.meta
+new file mode 100644
+index 0000000..48d11a0
+--- /dev/null
++++ b/Assets/SkiView/Scripts/Logic.meta
+@@ -0,0 +1,8 @@
++fileFormatVersion: 2
++guid: d224c39310c2446997a2a0cc8d449384
++folderAsset: yes
++DefaultImporter:
++  externalObjects: {}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Scripts/Logic/PassRestart.cs b/Assets/SkiView/Scripts/Logic/PassRestart.cs
+new file mode 100644
+index 0000000..5bb6790
+--- /dev/null
++++ b/Assets/SkiView/Scripts/Logic/PassRestart.cs
+@@ -0,0 +1,43 @@
++namespace SkiView.Logic
++{
++    public enum PauseRestart { RetryPass, TrickPass }
++
++    /// <summary>
++    /// Pause → RESTART PASS. Jump stays on <c>RetryPass</c> so fix/jump-retry can own that path.
++    /// Trick does not use the slalom set-up. Slalom, including its direction flip, stays on <c>RetryPass</c>.
++    /// </summary>
++    public static class PassRestart
++    {
++        public static PauseRestart Choose(bool jumpMode, bool trickMode)
++        {
++            if (!jumpMode && trickMode) return PauseRestart.TrickPass;
++            return PauseRestart.RetryPass;
++        }
++
++        /// <summary>The direction <c>SkipToSetup</c> already uses. Not applied to a trick restart.</summary>
++        public static int SlalomSetupDirection(int passDir)
++        {
++            int nd = -passDir;
++            if (nd == 0) nd = 1;
++            return nd;
++        }
++
++        /// <summary>Pass 1 keeps the round's start direction. Pass 2 is the opposite of that start, not of the boat's current direction.</summary>
++        public static int TrickPassDirection(int trickPass, int startDir)
++        {
++            int d = startDir < 0 ? -1 : 1;
++            return trickPass <= 1 ? d : -d;
++        }
++
++        /// <summary>
++        /// Where to place the boat. Pass 1 uses the round start. Pass 2 sits 80 m short of its entry buoy:
++        /// progress increases as the boat travels, the arm window opens a few metres before the buoy,
++        /// and the deep-water start itself covers about 30 m.
++        /// </summary>
++        public static float TrickPassProgress(int trickPass, float startProgress, float entryAlong)
++        {
++            if (trickPass <= 1) return startProgress;
++            return entryAlong - 80f;
++        }
++    }
++}
+diff --git a/Assets/SkiView/Scripts/Logic/PassRestart.cs.meta b/Assets/SkiView/Scripts/Logic/PassRestart.cs.meta
+new file mode 100644
+index 0000000..ad7fe6f
+--- /dev/null
++++ b/Assets/SkiView/Scripts/Logic/PassRestart.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: a1c3e5b79d0f4e6a8b2c1d3e5f709182
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Scripts/Logic/PassRulesHarness.cs b/Assets/SkiView/Scripts/Logic/PassRulesHarness.cs
+new file mode 100644
+index 0000000..a353c7d
+--- /dev/null
++++ b/Assets/SkiView/Scripts/Logic/PassRulesHarness.cs
+@@ -0,0 +1,51 @@
++namespace SkiView.Logic
++{
++    /// <summary>Runs without Unity. Returns the number of failed checks.</summary>
++    public static class PassRulesHarness
++    {
++        public static int Run(System.Action<string> fail)
++        {
++            int n = 0;
++            System.Action<bool, string> F = (ok, m) => { if (!ok) { n++; if (fail != null) fail(m); } };
++
++            F(PassRestart.Choose(false, true) == PauseRestart.TrickPass, "TR-07 trick pause restart is the trick pass");
++            F(PassRestart.Choose(false, false) == PauseRestart.RetryPass, "slalom pause restart stays on RetryPass");
++            F(PassRestart.Choose(true, false) == PauseRestart.RetryPass, "jump pause restart stays on RetryPass");
++            F(PassRestart.Choose(true, true) == PauseRestart.RetryPass, "jump wins when both flags are set, so the jump patch still runs");
++
++            int pass1 = PassRestart.TrickPassDirection(1, -1);
++            int pass2 = PassRestart.TrickPassDirection(2, -1);
++            F(pass1 == -1, "trick pass 1 keeps the Ski View start direction");
++            F(pass2 == 1, "trick pass 2 is the opposite of the start direction");
++            F(pass1 != PassRestart.SlalomSetupDirection(pass1), "restarting pass 1 does not use the slalom flip");
++            F(PassRestart.SlalomSetupDirection(pass2) == -1, "once pass 2 is already heading its own way, the slalom flip would reverse it");
++            F(PassRestart.SlalomSetupDirection(-1) == 1 && PassRestart.SlalomSetupDirection(1) == -1 && PassRestart.SlalomSetupDirection(0) == 1, "slalom flip itself is unchanged");
++            F(PassRestart.TrickPassDirection(1, 1) == 1 && PassRestart.TrickPassDirection(2, 1) == -1, "a southbound start still swaps only on pass 2");
++
++            F(PassRestart.TrickPassProgress(1, -232f, 115f) == -232f, "pass 1 restarts from the round start");
++            float pass2At = PassRestart.TrickPassProgress(2, -232f, -115f);
++            F(pass2At == -195f, "pass 2 restarts 80 m short of its entry");
++            F(pass2At < -115f - 5f, "pass 2 starts before the arm window");
++
++            F(SlalomBest.FormatPass(8, 0f) == "0 @ 43 OFF", "0 buoys at 43 OFF displays as 0 @ 43 OFF");
++            F(SlalomBest.FormatPass(7, 6f) == "6 @ 41 OFF", "6 buoys at 41 OFF stays 6 @ 41 OFF");
++            F(SlalomBest.FormatPass(8, 3.5f) == "3.5 @ 43 OFF", "3.5 at 43 OFF");
++            F(SlalomBest.FormatPass(2, 6f) == "6 @ 28 OFF", "6 at 28 OFF");
++            F(SlalomBest.Pack(8, 0f) == 48f && SlalomBest.Pack(7, 6f) == 48f, "packed 0 @ 43 and 6 @ 41 are the same number");
++            F(SlalomBest.FormatPacked(48f) == "6 @ 41 OFF", "a legacy packed 48 still reads as the full pass at 41 OFF");
++            F(SlalomBest.FormatPacked(18f) == "6 @ 28 OFF", "packed 18 is 6 @ 28 OFF");
++            F(SlalomBest.FormatPacked(51.5f) == "3.5 @ 43 OFF", "packed 51.5 is 3.5 @ 43 OFF");
++            F(SlalomBest.FormatPacked(-1f) == "—", "no saved best stays the em dash");
++            F(SlalomBest.FormatPacked(54f) == "6 @ 43 OFF", "a full pass at 43 OFF still fits the last rope");
++            F(SlalomBest.FormatPacked(0f) == "0 @ 15 OFF", "zero at the longest rope is 0 @ 15 OFF");
++            F(SlalomBest.Display(48f, true, 8, 0f) == "0 @ 43 OFF", "a saved pass of 0 at 43 OFF is not shown as 6 @ 41 OFF");
++            F(SlalomBest.Display(48f, true, 7, 6f) == "6 @ 41 OFF", "a saved full pass at 41 OFF keeps its own rope");
++            F(SlalomBest.Display(48f, false, 0, 0f) == "6 @ 41 OFF", "without the pass fields, packed 48 keeps the old reading");
++            F(SlalomBest.IsBetter(-1f, 8, 0f), "a first pass of 0 at 43 OFF is a best");
++            F(!SlalomBest.IsBetter(48f, 8, 0f), "0 at 43 OFF does not replace a packed 48");
++            F(SlalomBest.IsBetter(47.5f, 8, 0.5f) && SlalomBest.FormatPass(8, 0.5f) == "0.5 @ 43 OFF", "half a buoy at 43 OFF");
++
++            return n;
++        }
++    }
++}
+diff --git a/Assets/SkiView/Scripts/Logic/PassRulesHarness.cs.meta b/Assets/SkiView/Scripts/Logic/PassRulesHarness.cs.meta
+new file mode 100644
+index 0000000..91c22c2
+--- /dev/null
++++ b/Assets/SkiView/Scripts/Logic/PassRulesHarness.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: e4f618c02a3b4d9e1c5f4a61728394b6
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Scripts/Logic/SkiView.Logic.asmdef b/Assets/SkiView/Scripts/Logic/SkiView.Logic.asmdef
+new file mode 100644
+index 0000000..757588a
+--- /dev/null
++++ b/Assets/SkiView/Scripts/Logic/SkiView.Logic.asmdef
+@@ -0,0 +1,14 @@
++{
++    "name": "SkiView.Logic",
++    "rootNamespace": "SkiView.Logic",
++    "references": [],
++    "includePlatforms": [],
++    "excludePlatforms": [],
++    "allowUnsafeCode": false,
++    "overrideReferences": false,
++    "precompiledReferences": [],
++    "autoReferenced": true,
++    "defineConstraints": [],
++    "versionDefines": [],
++    "noEngineReferences": true
++}
+diff --git a/Assets/SkiView/Scripts/Logic/SkiView.Logic.asmdef.meta b/Assets/SkiView/Scripts/Logic/SkiView.Logic.asmdef.meta
+new file mode 100644
+index 0000000..2287619
+--- /dev/null
++++ b/Assets/SkiView/Scripts/Logic/SkiView.Logic.asmdef.meta
+@@ -0,0 +1,7 @@
++fileFormatVersion: 2
++guid: 714723a2365c42ce810043c1f49c5ca8
++AssemblyDefinitionImporter:
++  externalObjects: {}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Scripts/Logic/SlalomBest.cs b/Assets/SkiView/Scripts/Logic/SlalomBest.cs
+new file mode 100644
+index 0000000..f689e86
+--- /dev/null
++++ b/Assets/SkiView/Scripts/Logic/SlalomBest.cs
+@@ -0,0 +1,66 @@
++namespace SkiView.Logic
++{
++    /// <summary>
++    /// Slalom personal-best text. A packed score is <c>ropeIndex * 6 + buoys</c>.
++    /// Six buoys at a rope and zero buoys at the next rope are the same number, so a packed 48
++    /// is both 6 @ 41 OFF and 0 @ 43 OFF. Callers that still have the pass use <see cref="FormatPass"/>.
++    /// Labels match <c>SkierSim.ROPE_LABEL</c>.
++    /// </summary>
++    public static class SlalomBest
++    {
++        public static readonly string[] RopeLabel =
++        {
++            "15 OFF", "22 OFF", "28 OFF", "32 OFF", "35 OFF", "38 OFF", "39.5 OFF", "41 OFF", "43 OFF"
++        };
++
++        public static float Pack(int rope, float buoys)
++        {
++            if (rope < 0) rope = 0;
++            if (rope > 8) rope = 8;
++            if (float.IsNaN(buoys) || buoys < 0f) buoys = 0f;
++            if (buoys > 6f) buoys = 6f;
++            return rope * 6f + buoys;
++        }
++
++        public static bool IsBetter(float previous, int rope, float buoys)
++        {
++            return Pack(rope, buoys) > previous + 0.01f;
++        }
++
++        /// <summary>The pass that was actually skied. Zero buoys at 43 OFF stays "0 @ 43 OFF".</summary>
++        public static string FormatPass(int rope, float buoys)
++        {
++            if (rope < 0) rope = 0;
++            if (rope > 8) rope = 8;
++            if (float.IsNaN(buoys) || buoys < 0f) buoys = 0f;
++            if (buoys > 6f) buoys = 6f;
++            return Balls(buoys) + " @ " + RopeLabel[rope];
++        }
++
++        /// <summary>
++        /// Older saves stored only the packed float. An exact multiple of 6 is shown as a full pass
++        /// at the previous rope, which is what a clean pass wrote. Packed 48 therefore stays "6 @ 41 OFF".
++        /// </summary>
++        public static string FormatPacked(float score)
++        {
++            if (score < 0f) return "—";
++            float balls = (score % 6f < 0.01f && score > 0f) ? 6f : score % 6f;
++            int rope = (int)System.Math.Floor((score - 0.01f) / 6f);
++            if (rope < 0) rope = 0;
++            if (rope > 8) rope = 8;
++            return Balls(balls) + " @ " + RopeLabel[rope];
++        }
++
++        public static string Display(float packed, bool hasPass, int rope, float buoys)
++        {
++            if (hasPass) return FormatPass(rope, buoys);
++            return FormatPacked(packed);
++        }
++
++        public static string Balls(float b)
++        {
++            int w = (int)System.Math.Floor(b + 1e-3f);
++            return (b - w >= 0.49f) ? w + ".5" : w.ToString();
++        }
++    }
++}
+diff --git a/Assets/SkiView/Scripts/Logic/SlalomBest.cs.meta b/Assets/SkiView/Scripts/Logic/SlalomBest.cs.meta
+new file mode 100644
+index 0000000..a4513a0
+--- /dev/null
++++ b/Assets/SkiView/Scripts/Logic/SlalomBest.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: b2d4f6a80e1c4f7b9c3d2e4f608193a5
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Scripts/SkiAudio.cs b/Assets/SkiView/Scripts/SkiAudio.cs
+index 778ee89..c38df09 100644
+--- a/Assets/SkiView/Scripts/SkiAudio.cs
++++ b/Assets/SkiView/Scripts/SkiAudio.cs
+@@ -100,7 +100,9 @@ namespace SkiView
+             var s = Free(at.HasValue ? pool3 : pool2);
+             s.clip = e.clip; s.loop = false; s.pitch = pitch * (1f + Random.Range(-jitter, jitter));
+             s.volume = Mathf.Clamp01(Db(srcDb + group)); if (at.HasValue) s.transform.position = at.Value;
+-            s.time = Mathf.Clamp(startTime, 0f, e.clip.length - 0.05f); s.Play(); return s;
++            // WebGL throws or stalls if time is set past a clip that has not decoded (length 0 → negative max).
++            float len = e.clip.length; if (len > 0.06f) s.time = Mathf.Clamp(startTime, 0f, len - 0.05f);
++            s.Play(); return s;
+         }
+         // pass 19: ?mute=boat,skier,amb,ui,music and ?solo=<group> (James's captures)
+         static float M(string g) => (SkiViewArgs.Has("solo") && SkiViewArgs.Get("solo") != g) || SkiViewArgs.Listed("mute", g) || SkiViewArgs.Listed("mute", "all") ? -80f : 0f;
+@@ -362,8 +364,9 @@ namespace SkiView
+                 gatesPrev = sim.gatesCleared;
+             }
+             // pass 8: rope slap at the jump cut; jump MISSED / crash -> ui_results_sting_alt (T13 decision H)
+-            if (!float.IsNaN(game.JumpCutT) && float.IsNaN(cutPrev)) Play("skier_rope_slap_01", sp, -2f, GSkier, 1f, 0.05f, 0f, 0.5f);
+-            cutPrev = game.JumpCutT;
++            // Latch before Play: a WebGL audio exception here used to retry every frame for the rest of the pass.
++            if (!float.IsNaN(game.JumpCutT) && float.IsNaN(cutPrev)) { cutPrev = game.JumpCutT; Play("skier_rope_slap_01", sp, -2f, GSkier, 1f, 0.05f, 0f, 0.5f); }
++            else cutPrev = game.JumpCutT;
+             string jr = game.JumpResult ?? "";
+             if (jr != jResPrev) { if (jr == "MISSED" || jr == "OUT THE FRONT" || jr == "FELL BACK") altStingAt = Time.time + (jr == "MISSED" ? 0.3f : 1.2f); jResPrev = jr; }
+             if (game.SkipCount != skipPrev)
+diff --git a/Assets/SkiView/Scripts/SkiViewGame.Args.cs b/Assets/SkiView/Scripts/SkiViewGame.Args.cs
+index dafdd3b..7333764 100644
+--- a/Assets/SkiView/Scripts/SkiViewGame.Args.cs
++++ b/Assets/SkiView/Scripts/SkiViewGame.Args.cs
+@@ -49,7 +49,7 @@ namespace SkiView
+             if (r >= 0 && !jumpMode) { sim.ropeIndex = Mathf.Clamp(r, 0, SkierSim.ROPE_M.Length - 1); sim.ropeM = SkierSim.ROPE_M[sim.ropeIndex]; ropeTarget = sim.ropeM; }
+             if (SkiViewArgs.On("auto")) autopilot = true;
+             if (SkiViewArgs.On("gates")) BuildGateDebug();
+-            float sp = SkiViewArgs.F("speed", 1f); if (sp != 1f) timeScale = Mathf.Clamp(sp, 0.25f, 4f);
++            float sp = SkiViewArgs.F("speed", 1f); if (!float.IsNaN(sp) && !float.IsInfinity(sp) && sp != 1f) timeScale = Mathf.Clamp(sp, 0.25f, 4f);
+             int tier = SkiViewArgs.I("tier", -1);
+             if (tier >= 0) { var det = FindFirstObjectByType<LakeDetail>(); if (det != null) { det.forceTier = tier; det.Apply(tier); } }
+             if (SkiViewArgs.Has("seed")) Random.InitState(SkiViewArgs.I("seed", 0));
+diff --git a/Assets/SkiView/Scripts/SkiViewGame.Drop.cs b/Assets/SkiView/Scripts/SkiViewGame.Drop.cs
+index d3144cd..118dfb9 100644
+--- a/Assets/SkiView/Scripts/SkiViewGame.Drop.cs
++++ b/Assets/SkiView/Scripts/SkiViewGame.Drop.cs
+@@ -204,6 +204,20 @@ namespace SkiView
+         }
+         public bool InDropFloat => dropPh >= 2 && mode == Mode.Sink;
+ 
++        /// <summary>
++        /// Pause → RESTART PASS. A trick pass restarts that pass. Jump and slalom stay on <see cref="RetryPass"/>
++        /// (the jump round is fix/jump-retry; slalom still flips direction in SkipToSetup).
++        /// </summary>
++        public void RestartFromPause()
++        {
++            if (SkiView.Logic.PassRestart.Choose(jumpMode, trickMode) == SkiView.Logic.PauseRestart.TrickPass)
++            {
++                RestartTrickPass();
++                return;
++            }
++            RetryPass();
++        }
++
+         /// <summary>RETRY PASS / RESTART: always the plain set-up, even mid-turnaround.</summary>
+         public void RetryPass() { FlushSlalomSet(); DropReset(); SkipToSetup(); }
+         void DropReset() { dropPh = 0; dwsBlendT = -1f; floatYawSet = false; }
+diff --git a/Assets/SkiView/Scripts/SkiViewGame.Jump.cs b/Assets/SkiView/Scripts/SkiViewGame.Jump.cs
+index 4c0f4ab..86cd8e3 100644
+--- a/Assets/SkiView/Scripts/SkiViewGame.Jump.cs
++++ b/Assets/SkiView/Scripts/SkiViewGame.Jump.cs
+@@ -52,7 +52,7 @@ namespace SkiView
+         // pass 14: player control. CUT = tap (Space / click / touch) on the far side starts the progressive cut to the ramp: a later,
+         // harder cut means more speed and a steeper crossing angle; no cut by -2.6 s = missed the ramp. POP = tap on the ramp:
+         // best in the last ~third (0.78-0.95), early = tips high (sat back), late = tips low (out the front).
+-        public float jumpCutAt = float.NaN, jumpPopAt = float.NaN;   // capture / debug: run time of the cut press, ramp fraction of the pop press
++        public float jumpCutAt = float.NaN, jumpPopAt = float.NaN;   // capture / debug: run time of the cut press, ramp fraction of the pop press. NaN = not scripted. Exact 0 is also not scripted (see JumpMarkOverrides).
+         public bool jumpCam = true; public static bool jumpDebug = false;                                  // shore / side camera for the ramp, flight and ride-out
+         public float JumpCutT { get; private set; } = float.NaN;
+         public float JumpPopT { get; private set; } = -1f;
+@@ -68,6 +68,32 @@ namespace SkiView
+         /// <summary>Jump mode, press before the approach has started: cut at the ideal moment of the coming run.</summary>
+         public void JumpArm() { if (jumpMode) cutArmed = true; }
+         bool cutArmed; const float ASSIST_CUT = -3.9f;
++        JPhase jumpLogPhase; bool jumpLogCut, jumpLogMiss; float jumpLogNext = -1f;
++        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit)]
++        struct FloatBits { [System.Runtime.InteropServices.FieldOffset(0)] public float f; [System.Runtime.InteropServices.FieldOffset(0)] public uint u; }
++        /// <summary>True when <paramref name="mark"/> is a capture/script time that replaces the player and the assist.
++        /// Scenes store this as NaN. A WebGL/IL2CPP scene load can turn that NaN into 0, and 0 is past the cut window
++        /// (-6.4 to -2.6), so treating 0 as scripted suppresses every cut: the skier holds wide, misses the ramp, and
++        /// never reaches Flight, Landing or results. Non-finite values and exact 0 stay "not scripted". 99 (the
++        /// no-cut capture) and a real time such as −4.3 still override.</summary>
++        public static bool JumpMarkOverrides(float mark)
++        {
++            uint bits = new FloatBits { f = mark }.u;
++            if ((bits & 0x7F800000u) == 0x7F800000u) return false;
++            return mark != 0f;
++        }
++        /// <summary>Whether this step should start the cut. <paramref name="cutArmed"/> is set when the press lands before the window.</summary>
++        public static bool WantJumpCut(ref bool cutArmed, float runT, float jumpCutAt, bool autopilot, bool playerDown, bool alreadyCut)
++        {
++            if (alreadyCut) return false;
++            bool press = playerDown;
++            if (press && runT < CUT_OPEN) { cutArmed = true; press = false; }
++            if (cutArmed && runT >= AUTO_CUT) press = true;
++            if (JumpMarkOverrides(jumpCutAt)) press = runT >= jumpCutAt;
++            else if (autopilot) press = runT >= AUTO_CUT;
++            else if (runT >= ASSIST_CUT) press = true;
++            return press && runT >= CUT_OPEN && runT < CUT_LATE;
++        }
+         public float JumpT => jT;
+         public float JumpRunT => runT;
+         public float JumpDistance { get; private set; }
+@@ -311,6 +337,7 @@ namespace SkiView
+         void JumpStep(float dt)
+         {
+             jT += dt; runT = RunTime();
++            MaybeJumpLog();
+             float g = 9.81f, sinA = RampSinA, cosA = Mathf.Sqrt(1f - sinA * sinA);
+             skierPrev = skierPos;
+             switch (jphase)
+@@ -321,11 +348,9 @@ namespace SkiView
+                     // a press before the cut window opens is kept (it used to be thrown away, so an early tap meant a miss), and
+                     // the cut goes at the ideal moment; no press at all -> assisted cut a little after the ideal moment, so the skier
+                     // always makes the double-wake cut to the ramp
+-                    if (press && !cutOn && runT < CUT_OPEN) { cutArmed = true; press = false; }
+-                    if (cutArmed && runT >= AUTO_CUT) press = true;
+-                    if (!float.IsNaN(jumpCutAt)) press = runT >= jumpCutAt; else if (autopilot) press = runT >= AUTO_CUT;
+-                    else if (runT >= ASSIST_CUT) press = true;
+-                    if (!cutOn && press && runT >= CUT_OPEN && runT < CUT_LATE) BeginCut(runT);
++                    bool armed = cutArmed;
++                    if (WantJumpCut(ref armed, runT, jumpCutAt, autopilot, press, cutOn)) BeginCut(runT);
++                    cutArmed = armed;
+                     if (!cutOn && runT >= CUT_LATE)
+                     {
+                         // never cut: swing back in behind the boat, past the ramp
+@@ -366,7 +391,7 @@ namespace SkiView
+                     rampS += rampV * dt; rampLat += rampLatV * dt;
+                     float tau = Mathf.Clamp01(rampS / rampLenOut);
+                     bool pp = jumpPress; jumpPress = false;
+-                    if (!float.IsNaN(jumpPopAt)) pp = tau >= jumpPopAt; else if (autopilot) pp = tau >= AUTO_POP;
++                    if (JumpMarkOverrides(jumpPopAt)) pp = tau >= jumpPopAt; else if (autopilot) pp = tau >= AUTO_POP;
+                     if (!popped && pp) { popped = true; JumpPopT = tau; }
+                     jumpCrouch = tau < 0.67f ? Mathf.Lerp(0.60f, 0.58f, tau / 0.67f) : Mathf.Lerp(0.58f, 0.93f, Mathf.InverseLerp(0.67f, 1f, tau));   // compressed, then standing up in the last third
+                     jumpPitch = 4f; jumpHandleIn = 0.6f; jumpTip = 0f; jumpSink = 0f;
+@@ -392,7 +417,7 @@ namespace SkiView
+                     jPost = Mathf.MoveTowards(jPost, jT < 0.12f ? 0f : 1f, 2.5f * dt);
+                     {
+                         bool lp = jumpPress; jumpPress = false;
+-                        if (!float.IsNaN(jumpPopAt) && jumpPopAt > 1f) lp = jT >= (jumpPopAt - 1f) * 0.3f;
++                        if (JumpMarkOverrides(jumpPopAt) && jumpPopAt > 1f) lp = jT >= (jumpPopAt - 1f) * 0.3f;
+                         if (!popped && lp && jT < 0.15f) { popped = true; JumpPopT = 1f + jT / 0.3f; PopEffect(JumpPopT, out float ldv, out landPitchWant); jVel.y += ldv; if (jCrash) landPitchWant = -4f; Debug.Log($"[SkiView] jump: late pop {jT:0.00} s after the lip -> landing pitch {landPitchWant:0.0}"); }
+                     }
+                     int sub = 4; float h = dt / sub;
+@@ -520,6 +545,27 @@ namespace SkiView
+             if (jMissed) RegisterJumpPass("BALK", 0f);
+             else if (JumpResult == "SCORED" || JumpResult == "RIDE OUT") RegisterJumpPass("SCORED", JumpDistance);
+             if (!jumpMode) SetJumpGear(false);
++            MaybeJumpLog();
++        }
++
++        static string MarkText(float v)
++        {
++            uint bits = new FloatBits { f = v }.u;
++            string n = float.IsNaN(v) ? "NaN" : float.IsInfinity(v) ? "Inf" : v.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
++            return "0x" + bits.ToString("X8") + "=" + n;
++        }
++        /// <summary>Browser console trace for a WebGL stall. On with ?jumplog=1. One line on phase / cut / miss changes and every 0.5 s of sim.</summary>
++        void MaybeJumpLog()
++        {
++            if (!SkiViewArgs.On("jumplog")) return;
++            bool changed = jphase != jumpLogPhase || cutOn != jumpLogCut || jMissed != jumpLogMiss;
++            if (!changed && simTime < jumpLogNext) return;
++            jumpLogPhase = jphase; jumpLogCut = cutOn; jumpLogMiss = jMissed; jumpLogNext = simTime + 0.5f;
++            Debug.Log(string.Format(System.Globalization.CultureInfo.InvariantCulture,
++                "[SkiView] jumplog phase={0} runT={1:0.00} jT={2:0.00} cut={3} missed={4} pop={5} ramp={6:0.00} result={7} boatKmh={8:0.0} frameDt={9:0.000} udt={10:0.000} acc={11:0.000} timeScale={12:0.00} gameScale={13:0.00} focus={14} bg={15} cutAt={16} popAt={17}",
++                jphase, runT, jT, cutOn ? 1 : 0, jMissed ? 1 : 0, popped ? 1 : 0, RampProgress, JumpResult ?? "",
++                jumpBoatKmh, lastFrameDt, Time.unscaledDeltaTime, acc, Time.timeScale, timeScale,
++                Application.isFocused ? 1 : 0, Application.runInBackground ? 1 : 0, MarkText(jumpCutAt), MarkText(jumpPopAt)));
+         }
+ 
+         /// <summary>Called every FixedStep after the boat moved: jump-lane offset and the run trigger.</summary>
+diff --git a/Assets/SkiView/Scripts/SkiViewGame.Trick.cs b/Assets/SkiView/Scripts/SkiViewGame.Trick.cs
+index 661041b..ca65c6c 100644
+--- a/Assets/SkiView/Scripts/SkiViewGame.Trick.cs
++++ b/Assets/SkiView/Scripts/SkiViewGame.Trick.cs
+@@ -164,6 +164,55 @@ namespace SkiView
+             banner = $"TRICKS · PASS 1 · {trickBoatKmh:0} km/h · {trickRopeM:0.0} m"; bannerT = 3f;
+         }
+ 
++        /// <summary>Pause → RESTART PASS while tricks are on. Same pass, that pass's own direction, clock cleared. Pass 1 also clears the round.</summary>
++        public void RestartTrickPass()
++        {
++            if (!trickMode || path == null) return;
++            FlushSlalomSet();
++            DropReset();
++            if (trickPass <= 1)
++            {
++                trickPass = 1;
++                trickLog.Clear();
++                creditedKeys.Clear();
++                TrickScore = 0;
++            }
++            else
++            {
++                string prefix = trickPass + ":";
++                creditedKeys.RemoveWhere(k => k != null && k.StartsWith(prefix));
++                trickLog.RemoveAll(e => e.pass == trickPass);
++                int score = 0;
++                for (int i = 0; i < trickLog.Count; i++) if (trickLog[i].credited) score += trickLog[i].pts;
++                TrickScore = score;
++            }
++            TrickRoundOver = false;
++            trickYaw = 0f; trickFacingBack = false; trickSpinRemain = 0f; trickSpinTarget = 0f; trickSpinCode = null;
++            trickSpinWake = false; trickSpinRev = false; trickSlideT = 0f; trickEdgeHold = 0f; trickCrestWindow = 0f;
++            trickClockStarted = false; TrickClock = 20f; trickFallThisPass = false; trickBeepPrev = 99;
++            trickLastBasicKey = null; trickLastCreditT = -99f; trickPopArmed = false; trickSwipeCount = 0; trickQChain = 0;
++            TrickToast = ""; TrickToastT = 0f;
++            tphase = TPhase.Approach;
++            int dir = SkiView.Logic.PassRestart.TrickPassDirection(trickPass, StartDir);
++            passDir = dir;
++            mode = Mode.DeepStart; actionT = 0f; dwsPatchDone = false; dwsFrom = 0.25f; throttle = 0.25f;
++            skipTurn = false; turnaround = false; spinSink = false; spinCall = false;
++            PlaceTrickBuoys();
++            float along = SkiView.Logic.PassRestart.TrickPassProgress(trickPass, startProgress, EntryAlongForDir(dir));
++            boatS = path.FindS(dir, along);
++            boatPos = path.Position(boatS); boatFwd = path.Tangent(boatS); prevHeading = Heading(boatFwd);
++            if (sim != null)
++            {
++                sim.Recover();
++                sim.ropeM = trickRopeM; sim.theta = 0.2f; sim.omega = 0f;
++            }
++            ropeTarget = trickRopeM;
++            PlaceSkier(); skierPrev = skierPos;
++            headPrev = float.NaN; headRate = 0f; wakeN = 0; skiN = 0; lastRopeT = -1f;
++            snapCamNext = true;
++            banner = $"TRICKS · PASS {trickPass} · RESTART"; bannerT = 2.5f;
++        }
++
+         void ApplyTrickSki(bool on)
+         {
+             if (ski == null) return;
+diff --git a/Assets/SkiView/Scripts/SkiViewGame.cs b/Assets/SkiView/Scripts/SkiViewGame.cs
+index 9d78a6f..d98e240 100644
+--- a/Assets/SkiView/Scripts/SkiViewGame.cs
++++ b/Assets/SkiView/Scripts/SkiViewGame.cs
+@@ -91,6 +91,10 @@ namespace SkiView
+         public float simTime;
+ 
+         const float FIXED = 1f / 60f;
++        /// <summary>Jump sim kept per rendered frame. WebGL tabs and heavy frames often deliver 0.3–1 s;
++        /// the old 0.1 s cap threw the rest away, so the cut crawled and looked stuck.</summary>
++        public const float SimFrameCap = 0.5f;
++        float lastFrameDt;
+         const float PYLON_BACK = -0.36f;   // SkiBoat.fbx TowPoint is 0.36 m forward of the pivot (CG)
+         float acc, prevHeading, fallT, ropeTarget, wakeT, skiT;
+         // pass 11: deep-water start + fall sequence (Mixamo batch 3). actionT = seconds into the current fall / start;
+@@ -166,7 +170,14 @@ namespace SkiView
+             if (rampJumpModeOnly && jumpRamp != null && !jumpMode) jumpRamp.gameObject.SetActive(false);   // T26
+             for (int i = 0; i < splash.Length; i++) splash[i] = Vector4.zero;   // the game opens with a deep-water start (captures skip it)
+             banner = lakeName.ToUpperInvariant() + " · " + SkiViewBranding.SkierName + " · " + SkierSim.ROPE_LABEL[sim.ropeIndex] + " · " + SkiView.UI.SkiViewUI.SpeedMph(RunMph).ToUpperInvariant(); bannerT = 4f;
+-            if (Application.isPlaying) { SkiView.UI.SkiViewUI.Ensure(this)?.ShowCamToast(camMode); SkiAudio.Ensure(this); }   // pass 18: UI Toolkit overlay + run-start view toast
++            if (Application.isPlaying)
++            {
++                // WebGL: with runInBackground left at 0 the player stops the frame the canvas loses focus.
++                // A click (the cut) is when that happens. Unity 6 still honours this at runtime on Web.
++                Application.runInBackground = true;
++                if (Time.maximumDeltaTime < SimFrameCap) Time.maximumDeltaTime = SimFrameCap;
++                SkiView.UI.SkiViewUI.Ensure(this)?.ShowCamToast(camMode); SkiAudio.Ensure(this);   // pass 18: UI Toolkit overlay + run-start view toast
++            }
+             inited = true;
+             ApplyArgs();   // pass 19: URL / command-line capture params
+             ApplyVisuals(true);
+@@ -223,9 +234,25 @@ namespace SkiView
+         /// <summary>Advance the simulation by dt seconds of real time (fixed 60 Hz substeps).</summary>
+         public void Advance(float dt)
+         {
++            lastFrameDt = dt;
+             float scale = timeScale * (mode != Mode.Pass && mode != Mode.Jump && skipTurn ? 3f : 1f);
+-            acc += Mathf.Min(dt, 0.1f) * scale;
+-            while (acc >= FIXED) { FixedStep(FIXED); acc -= FIXED; }
++            float cap = mode == Mode.Jump ? SimFrameCap : 0.1f;
++            int n = CountFixedSteps(ref acc, dt, scale, cap, FIXED);
++            for (int i = 0; i < n; i++) FixedStep(FIXED);
++        }
++
++        /// <summary>How many fixed steps a frame may run. Non-finite dt or scale cannot poison the accumulator
++        /// (a single NaN frame would otherwise freeze the sim for the rest of the page).</summary>
++        public static int CountFixedSteps(ref float acc, float frameDt, float scale, float cap, float fixedDt)
++        {
++            if (float.IsNaN(frameDt) || float.IsInfinity(frameDt) || frameDt < 0f) frameDt = 0f;
++            if (!(scale >= 0f)) scale = 1f;
++            if (!(cap > 0f)) cap = 0.1f;
++            acc += Mathf.Min(frameDt, cap) * scale;
++            if (!(acc >= 0f)) acc = 0f;
++            int n = 0;
++            while (acc >= fixedDt && n < 256) { acc -= fixedDt; n++; }
++            return n;
+         }
+ 
+         /// <summary>Used by the headless capture script.</summary>
+diff --git a/Assets/SkiView/Scripts/UI/SkiViewUI.P19.cs b/Assets/SkiView/Scripts/UI/SkiViewUI.P19.cs
+index 2e4f886..661b6e8 100644
+--- a/Assets/SkiView/Scripts/UI/SkiViewUI.P19.cs
++++ b/Assets/SkiView/Scripts/UI/SkiViewUI.P19.cs
+@@ -171,7 +171,7 @@ namespace SkiView.UI
+             var col = El("sv-pause19", body);
+             pauseCrumb = Lb("", "t-micro", col); Lb("PAUSED", "t-h1", col);
+             Btn("RESUME", "sv-btn sv-btn--primary", col, CloseMenus, "play");
+-            Btn("RESTART PASS", "sv-btn", col, () => { CloseMenus(); game?.RetryPass(); }, "retry");
++            Btn("RESTART PASS", "sv-btn", col, () => { CloseMenus(); game?.RestartFromPause(); }, "retry");
+             var cam = El("sv-btn sv-pause19__cam", col); var ci = El("sv-icon", cam); ci.style.backgroundImage = new StyleBackground(Resources.Load<VectorImage>("SkiViewUI/Icons/camera"));
+             Lb("CAMERA", "sv-pause19__lab", cam); var stp = El("sv-pause19__step", cam);
+             Btn(null, "sv-btn sv-btn--icon sv-pause19__arrow", stp, () => StepCam(-1), "arrow-left"); camStep = Lb("", "t-label sv-pause19__view", stp); Btn(null, "sv-btn sv-btn--icon sv-pause19__arrow", stp, () => StepCam(1), "arrow-right");
+@@ -211,10 +211,17 @@ namespace SkiView.UI
+             tpPb.text = PbText(game.lakeId);
+             int k = 0; foreach (var e in tpPips.Children()) { if (k > 0) { e.EnableInClassList("sv-pip--done", b >= k); e.EnableInClassList("sv-pip--half", b > k - 1 && b < k); } k++; }
+         }
+-        // personal best per lake: score = rope index * 6 + buoys (PlayerPrefs sv.pb.<lake>)
++        // personal best per lake: packed score = rope index * 6 + buoys (PlayerPrefs sv.pb.<lake>).
++        // The rope and buoy count are stored beside it so 0 @ 43 OFF is not read back as 6 @ 41 OFF.
+         static float Pb(string lake) => PlayerPrefs.GetFloat("sv.pb." + lake, -1f);
+-        static string PbFmt(float sc) => sc < 0f ? "—" : $"{(sc % 6f < 0.01f && sc > 0f ? 6f : sc % 6f):0.#} @ {SkierSim.ROPE_LABEL[Mathf.Clamp(Mathf.FloorToInt((sc - 0.01f) / 6f), 0, 8)]}";
+-        static string PbText(string lake) => PbFmt(Pb(lake));
++        static string PbRopeKey(string lake) => "sv.pb." + lake + ".rope";
++        static string PbBuoysKey(string lake) => "sv.pb." + lake + ".buoys";
++        static string PbText(string lake)
++        {
++            if (PlayerPrefs.HasKey(PbRopeKey(lake)))
++                return SkiView.Logic.SlalomBest.FormatPass(PlayerPrefs.GetInt(PbRopeKey(lake), 0), PlayerPrefs.GetFloat(PbBuoysKey(lake), 0f));
++            return SkiView.Logic.SlalomBest.FormatPacked(Pb(lake));
++        }
+ 
+         Label trickTbdChip;
+         void EnsureTrickTbdChip(VisualElement host)
+@@ -376,12 +383,21 @@ namespace SkiView.UI
+ 
+             if ((m == SkiViewGame.Mode.Sink || m == SkiViewGame.Mode.Fallen || m == SkiViewGame.Mode.Turn) && rsModePrev == SkiViewGame.Mode.Pass && !game.jumpMode && !game.JumpResultsOpen && !SkiViewClinic.Active && tutStep < 0)
+             {
+-                var res = sim.last; rsRopeIdx = res.rope; float b = res.buoys; bool full = res.clean; float sc = rsRopeIdx * 6f + b;
+-                float pb0 = Pb(game.lakeId); bool newPb = sc > pb0 + 0.01f; if (newPb) { PlayerPrefs.SetFloat("sv.pb." + game.lakeId, sc); PlayerPrefs.Save(); }
++                var res = sim.last; rsRopeIdx = res.rope; float b = res.buoys; bool full = res.clean; float sc = SkiView.Logic.SlalomBest.Pack(rsRopeIdx, b);
++                float pb0 = Pb(game.lakeId); string was = pb0 < 0f ? null : PbText(game.lakeId);
++                bool newPb = SkiView.Logic.SlalomBest.IsBetter(pb0, rsRopeIdx, b);
++                if (newPb)
++                {
++                    PlayerPrefs.SetFloat("sv.pb." + game.lakeId, sc);
++                    PlayerPrefs.SetInt(PbRopeKey(game.lakeId), rsRopeIdx);
++                    PlayerPrefs.SetFloat(PbBuoysKey(game.lakeId), b);
++                    PlayerPrefs.Save();
++                }
+                 rsScore.text = SkierSim.Fmt(b); rsSuffix.text = " @ " + SkierSim.ROPE_LABEL[rsRopeIdx];
+                 rsRope.text = $"{RopeOff(rsRopeIdx)} | {SpeedMph(game != null ? game.RunMph : 34f)} | Pass {Mathf.Max(1, game.passes)}";
+                 rsDetails.text = $"{sim.Breakdown(res)} · rope {SkierSim.ROPE_M[rsRopeIdx]:0.00} m · {SpeedMph(game != null ? game.RunMph : 34f)}";
+-                rsPb.text = newPb ? $"PERSONAL BEST {PbFmt(sc)}" + (pb0 >= 0f ? $" · WAS {PbFmt(pb0)}" : "") : $"PERSONAL BEST {PbFmt(Mathf.Max(pb0, sc))}";
++                string bestNow = newPb ? SkiView.Logic.SlalomBest.FormatPass(rsRopeIdx, b) : PbText(game.lakeId);
++                rsPb.text = newPb ? "PERSONAL BEST " + bestNow + (was != null ? " · WAS " + was : "") : "PERSONAL BEST " + bestNow;
+                 bool wr = game.LastRecord.attempted && game.LastRecord.discipline == SkiViewRecords.Discipline.Slalom && game.LastRecord.qualified && game.LastRecord.rank == 1;
+                 rsBanner.text = wr ? "NEW WORLD RECORD" : "NEW PERSONAL BEST";
+                 results.EnableInClassList("sv-results19--pb", newPb || wr); rsBanner.style.display = (newPb || wr) ? DisplayStyle.Flex : DisplayStyle.None;
+diff --git a/Assets/SkiView/Tests.meta b/Assets/SkiView/Tests.meta
+new file mode 100644
+index 0000000..f929d42
+--- /dev/null
++++ b/Assets/SkiView/Tests.meta
+@@ -0,0 +1,8 @@
++fileFormatVersion: 2
++guid: 5117762d484e48d3a07466f3e00ffa3f
++folderAsset: yes
++DefaultImporter:
++  externalObjects: {}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Tests/EditMode.meta b/Assets/SkiView/Tests/EditMode.meta
+new file mode 100644
+index 0000000..f075004
+--- /dev/null
++++ b/Assets/SkiView/Tests/EditMode.meta
+@@ -0,0 +1,8 @@
++fileFormatVersion: 2
++guid: 42937ef612064f1f9621c63b62c43db9
++folderAsset: yes
++DefaultImporter:
++  externalObjects: {}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Tests/EditMode/PassRulesTests.cs b/Assets/SkiView/Tests/EditMode/PassRulesTests.cs
+new file mode 100644
+index 0000000..ce67b66
+--- /dev/null
++++ b/Assets/SkiView/Tests/EditMode/PassRulesTests.cs
+@@ -0,0 +1,15 @@
++using NUnit.Framework;
++using SkiView.Logic;
++
++namespace SkiView.Tests
++{
++    public class PassRulesTests
++    {
++        [Test]
++        public void Harness_Passes()
++        {
++            int n = PassRulesHarness.Run(m => Assert.Fail(m));
++            Assert.AreEqual(0, n);
++        }
++    }
++}
+diff --git a/Assets/SkiView/Tests/EditMode/PassRulesTests.cs.meta b/Assets/SkiView/Tests/EditMode/PassRulesTests.cs.meta
+new file mode 100644
+index 0000000..84c4082
+--- /dev/null
++++ b/Assets/SkiView/Tests/EditMode/PassRulesTests.cs.meta
+@@ -0,0 +1,11 @@
++fileFormatVersion: 2
++guid: c3e507b91f2d4a8c0d4e3f5061728394
++MonoImporter:
++  externalObjects: {}
++  serializedVersion: 2
++  defaultReferences: []
++  executionOrder: 0
++  icon: {instanceID: 0}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Assets/SkiView/Tests/EditMode/SkiView.Tests.EditMode.asmdef b/Assets/SkiView/Tests/EditMode/SkiView.Tests.EditMode.asmdef
+new file mode 100644
+index 0000000..6342c9b
+--- /dev/null
++++ b/Assets/SkiView/Tests/EditMode/SkiView.Tests.EditMode.asmdef
+@@ -0,0 +1,24 @@
++{
++    "name": "SkiView.Tests.EditMode",
++    "rootNamespace": "SkiView.Tests",
++    "references": [
++        "SkiView.Logic",
++        "UnityEngine.TestRunner",
++        "UnityEditor.TestRunner"
++    ],
++    "includePlatforms": [
++        "Editor"
++    ],
++    "excludePlatforms": [],
++    "allowUnsafeCode": false,
++    "overrideReferences": true,
++    "precompiledReferences": [
++        "nunit.framework.dll"
++    ],
++    "autoReferenced": false,
++    "defineConstraints": [
++        "UNITY_INCLUDE_TESTS"
++    ],
++    "versionDefines": [],
++    "noEngineReferences": false
++}
+diff --git a/Assets/SkiView/Tests/EditMode/SkiView.Tests.EditMode.asmdef.meta b/Assets/SkiView/Tests/EditMode/SkiView.Tests.EditMode.asmdef.meta
+new file mode 100644
+index 0000000..4a9278d
+--- /dev/null
++++ b/Assets/SkiView/Tests/EditMode/SkiView.Tests.EditMode.asmdef.meta
+@@ -0,0 +1,7 @@
++fileFormatVersion: 2
++guid: 4428eb76aff441deab830d1bd59125db
++AssemblyDefinitionImporter:
++  externalObjects: {}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+diff --git a/Packages/manifest.json b/Packages/manifest.json
+index 13b743a..c9b5bce 100644
+--- a/Packages/manifest.json
++++ b/Packages/manifest.json
+@@ -26,6 +26,7 @@
+     "com.unity.modules.unitywebrequestwww": "1.0.0",
+     "com.unity.modules.vectorgraphics": "1.0.0",
+     "com.unity.addressables": "2.10.3",
+-    "com.unity.addressables.android": "1.1.0"
++    "com.unity.addressables.android": "1.1.0",
++    "com.unity.test-framework": "1.4.6"
+   }
+ }
+\ No newline at end of file

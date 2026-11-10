@@ -49,7 +49,7 @@ namespace SkiView
             if (r >= 0 && !jumpMode) { sim.ropeIndex = Mathf.Clamp(r, 0, SkierSim.ROPE_M.Length - 1); sim.ropeM = SkierSim.ROPE_M[sim.ropeIndex]; ropeTarget = sim.ropeM; }
             if (SkiViewArgs.On("auto")) autopilot = true;
             if (SkiViewArgs.On("gates")) BuildGateDebug();
-            float sp = SkiViewArgs.F("speed", 1f); if (sp != 1f) timeScale = Mathf.Clamp(sp, 0.25f, 4f);
+            float sp = SkiViewArgs.F("speed", 1f); if (!float.IsNaN(sp) && !float.IsInfinity(sp) && sp != 1f) timeScale = Mathf.Clamp(sp, 0.25f, 4f);
             int tier = SkiViewArgs.I("tier", -1);
             if (tier >= 0) { var det = FindFirstObjectByType<LakeDetail>(); if (det != null) { det.forceTier = tier; det.Apply(tier); } }
             if (SkiViewArgs.Has("seed")) Random.InitState(SkiViewArgs.I("seed", 0));

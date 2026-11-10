@@ -164,6 +164,55 @@ namespace SkiView
             banner = $"TRICKS · PASS 1 · {trickBoatKmh:0} km/h · {trickRopeM:0.0} m"; bannerT = 3f;
         }
 
+        /// <summary>Pause → RESTART PASS while tricks are on. Same pass, that pass's own direction, clock cleared. Pass 1 also clears the round.</summary>
+        public void RestartTrickPass()
+        {
+            if (!trickMode || path == null) return;
+            FlushSlalomSet();
+            DropReset();
+            if (trickPass <= 1)
+            {
+                trickPass = 1;
+                trickLog.Clear();
+                creditedKeys.Clear();
+                TrickScore = 0;
+            }
+            else
+            {
+                string prefix = trickPass + ":";
+                creditedKeys.RemoveWhere(k => k != null && k.StartsWith(prefix));
+                trickLog.RemoveAll(e => e.pass == trickPass);
+                int score = 0;
+                for (int i = 0; i < trickLog.Count; i++) if (trickLog[i].credited) score += trickLog[i].pts;
+                TrickScore = score;
+            }
+            TrickRoundOver = false;
+            trickYaw = 0f; trickFacingBack = false; trickSpinRemain = 0f; trickSpinTarget = 0f; trickSpinCode = null;
+            trickSpinWake = false; trickSpinRev = false; trickSlideT = 0f; trickEdgeHold = 0f; trickCrestWindow = 0f;
+            trickClockStarted = false; TrickClock = 20f; trickFallThisPass = false; trickBeepPrev = 99;
+            trickLastBasicKey = null; trickLastCreditT = -99f; trickPopArmed = false; trickSwipeCount = 0; trickQChain = 0;
+            TrickToast = ""; TrickToastT = 0f;
+            tphase = TPhase.Approach;
+            int dir = SkiView.Logic.PassRestart.TrickPassDirection(trickPass, StartDir);
+            passDir = dir;
+            mode = Mode.DeepStart; actionT = 0f; dwsPatchDone = false; dwsFrom = 0.25f; throttle = 0.25f;
+            skipTurn = false; turnaround = false; spinSink = false; spinCall = false;
+            PlaceTrickBuoys();
+            float along = SkiView.Logic.PassRestart.TrickPassProgress(trickPass, startProgress, EntryAlongForDir(dir));
+            boatS = path.FindS(dir, along);
+            boatPos = path.Position(boatS); boatFwd = path.Tangent(boatS); prevHeading = Heading(boatFwd);
+            if (sim != null)
+            {
+                sim.Recover();
+                sim.ropeM = trickRopeM; sim.theta = 0.2f; sim.omega = 0f;
+            }
+            ropeTarget = trickRopeM;
+            PlaceSkier(); skierPrev = skierPos;
+            headPrev = float.NaN; headRate = 0f; wakeN = 0; skiN = 0; lastRopeT = -1f;
+            snapCamNext = true;
+            banner = $"TRICKS · PASS {trickPass} · RESTART"; bannerT = 2.5f;
+        }
+
         void ApplyTrickSki(bool on)
         {
             if (ski == null) return;
