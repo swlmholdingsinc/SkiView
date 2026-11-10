@@ -13,6 +13,9 @@
 .sv-title__left { position: absolute; left: 32px; top: 0; bottom: 0; width: 760px; justify-content: flex-start; }
 .sv-title--4x3 .sv-title__left { justify-content: center; width: 820px; }   /* 4:3: menu block vertically centred */
 .sv-logo-plate { position: absolute; left: 24px; top: 16px; width: 420px; height: 140px; background-image: none; -unity-background-scale-mode: scale-to-fit; }
+.sv-swlm-mark { left: 32px; top: 24px; width: 63px; height: 80px; -unity-background-scale-mode: scale-to-fit; }
+.sv-swlm-name { position: absolute; left: 108px; top: 48px; font-size: 22px; color: var(--sv-text); }
+.sv-crest, .sv-crest-tag { display: none; }
 .sv-event-list { margin-top: 146px; }
 .sv-title--4x3 .sv-event-list { margin-top: 0; }
 .sv-event { height: var(--ev-h); margin-bottom: 14px; flex-direction: row; align-items: center; padding: 0 32px;

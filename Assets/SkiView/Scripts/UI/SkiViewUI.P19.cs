@@ -75,9 +75,14 @@ namespace SkiView.UI
             if (id == "skiview") return PackState.Included;
             if (!SkiViewBoot.Active) return id == game?.lakeId ? PackState.Installed : PackState.Unknown;
             var p = SkiViewBoot.PackInfo(id); size = p.size; pct = p.progress; got = p.got;
-            if (p.downloading) return PackState.Downloading; if (p.failed) return PackState.Failed;
-            if (p.size < 0) return PackState.Unknown; if (p.size == 0) return PackState.Installed;
-            return Application.internetReachability == NetworkReachability.NotReachable ? PackState.Offline : PackState.NotDownloaded;
+            if (p.downloading) return PackState.Downloading;
+            if (p.failed) return PackState.Failed;
+            bool web = Application.platform == RuntimePlatform.WebGLPlayer;
+            bool offline = Application.internetReachability == NetworkReachability.NotReachable;
+            if (!SkiViewLakeChoice.Selectable(web, id, false, false, p.size, offline))
+                return offline ? PackState.Offline : PackState.NotDownloaded;
+            if (!web && p.size < 0) return PackState.Unknown;
+            return PackState.Installed;
         }
         static string Mb(long b) => (b / 1000000f).ToString("0.0") + " MB";
 
@@ -116,6 +121,8 @@ namespace SkiView.UI
                 else if (st == PackState.NotDownloaded) { Key(chip, null, "download").AddToClassList("sv-lakes19__ok"); Lb(Mb(size), "t-micro", chip); }
                 else Lb("…", "t-micro", chip);
             }
+            var crumb = lakes.Q<Label>(className: "t-micro");
+            if (crumb != null) crumb.text = "STEP 2 OF 3 · " + (panelChallenge ? "CHALLENGE" : panelTricks ? "TRICKS" : panelJump ? "JUMP" : "SLALOM");
             var l = LAKES[lakeSel]; lakeCard.Clear(); var s = State(l.id, out float p0, out long sz, out long got);
             var img = El("sv-lakes19__img", lakeCard); var tex = Resources.Load<Texture2D>("SkiViewUI/Lakes/" + l.id); if (tex != null) img.style.backgroundImage = new StyleBackground(tex);
             var chips = El("sv-lakes19__chips", img); Lb("SLALOM", "sv-lakes19__ev", chips); Lb(!l.jump ? "NO JUMP RAMP" : l.id == "gulfwind" ? "JUMP MODE · NORTH BULGE" : "JUMP", "sv-lakes19__ev", chips);
@@ -146,7 +153,7 @@ namespace SkiView.UI
             }
         }
         static string Title(string n) => System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(n.ToLowerInvariant());
-        public void OpenLakes() { lakesFromSetup = TitleFlow; Open(lakes); }
+        public void OpenLakes() { lakesFromEvent = false; lakesFromSetup = TitleFlow; Open(lakes); }
         void Select(string id)
         {
             CloseMenus();
@@ -171,7 +178,7 @@ namespace SkiView.UI
             Btn("SETTINGS", "sv-btn", col, () => { pauseReturn = true; Open(settings); }, "settings");
             Btn("CONTROLS HELP", "sv-btn", col, () => { pauseReturn = true; Open(help); }, "controls");
             pauseJump = Btn("JUMP MODE: OFF", "sv-btn", col, () => { game?.ToggleJumpMode(); CloseMenus(); }, "jump-distance");
-            Btn("CHANGE LAKE", "sv-btn", col, () => { lakesFromSetup = false; Open(lakes); }, "back");
+            Btn("CHANGE LAKE", "sv-btn", col, () => { lakesFromSetup = false; lakesFromEvent = false; Open(lakes); }, "back");
             Btn("WORLD RECORDS", "sv-btn", col, () =>
             {
                 pauseReturn = true; titleReturn = false;

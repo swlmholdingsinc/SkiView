@@ -39,6 +39,14 @@ public static class StageContractTests
         F(named.IndexOf("Cache API", StringComparison.Ordinal) >= 0 && named.IndexOf(settings, StringComparison.Ordinal) >= 0, "init failure names the cache step and the settings url");
         F(SkiViewBootContract.DescribeInitFailure("load scene failed", false, settings) == "load scene failed", "a later load error stays a load error");
 
+        F(SkiViewLakeChoice.BuiltLakeIds.Length == 10, "the menu lists ten built lakes");
+        F(System.Array.IndexOf(SkiViewLakeChoice.BuiltLakeIds, "skiview") == 0, "Ski View Lake is in the list");
+        F(System.Array.IndexOf(SkiViewLakeChoice.BuiltLakeIds, "heronmarsh") > 0, "Heron Marsh is in the list");
+        F(SkiViewLakeChoice.Selectable(true, "heronmarsh", false, false, 14800000, false), "a WebGL lake bundle stays selectable");
+        F(!SkiViewLakeChoice.Selectable(false, "heronmarsh", false, false, 14800000, false), "a phone pack that is not on the device is not yet selectable");
+        F(SkiViewLakeChoice.Selectable(false, "skiview", false, false, 0, true), "the home lake stays selectable");
+        F(SkiViewLakeChoice.Selectable(false, "cedarbend", false, false, 0, true), "an installed phone pack stays selectable offline");
+
         var hashed = CatalogCohesion.Check(
             new[] { "\"core_home_scenes_all_0123456789abcdef0123456789abcdef.bundle\"" },
             new[] { "core_home_scenes_all.bundle" });

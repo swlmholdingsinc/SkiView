@@ -33,13 +33,14 @@
         <ui:VisualElement name="event-panel" class="sv-event-panel">
             <ui:Label text="SLALOM" /><ui:Label text="READY TO SKI" /><ui:Label name="last-setup" text="Last setup: {LAKE} · {ROPE} off · {SPEED} mph" />
             <ui:VisualElement style="flex-direction: row; margin-top: 22px;">
-                <ui:Button name="quick-start" class="sv-btn sv-btn--primary" text="QUICK START"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
+                <ui:Button name="choose-lake" class="sv-btn sv-btn--primary" text="CHOOSE LAKE"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
+                <ui:Button name="quick-start" class="sv-btn" text="QUICK START"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
                 <ui:Button name="setup" class="sv-btn" text="SETUP"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="soon-toast" class="sv-soon-toast" picking-mode="Ignore"><ui:Label text="TRICKS · COMING SOON" /></ui:VisualElement>
         <ui:Label name="rights-tag" class="sv-rights-tag" text="WADE PHOTO · SUPPLIED BY SCOTT · RIGHTS TBC · SWAP FOR 3D RENDER" />
-        <ui:Label name="copyright" class="sv-copyright" text="© 2026 SWLM Holdings Inc" />
+        <ui:Label name="copyright" class="sv-copyright" text="© 2026 SWLM Holdings Inc." />
         <ui:VisualElement name="watermark" class="sv-watermark" picking-mode="Ignore" />
     </ui:VisualElement>
 </ui:UXML>
