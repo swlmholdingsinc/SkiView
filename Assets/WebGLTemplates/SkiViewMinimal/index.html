@@ -19,7 +19,7 @@
       #sv-rotate { display: none; position: fixed; inset: 0; z-index: 10; background: #0b1a2a; color: #fff; font: 600 20px -apple-system, sans-serif; align-items: center; justify-content: center; text-align: center; padding: 24px; }
       @media (orientation: portrait) and (pointer: coarse) { #sv-rotate { display: flex; } }
       #sv-err { display: none; position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 11; background: #a3161dee; color: #fff; font: 14px -apple-system, sans-serif; padding: 10px; border-radius: 6px; }
-      #sv-boot { position: fixed; left: 12px; top: 12px; z-index: 13; max-width: 72vw; background: #000000d1; color: #fff; font: 18px/1.35 -apple-system, sans-serif; padding: 14px 16px; white-space: pre-wrap; }
+      #sv-boot { position: fixed; left: 12px; top: 12px; z-index: 13; max-width: 72vw; background: #000000d1; color: #fff; font: 18px/1.35 -apple-system, sans-serif; padding: 14px 16px; white-space: pre-wrap; pointer-events: none; }
     </style>
   </head>
   <body>
@@ -87,7 +87,18 @@
       script.onload = function () {
         svBoot("Boot: loader script running.");
         var svMarked = false;
-        window.svBootMark = function (m) { svMarked = true; svBoot(m); if (m.indexOf("lake-ready") >= 0 && m.indexOf("\n") < 0) { var e = document.querySelector("#sv-boot"); if (e) e.style.display = "none"; } };
+        window.svBootMark = function (m) {
+          svMarked = true;
+          var nl = m.indexOf("\n");
+          var extra = nl < 0 ? "" : m.substring(nl + 1);
+          var realFault = extra.length > 0 && extra.indexOf("stalled at ") !== 0;
+          if (m.indexOf("lake-ready") >= 0 && !realFault) {
+            var e = document.querySelector("#sv-boot");
+            if (e) e.style.display = "none";
+            return;
+          }
+          svBoot(m);
+        };
         createUnityInstance(canvas, config, function (p) {
           var pct = Math.round(100 * p);
           var f = document.querySelector("#sv-loading-fill"); if (f) f.style.width = Math.max(4, pct) + "%";

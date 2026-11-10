@@ -8,6 +8,8 @@ namespace SkiView
     /// <summary>Exact catalog bundle names against files on disk. Does not rename anything.</summary>
     public static class CatalogCohesion
     {
+        public const long MaxBundleBytes = 100L * 1024L * 1024L;
+
         static readonly Regex BundleId = new Regex(@"[A-Za-z0-9_.+\-]+\.bundle", RegexOptions.Compiled);
 
         public sealed class Report

@@ -1,0 +1,179 @@
+diff --git a/Assets/SkiView/Editor/SkiViewContent.cs b/Assets/SkiView/Editor/SkiViewContent.cs
+index f533045..f4335a2 100644
+--- a/Assets/SkiView/Editor/SkiViewContent.cs
++++ b/Assets/SkiView/Editor/SkiViewContent.cs
+@@ -40,7 +40,9 @@ public static class SkiViewContent
+         var b = g.GetSchema<BundledAssetGroupSchema>() ?? g.AddSchema<BundledAssetGroupSchema>();
+         b.BuildPath.SetVariableByName(s, AddressableAssetSettings.kLocalBuildPath);
+         b.LoadPath.SetVariableByName(s, AddressableAssetSettings.kLocalLoadPath);
+-        b.BundleMode = BundledAssetGroupSchema.BundlePackingMode.PackTogether;
++        b.BundleMode = name == "Core_Shared"
++            ? BundledAssetGroupSchema.BundlePackingMode.PackTogetherByLabel
++            : BundledAssetGroupSchema.BundlePackingMode.PackTogether;
+         b.Compression = BundledAssetGroupSchema.BundleCompressionMode.LZ4;
+         b.BundleNaming = BundledAssetGroupSchema.BundleNamingStyle.NoHash;
+         b.IncludeInBuild = true;
+@@ -90,6 +92,12 @@ public static class SkiViewContent
+             try { var e = s.CreateOrMoveEntry(gd, shared, false, false); if (e != null) { e.address = AssetDatabase.GUIDToAssetPath(gd); added++; } }
+             catch (Exception ex) { Debug.LogWarning("[SkiView] shared entry skipped " + AssetDatabase.GUIDToAssetPath(gd) + ": " + ex.Message); }
+         }
++        foreach (var e in shared.entries.ToList())
++        {
++            foreach (var lab in e.labels.ToList())
++                if (lab == "shared-0" || lab == "shared-1") e.SetLabel(lab, false, true);
++            e.SetLabel(SharedHalf(e.guid), true, true);
++        }
+         s.SetDirty(AddressableAssetSettings.ModificationEvent.BatchModification, null, true, true);
+         AssetDatabase.SaveAssets();
+         Debug.Log($"[SkiView] content split: {scenes.Count} lake scenes, shared kit {added} assets; groups {string.Join(", ", s.groups.Select(g => g.Name + "(" + g.entries.Count + ")"))}");
+@@ -132,7 +140,22 @@ public static class SkiViewContent
+         }
+         var texts = catalogs.Select(File.ReadAllText);
+         var files = Directory.GetFiles(dir, "*.bundle", SearchOption.AllDirectories);
+-        return CatalogCohesion.Check(texts, files);
++        report = CatalogCohesion.Check(texts, files);
++        var oversized = files.Where(f => new FileInfo(f).Length >= CatalogCohesion.MaxBundleBytes).Select(Path.GetFileName).ToList();
++        if (oversized.Count > 0)
++        {
++            report.Proven = false;
++            string sizeReason = "bundle over 100 MiB: " + string.Join(", ", oversized) + ". Names were not renamed.";
++            report.Reason = string.IsNullOrEmpty(report.Reason) ? sizeReason : report.Reason + " " + sizeReason;
++        }
++        return report;
++    }
++
++    static string SharedHalf(string guid)
++    {
++        int h = 0;
++        if (guid != null) for (int i = 0; i < guid.Length; i++) h = unchecked(h * 31 + guid[i]);
++        return (h & 1) == 0 ? "shared-0" : "shared-1";
+     }
+ 
+     /// <summary>Report the built bundle sizes per group (Library/com.unity.addressables/aa/&lt;target&gt;).</summary>
+diff --git a/Assets/SkiView/Editor/StageContractTests.cs b/Assets/SkiView/Editor/StageContractTests.cs
+index 288e956..343e366 100644
+--- a/Assets/SkiView/Editor/StageContractTests.cs
++++ b/Assets/SkiView/Editor/StageContractTests.cs
+@@ -14,6 +14,17 @@ public static class StageContractTests
+         F(!SkiViewBootContract.Stalled("lake-ready SkiViewLake", 30f), "a ready lake is not a stall");
+         F(SkiViewBootContract.StallFault("addressables-init").IndexOf("addressables-init", StringComparison.Ordinal) >= 0, "stall names the phase");
+         F(SkiViewBootContract.StallFault("addressables-init").IndexOf("No red browser message", StringComparison.Ordinal) >= 0, "stall does not require a red console line");
++        string stall = SkiViewBootContract.StallFault("load-scene SkiViewLake");
++        F(SkiViewBootContract.NextFault(true, stall, null) == null, "a later step clears a stall");
++        F(SkiViewBootContract.NextFault(false, stall, null) == stall, "the same step keeps the stall");
++        F(SkiViewBootContract.NextFault(true, "invalid handle", null) == "invalid handle", "a real fault stays when the phase advances");
++        F(SkiViewBootContract.NextFault(true, stall, "load scene failed") == "load scene failed", "an explicit failure replaces a stall");
++        F(SkiViewBootContract.HideBootOverlay("lake-ready SkiViewLake", null), "lake-ready with no fault hides the overlay");
++        F(SkiViewBootContract.HideBootOverlay("lake-ready SkiViewLake", stall), "lake-ready hides a leftover stall");
++        F(!SkiViewBootContract.HideBootOverlay("lake-ready SkiViewLake", "load scene failed"), "a real load error stays visible");
++        F(!SkiViewBootContract.HideBootOverlay("load-scene SkiViewLake", null), "load-scene stays on screen");
++        F(106805050L >= CatalogCohesion.MaxBundleBytes, "the shared bundle is over 100 MiB");
++        F(104857599L < CatalogCohesion.MaxBundleBytes, "one byte under 100 MiB is inside the cap");
+ 
+         var hashed = CatalogCohesion.Check(
+             new[] { "\"core_home_scenes_all_0123456789abcdef0123456789abcdef.bundle\"" },
+diff --git a/Assets/SkiView/Scripts/CatalogCohesion.cs b/Assets/SkiView/Scripts/CatalogCohesion.cs
+index 5a781d1..d282cb8 100644
+--- a/Assets/SkiView/Scripts/CatalogCohesion.cs
++++ b/Assets/SkiView/Scripts/CatalogCohesion.cs
+@@ -8,6 +8,8 @@ namespace SkiView
+     /// <summary>Exact catalog bundle names against files on disk. Does not rename anything.</summary>
+     public static class CatalogCohesion
+     {
++        public const long MaxBundleBytes = 100L * 1024L * 1024L;
++
+         static readonly Regex BundleId = new Regex(@"[A-Za-z0-9_.+\-]+\.bundle", RegexOptions.Compiled);
+ 
+         public sealed class Report
+diff --git a/Assets/SkiView/Scripts/SkiViewBoot.cs b/Assets/SkiView/Scripts/SkiViewBoot.cs
+index a194c8a..34b05da 100644
+--- a/Assets/SkiView/Scripts/SkiViewBoot.cs
++++ b/Assets/SkiView/Scripts/SkiViewBoot.cs
+@@ -49,9 +49,14 @@ namespace SkiView
+ 
+         static void SetPhase(string phase, string fault = null)
+         {
++            bool advanced = phase != Phase;
+             Phase = phase;
+-            if (inst != null) inst.phaseSince = Time.realtimeSinceStartup;
+-            if (fault != null) Fault = fault;
++            if (inst != null)
++            {
++                inst.phaseSince = Time.realtimeSinceStartup;
++                if (advanced) inst.stallMarked = false;
++            }
++            Fault = SkiViewBootContract.NextFault(advanced, Fault, fault);
+             string line = BootLine(phase, SceneManager.GetActiveScene().name, inst != null && inst.busy, Screen.width, Screen.height, Fault);
+             if (string.IsNullOrEmpty(fault)) Debug.Log("[SkiView] " + line);
+             else Debug.LogError("[SkiView] " + line);
+@@ -272,7 +277,7 @@ namespace SkiView
+         void OnGUI()
+         {
+             var scene = SceneManager.GetActiveScene();
+-            bool ready = Phase != null && Phase.IndexOf("lake-ready", StringComparison.Ordinal) >= 0 && string.IsNullOrEmpty(Fault);
++            bool ready = SkiViewBootContract.HideBootOverlay(Phase, Fault);
+             if (!ready)
+             {
+                 float boxW = Mathf.Max(320f, Screen.width * 0.72f);
+diff --git a/Assets/SkiView/Scripts/SkiViewBootContract.cs b/Assets/SkiView/Scripts/SkiViewBootContract.cs
+index fed4e6b..9e22e5d 100644
+--- a/Assets/SkiView/Scripts/SkiViewBootContract.cs
++++ b/Assets/SkiView/Scripts/SkiViewBootContract.cs
+@@ -20,5 +20,24 @@ namespace SkiView
+                 + ". No later boot step ran for " + StallSeconds.ToString("0")
+                 + "s. No red browser message is required for this to be a stop.";
+         }
++
++        public static bool IsStall(string fault)
++        {
++            return !string.IsNullOrEmpty(fault) && fault.StartsWith("stalled at ", StringComparison.Ordinal);
++        }
++
++        /// <summary>A later boot step drops a stall. An explicit failure string stays.</summary>
++        public static string NextFault(bool advanced, string existing, string incoming)
++        {
++            if (incoming != null) return incoming;
++            if (advanced && IsStall(existing)) return null;
++            return existing;
++        }
++
++        public static bool HideBootOverlay(string phase, string fault)
++        {
++            if (string.IsNullOrEmpty(phase) || phase.IndexOf("lake-ready", StringComparison.Ordinal) < 0) return false;
++            return string.IsNullOrEmpty(fault) || IsStall(fault);
++        }
+     }
+ }
+diff --git a/Assets/WebGLTemplates/SkiViewMinimal/index.html b/Assets/WebGLTemplates/SkiViewMinimal/index.html
+index 0db77e4..5c93e7b 100644
+--- a/Assets/WebGLTemplates/SkiViewMinimal/index.html
++++ b/Assets/WebGLTemplates/SkiViewMinimal/index.html
+@@ -19,7 +19,7 @@
+       #sv-rotate { display: none; position: fixed; inset: 0; z-index: 10; background: #0b1a2a; color: #fff; font: 600 20px -apple-system, sans-serif; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+       @media (orientation: portrait) and (pointer: coarse) { #sv-rotate { display: flex; } }
+       #sv-err { display: none; position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 11; background: #a3161dee; color: #fff; font: 14px -apple-system, sans-serif; padding: 10px; border-radius: 6px; }
+-      #sv-boot { position: fixed; left: 12px; top: 12px; z-index: 13; max-width: 72vw; background: #000000d1; color: #fff; font: 18px/1.35 -apple-system, sans-serif; padding: 14px 16px; white-space: pre-wrap; }
++      #sv-boot { position: fixed; left: 12px; top: 12px; z-index: 13; max-width: 72vw; background: #000000d1; color: #fff; font: 18px/1.35 -apple-system, sans-serif; padding: 14px 16px; white-space: pre-wrap; pointer-events: none; }
+     </style>
+   </head>
+   <body>
+@@ -87,7 +87,18 @@
+       script.onload = function () {
+         svBoot("Boot: loader script running.");
+         var svMarked = false;
+-        window.svBootMark = function (m) { svMarked = true; svBoot(m); if (m.indexOf("lake-ready") >= 0 && m.indexOf("\n") < 0) { var e = document.querySelector("#sv-boot"); if (e) e.style.display = "none"; } };
++        window.svBootMark = function (m) {
++          svMarked = true;
++          var nl = m.indexOf("\n");
++          var extra = nl < 0 ? "" : m.substring(nl + 1);
++          var realFault = extra.length > 0 && extra.indexOf("stalled at ") !== 0;
++          if (m.indexOf("lake-ready") >= 0 && !realFault) {
++            var e = document.querySelector("#sv-boot");
++            if (e) e.style.display = "none";
++            return;
++          }
++          svBoot(m);
++        };
+         createUnityInstance(canvas, config, function (p) {
+           var pct = Math.round(100 * p);
+           var f = document.querySelector("#sv-loading-fill"); if (f) f.style.width = Math.max(4, pct) + "%";

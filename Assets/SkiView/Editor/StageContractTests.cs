@@ -14,6 +14,17 @@ public static class StageContractTests
         F(!SkiViewBootContract.Stalled("lake-ready SkiViewLake", 30f), "a ready lake is not a stall");
         F(SkiViewBootContract.StallFault("addressables-init").IndexOf("addressables-init", StringComparison.Ordinal) >= 0, "stall names the phase");
         F(SkiViewBootContract.StallFault("addressables-init").IndexOf("No red browser message", StringComparison.Ordinal) >= 0, "stall does not require a red console line");
+        string stall = SkiViewBootContract.StallFault("load-scene SkiViewLake");
+        F(SkiViewBootContract.NextFault(true, stall, null) == null, "a later step clears a stall");
+        F(SkiViewBootContract.NextFault(false, stall, null) == stall, "the same step keeps the stall");
+        F(SkiViewBootContract.NextFault(true, "invalid handle", null) == "invalid handle", "a real fault stays when the phase advances");
+        F(SkiViewBootContract.NextFault(true, stall, "load scene failed") == "load scene failed", "an explicit failure replaces a stall");
+        F(SkiViewBootContract.HideBootOverlay("lake-ready SkiViewLake", null), "lake-ready with no fault hides the overlay");
+        F(SkiViewBootContract.HideBootOverlay("lake-ready SkiViewLake", stall), "lake-ready hides a leftover stall");
+        F(!SkiViewBootContract.HideBootOverlay("lake-ready SkiViewLake", "load scene failed"), "a real load error stays visible");
+        F(!SkiViewBootContract.HideBootOverlay("load-scene SkiViewLake", null), "load-scene stays on screen");
+        F(106805050L >= CatalogCohesion.MaxBundleBytes, "the shared bundle is over 100 MiB");
+        F(104857599L < CatalogCohesion.MaxBundleBytes, "one byte under 100 MiB is inside the cap");
 
         var hashed = CatalogCohesion.Check(
             new[] { "\"core_home_scenes_all_0123456789abcdef0123456789abcdef.bundle\"" },

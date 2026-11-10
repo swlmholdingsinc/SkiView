@@ -40,7 +40,9 @@ public static class SkiViewContent
         var b = g.GetSchema<BundledAssetGroupSchema>() ?? g.AddSchema<BundledAssetGroupSchema>();
         b.BuildPath.SetVariableByName(s, AddressableAssetSettings.kLocalBuildPath);
         b.LoadPath.SetVariableByName(s, AddressableAssetSettings.kLocalLoadPath);
-        b.BundleMode = BundledAssetGroupSchema.BundlePackingMode.PackTogether;
+        b.BundleMode = name == "Core_Shared"
+            ? BundledAssetGroupSchema.BundlePackingMode.PackTogetherByLabel
+            : BundledAssetGroupSchema.BundlePackingMode.PackTogether;
         b.Compression = BundledAssetGroupSchema.BundleCompressionMode.LZ4;
         b.BundleNaming = BundledAssetGroupSchema.BundleNamingStyle.NoHash;
         b.IncludeInBuild = true;
@@ -90,6 +92,12 @@ public static class SkiViewContent
             try { var e = s.CreateOrMoveEntry(gd, shared, false, false); if (e != null) { e.address = AssetDatabase.GUIDToAssetPath(gd); added++; } }
             catch (Exception ex) { Debug.LogWarning("[SkiView] shared entry skipped " + AssetDatabase.GUIDToAssetPath(gd) + ": " + ex.Message); }
         }
+        foreach (var e in shared.entries.ToList())
+        {
+            foreach (var lab in e.labels.ToList())
+                if (lab == "shared-0" || lab == "shared-1") e.SetLabel(lab, false, true);
+            e.SetLabel(SharedHalf(e.guid), true, true);
+        }
         s.SetDirty(AddressableAssetSettings.ModificationEvent.BatchModification, null, true, true);
         AssetDatabase.SaveAssets();
         Debug.Log($"[SkiView] content split: {scenes.Count} lake scenes, shared kit {added} assets; groups {string.Join(", ", s.groups.Select(g => g.Name + "(" + g.entries.Count + ")"))}");
@@ -132,7 +140,22 @@ public static class SkiViewContent
         }
         var texts = catalogs.Select(File.ReadAllText);
         var files = Directory.GetFiles(dir, "*.bundle", SearchOption.AllDirectories);
-        return CatalogCohesion.Check(texts, files);
+        report = CatalogCohesion.Check(texts, files);
+        var oversized = files.Where(f => new FileInfo(f).Length >= CatalogCohesion.MaxBundleBytes).Select(Path.GetFileName).ToList();
+        if (oversized.Count > 0)
+        {
+            report.Proven = false;
+            string sizeReason = "bundle over 100 MiB: " + string.Join(", ", oversized) + ". Names were not renamed.";
+            report.Reason = string.IsNullOrEmpty(report.Reason) ? sizeReason : report.Reason + " " + sizeReason;
+        }
+        return report;
+    }
+
+    static string SharedHalf(string guid)
+    {
+        int h = 0;
+        if (guid != null) for (int i = 0; i < guid.Length; i++) h = unchecked(h * 31 + guid[i]);
+        return (h & 1) == 0 ? "shared-0" : "shared-1";
     }
 
     /// <summary>Report the built bundle sizes per group (Library/com.unity.addressables/aa/&lt;target&gt;).</summary>

@@ -49,9 +49,14 @@ namespace SkiView
 
         static void SetPhase(string phase, string fault = null)
         {
+            bool advanced = phase != Phase;
             Phase = phase;
-            if (inst != null) inst.phaseSince = Time.realtimeSinceStartup;
-            if (fault != null) Fault = fault;
+            if (inst != null)
+            {
+                inst.phaseSince = Time.realtimeSinceStartup;
+                if (advanced) inst.stallMarked = false;
+            }
+            Fault = SkiViewBootContract.NextFault(advanced, Fault, fault);
             string line = BootLine(phase, SceneManager.GetActiveScene().name, inst != null && inst.busy, Screen.width, Screen.height, Fault);
             if (string.IsNullOrEmpty(fault)) Debug.Log("[SkiView] " + line);
             else Debug.LogError("[SkiView] " + line);
@@ -272,7 +277,7 @@ namespace SkiView
         void OnGUI()
         {
             var scene = SceneManager.GetActiveScene();
-            bool ready = Phase != null && Phase.IndexOf("lake-ready", StringComparison.Ordinal) >= 0 && string.IsNullOrEmpty(Fault);
+            bool ready = SkiViewBootContract.HideBootOverlay(Phase, Fault);
             if (!ready)
             {
                 float boxW = Mathf.Max(320f, Screen.width * 0.72f);

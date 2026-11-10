@@ -20,5 +20,24 @@ namespace SkiView
                 + ". No later boot step ran for " + StallSeconds.ToString("0")
                 + "s. No red browser message is required for this to be a stop.";
         }
+
+        public static bool IsStall(string fault)
+        {
+            return !string.IsNullOrEmpty(fault) && fault.StartsWith("stalled at ", StringComparison.Ordinal);
+        }
+
+        /// <summary>A later boot step drops a stall. An explicit failure string stays.</summary>
+        public static string NextFault(bool advanced, string existing, string incoming)
+        {
+            if (incoming != null) return incoming;
+            if (advanced && IsStall(existing)) return null;
+            return existing;
+        }
+
+        public static bool HideBootOverlay(string phase, string fault)
+        {
+            if (string.IsNullOrEmpty(phase) || phase.IndexOf("lake-ready", StringComparison.Ordinal) < 0) return false;
+            return string.IsNullOrEmpty(fault) || IsStall(fault);
+        }
     }
 }
