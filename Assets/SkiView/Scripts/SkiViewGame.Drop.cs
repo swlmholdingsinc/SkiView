@@ -202,6 +202,21 @@ namespace SkiView
             floatYaw = Mathf.MoveTowardsAngle(floatYaw, w, 40f * dt);
             return Quaternion.Euler(0f, floatYaw, 0f) * Vector3.forward;
         }
+
+        /// <summary>
+        /// Pause → RESTART PASS. A trick pass restarts that pass. Jump and slalom stay on <see cref="RetryPass"/>
+        /// (the jump round is fix/jump-retry; slalom still flips direction in SkipToSetup).
+        /// </summary>
+        public void RestartFromPause()
+        {
+            if (SkiView.Logic.PassRestart.Choose(jumpMode, trickMode) == SkiView.Logic.PauseRestart.TrickPass)
+            {
+                RestartTrickPass();
+                return;
+            }
+            RetryPass();
+        }
+
         public bool InDropFloat => dropPh >= 2 && mode == Mode.Sink;
 
         /// <summary>RETRY PASS / RESTART: always the plain set-up, even mid-turnaround.</summary>

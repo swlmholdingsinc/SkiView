@@ -164,7 +164,7 @@ namespace SkiView.UI
             var col = El("sv-pause19", body);
             pauseCrumb = Lb("", "t-micro", col); Lb("PAUSED", "t-h1", col);
             Btn("RESUME", "sv-btn sv-btn--primary", col, CloseMenus, "play");
-            Btn("RESTART PASS", "sv-btn", col, () => { CloseMenus(); game?.RetryPass(); }, "retry");
+            Btn("RESTART PASS", "sv-btn", col, () => { CloseMenus(); game?.RestartFromPause(); }, "retry");
             var cam = El("sv-btn sv-pause19__cam", col); var ci = El("sv-icon", cam); ci.style.backgroundImage = new StyleBackground(Resources.Load<VectorImage>("SkiViewUI/Icons/camera"));
             Lb("CAMERA", "sv-pause19__lab", cam); var stp = El("sv-pause19__step", cam);
             Btn(null, "sv-btn sv-btn--icon sv-pause19__arrow", stp, () => StepCam(-1), "arrow-left"); camStep = Lb("", "t-label sv-pause19__view", stp); Btn(null, "sv-btn sv-btn--icon sv-pause19__arrow", stp, () => StepCam(1), "arrow-right");
@@ -204,10 +204,17 @@ namespace SkiView.UI
             tpPb.text = PbText(game.lakeId);
             int k = 0; foreach (var e in tpPips.Children()) { if (k > 0) { e.EnableInClassList("sv-pip--done", b >= k); e.EnableInClassList("sv-pip--half", b > k - 1 && b < k); } k++; }
         }
-        // personal best per lake: score = rope index * 6 + buoys (PlayerPrefs sv.pb.<lake>)
+        // personal best per lake: packed score = rope index * 6 + buoys (PlayerPrefs sv.pb.<lake>).
+        // The rope and buoy count are stored beside it so 0 @ 43 OFF is not read back as 6 @ 41 OFF.
         static float Pb(string lake) => PlayerPrefs.GetFloat("sv.pb." + lake, -1f);
-        static string PbFmt(float sc) => sc < 0f ? "—" : $"{(sc % 6f < 0.01f && sc > 0f ? 6f : sc % 6f):0.#} @ {SkierSim.ROPE_LABEL[Mathf.Clamp(Mathf.FloorToInt((sc - 0.01f) / 6f), 0, 8)]}";
-        static string PbText(string lake) => PbFmt(Pb(lake));
+        static string PbRopeKey(string lake) => "sv.pb." + lake + ".rope";
+        static string PbBuoysKey(string lake) => "sv.pb." + lake + ".buoys";
+        static string PbText(string lake)
+        {
+            if (PlayerPrefs.HasKey(PbRopeKey(lake)))
+                return SkiView.Logic.SlalomBest.FormatPass(PlayerPrefs.GetInt(PbRopeKey(lake), 0), PlayerPrefs.GetFloat(PbBuoysKey(lake), 0f));
+            return SkiView.Logic.SlalomBest.FormatPacked(Pb(lake));
+        }
 
         Label trickTbdChip;
         void EnsureTrickTbdChip(VisualElement host)
@@ -369,12 +376,21 @@ namespace SkiView.UI
 
             if ((m == SkiViewGame.Mode.Sink || m == SkiViewGame.Mode.Fallen || m == SkiViewGame.Mode.Turn) && rsModePrev == SkiViewGame.Mode.Pass && !game.jumpMode && !game.JumpResultsOpen && !SkiViewClinic.Active && tutStep < 0)
             {
-                var res = sim.last; rsRopeIdx = res.rope; float b = res.buoys; bool full = res.clean; float sc = rsRopeIdx * 6f + b;
-                float pb0 = Pb(game.lakeId); bool newPb = sc > pb0 + 0.01f; if (newPb) { PlayerPrefs.SetFloat("sv.pb." + game.lakeId, sc); PlayerPrefs.Save(); }
+                var res = sim.last; rsRopeIdx = res.rope; float b = res.buoys; bool full = res.clean; float sc = SkiView.Logic.SlalomBest.Pack(rsRopeIdx, b);
+                float pb0 = Pb(game.lakeId); string was = pb0 < 0f ? null : PbText(game.lakeId);
+                bool newPb = SkiView.Logic.SlalomBest.IsBetter(pb0, rsRopeIdx, b);
+                if (newPb)
+                {
+                    PlayerPrefs.SetFloat("sv.pb." + game.lakeId, sc);
+                    PlayerPrefs.SetInt(PbRopeKey(game.lakeId), rsRopeIdx);
+                    PlayerPrefs.SetFloat(PbBuoysKey(game.lakeId), b);
+                    PlayerPrefs.Save();
+                }
                 rsScore.text = SkierSim.Fmt(b); rsSuffix.text = " @ " + SkierSim.ROPE_LABEL[rsRopeIdx];
                 rsRope.text = $"{RopeOff(rsRopeIdx)} | {SpeedMph(game != null ? game.RunMph : 34f)} | Pass {Mathf.Max(1, game.passes)}";
                 rsDetails.text = $"{sim.Breakdown(res)} · rope {SkierSim.ROPE_M[rsRopeIdx]:0.00} m · {SpeedMph(game != null ? game.RunMph : 34f)}";
-                rsPb.text = newPb ? $"PERSONAL BEST {PbFmt(sc)}" + (pb0 >= 0f ? $" · WAS {PbFmt(pb0)}" : "") : $"PERSONAL BEST {PbFmt(Mathf.Max(pb0, sc))}";
+                string bestNow = newPb ? SkiView.Logic.SlalomBest.FormatPass(rsRopeIdx, b) : PbText(game.lakeId);
+                rsPb.text = newPb ? "PERSONAL BEST " + bestNow + (was != null ? " · WAS " + was : "") : "PERSONAL BEST " + bestNow;
                 bool wr = game.LastRecord.attempted && game.LastRecord.discipline == SkiViewRecords.Discipline.Slalom && game.LastRecord.qualified && game.LastRecord.rank == 1;
                 rsBanner.text = wr ? "NEW WORLD RECORD" : "NEW PERSONAL BEST";
                 results.EnableInClassList("sv-results19--pb", newPb || wr); rsBanner.style.display = (newPb || wr) ? DisplayStyle.Flex : DisplayStyle.None;
