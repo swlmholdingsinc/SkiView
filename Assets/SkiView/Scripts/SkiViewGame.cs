@@ -91,6 +91,10 @@ namespace SkiView
         public float simTime;
 
         const float FIXED = 1f / 60f;
+        /// <summary>Jump sim kept per rendered frame. WebGL tabs and heavy frames often deliver 0.3–1 s;
+        /// the old 0.1 s cap threw the rest away, so the cut crawled and looked stuck.</summary>
+        public const float SimFrameCap = 0.5f;
+        float lastFrameDt;
         const float PYLON_BACK = -0.36f;   // SkiBoat.fbx TowPoint is 0.36 m forward of the pivot (CG)
         float acc, prevHeading, fallT, ropeTarget, wakeT, skiT;
         // pass 11: deep-water start + fall sequence (Mixamo batch 3). actionT = seconds into the current fall / start;
@@ -166,7 +170,14 @@ namespace SkiView
             if (rampJumpModeOnly && jumpRamp != null && !jumpMode) jumpRamp.gameObject.SetActive(false);   // T26
             for (int i = 0; i < splash.Length; i++) splash[i] = Vector4.zero;   // the game opens with a deep-water start (captures skip it)
             banner = lakeName.ToUpperInvariant() + " · " + SkiViewBranding.SkierName + " · " + SkierSim.ROPE_LABEL[sim.ropeIndex] + " · " + SkiView.UI.SkiViewUI.SpeedMph(RunMph).ToUpperInvariant(); bannerT = 4f;
-            if (Application.isPlaying) { SkiView.UI.SkiViewUI.Ensure(this)?.ShowCamToast(camMode); SkiAudio.Ensure(this); }   // pass 18: UI Toolkit overlay + run-start view toast
+            if (Application.isPlaying)
+            {
+                // WebGL: with runInBackground left at 0 the player stops the frame the canvas loses focus.
+                // A click (the cut) is when that happens. Unity 6 still honours this at runtime on Web.
+                Application.runInBackground = true;
+                if (Time.maximumDeltaTime < SimFrameCap) Time.maximumDeltaTime = SimFrameCap;
+                SkiView.UI.SkiViewUI.Ensure(this)?.ShowCamToast(camMode); SkiAudio.Ensure(this);   // pass 18: UI Toolkit overlay + run-start view toast
+            }
             inited = true;
             ApplyArgs();   // pass 19: URL / command-line capture params
             ApplyVisuals(true);
@@ -223,9 +234,25 @@ namespace SkiView
         /// <summary>Advance the simulation by dt seconds of real time (fixed 60 Hz substeps).</summary>
         public void Advance(float dt)
         {
+            lastFrameDt = dt;
             float scale = timeScale * (mode != Mode.Pass && mode != Mode.Jump && skipTurn ? 3f : 1f);
-            acc += Mathf.Min(dt, 0.1f) * scale;
-            while (acc >= FIXED) { FixedStep(FIXED); acc -= FIXED; }
+            float cap = mode == Mode.Jump ? SimFrameCap : 0.1f;
+            int n = CountFixedSteps(ref acc, dt, scale, cap, FIXED);
+            for (int i = 0; i < n; i++) FixedStep(FIXED);
+        }
+
+        /// <summary>How many fixed steps a frame may run. Non-finite dt or scale cannot poison the accumulator
+        /// (a single NaN frame would otherwise freeze the sim for the rest of the page).</summary>
+        public static int CountFixedSteps(ref float acc, float frameDt, float scale, float cap, float fixedDt)
+        {
+            if (float.IsNaN(frameDt) || float.IsInfinity(frameDt) || frameDt < 0f) frameDt = 0f;
+            if (!(scale >= 0f)) scale = 1f;
+            if (!(cap > 0f)) cap = 0.1f;
+            acc += Mathf.Min(frameDt, cap) * scale;
+            if (!(acc >= 0f)) acc = 0f;
+            int n = 0;
+            while (acc >= fixedDt && n < 256) { acc -= fixedDt; n++; }
+            return n;
         }
 
         /// <summary>Used by the headless capture script.</summary>
