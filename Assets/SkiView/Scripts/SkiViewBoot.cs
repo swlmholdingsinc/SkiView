@@ -42,11 +42,45 @@ namespace SkiView
             Screen.orientation = ScreenOrientation.AutoRotation;
         }
 
+        static bool addrOk;
+        /// <summary>Addressables label for heavy, non-critical assets (hi-res lake textures, etc.) prefetched in the background once
+        /// the menu is up. Nothing happens if no asset carries the label.</summary>
+        public string deferredLabel = "deferred";
+
         IEnumerator Start()
         {
-            var init = Addressables.InitializeAsync(); yield return init;
+            // perf/webgl-load: the boot scene is tiny; show the loading screen straight away with real progress from init onwards
             string lake = StartLakeArg();
-            yield return LoadRoutine(string.IsNullOrEmpty(lake) || lake == "skiview" ? homeScene : "SkiViewLake_" + lake);
+            string key = string.IsNullOrEmpty(lake) || lake == "skiview" ? homeScene : "SkiViewLake_" + lake;
+            busy = true; progress = 0f; LoadingKey = key;
+            var init = Addressables.InitializeAsync(false);
+            while (!init.IsDone) { progress = 0.05f * init.PercentComplete; yield return null; }
+            addrOk = init.Status == AsyncOperationStatus.Succeeded;
+            if (!addrOk) Debug.LogWarning($"[SkiView] Addressables init failed ({init.OperationException?.Message}); falling back to built-in scenes");
+            Addressables.Release(init);
+            busy = false;
+            yield return LoadRoutine(key);
+            if (addrOk) StartCoroutine(PrefetchDeferred());
+        }
+
+        /// <summary>Background-download the deferred label after the menu is showing (no-op if nothing is labelled / already cached).</summary>
+        IEnumerator PrefetchDeferred()
+        {
+            if (string.IsNullOrEmpty(deferredLabel) || Offline) yield break;
+            var locs = Addressables.LoadResourceLocationsAsync(deferredLabel); yield return locs;
+            bool any = locs.Status == AsyncOperationStatus.Succeeded && locs.Result.Count > 0; Addressables.Release(locs);
+            if (!any) yield break;
+            var dl = Addressables.DownloadDependenciesAsync(deferredLabel, true); yield return dl;
+            Debug.Log($"[SkiView] deferred prefetch '{deferredLabel}': {dl.Status}");
+        }
+
+        /// <summary>Fallback when Addressables is unavailable / the key has no location: load a scene that's in the build list.</summary>
+        IEnumerator LoadBuiltIn(string key)
+        {
+            if (!Application.CanStreamedLevelBeLoaded(key)) { Debug.LogError($"[SkiView] lake load FAILED {key}: no Addressables location and not in build"); yield break; }
+            var op = SceneManager.LoadSceneAsync(key, LoadSceneMode.Single);
+            while (op != null && !op.isDone) { progress = 0.1f + 0.9f * Mathf.Clamp01(op.progress / 0.9f); yield return null; }
+            Debug.Log($"[SkiView] LAKE READY {key} (built-in fallback)");
         }
 
         // ---------- pass 19: lake packs for the lake-select screen (Julia's 03 / 03b / 03c / 03d) ----------
@@ -105,11 +139,14 @@ namespace SkiView
 
         IEnumerator LoadRoutine(string key)
         {
-            busy = true; progress = 0; status = key == homeScene ? "Loading Ski View" : "Loading lake";
+            busy = true; progress = 0.05f; status = key == homeScene ? "Loading Ski View" : "Loading lake";
+            LoadingKey = key;
             float t0 = Time.realtimeSinceStartup;
             string from = "";
+            if (!addrOk) { yield return LoadBuiltIn(key); busy = false; LoadingKey = null; yield break; }
             var locs = Addressables.LoadResourceLocationsAsync(key); yield return locs;
-            if (locs.Status == AsyncOperationStatus.Succeeded && locs.Result.Count > 0)
+            bool hasLoc = locs.Status == AsyncOperationStatus.Succeeded && locs.Result.Count > 0;
+            if (!hasLoc) { Addressables.Release(locs); yield return LoadBuiltIn(key); busy = false; LoadingKey = null; yield break; }
             {
                 var l = locs.Result[0];
                 from = string.Join(" + ", (l.Dependencies ?? new System.Collections.Generic.List<IResourceLocation>()).Select(d => System.IO.Path.GetFileName(d.InternalId)).Take(4));
@@ -130,10 +167,11 @@ namespace SkiView
                 if (!ok) { DlFailed = true; busy = false; Debug.Log($"[SkiView] pack {key}: download FAILED"); yield break; }
                 var pk = packs.Values.FirstOrDefault(x => x.key == key); if (pk != null) pk.size = 0;
             }
+            progress = 0.1f;
             var h = Addressables.LoadSceneAsync(key, LoadSceneMode.Single);
             while (!h.IsDone)
             {
-                progress = h.PercentComplete;
+                progress = 0.1f + 0.9f * h.PercentComplete;   // real progress (bundle fetch + scene activation)
                 var ds = h.GetDownloadStatus();
                 if (ds.TotalBytes > 0) status = $"Downloading lake  {ds.DownloadedBytes / 1048576f:0.0} / {ds.TotalBytes / 1048576f:0.0} MB";
                 yield return null;

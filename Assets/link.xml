@@ -1,0 +1,10 @@
+<!-- perf/webgl-load: managed stripping is High on WebGL. Keep game code and the Addressables runtime (providers and
+     ResourceManager types are created by reflection from the content catalog). -->
+<linker>
+  <assembly fullname="Assembly-CSharp" preserve="all"/>
+  <assembly fullname="Unity.Addressables" preserve="all"/>
+  <assembly fullname="Unity.ResourceManager" preserve="all"/>
+  <assembly fullname="UnityEngine.UIElementsModule">
+    <type fullname="UnityEngine.UIElements.*" preserve="all"/>
+  </assembly>
+</linker>

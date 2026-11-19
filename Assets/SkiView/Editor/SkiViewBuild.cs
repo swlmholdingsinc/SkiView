@@ -97,16 +97,18 @@ public static class SkiViewBuild
     {
         Directory.CreateDirectory(Path.Combine(Root, "Builds/WebGL"));
         SkiViewBuilder.ConfigureProject();
-        // favour build time over wasm size on this CPU-only box
+        // perf/webgl-load: optimise the wasm for download size (faster load) unless SV_FAST_BUILD=1 (old behaviour: BuildTimes)
+        string opt = Environment.GetEnvironmentVariable("SV_FAST_BUILD") == "1" ? "BuildTimes" : "DiskSize";
         try
         {
             var t = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("UnityEditor.WebGL.UserBuildSettings")).FirstOrDefault(x => x != null);
             var p = t?.GetProperty("codeOptimization");
-            if (p != null) { var e = Enum.Parse(p.PropertyType, "BuildTimes"); p.SetValue(null, e); Debug.Log("[SkiView] WebGL codeOptimization=BuildTimes"); }
+            if (p != null) { var e = Enum.Parse(p.PropertyType, opt); p.SetValue(null, e); Debug.Log("[SkiView] WebGL codeOptimization=" + opt); }
         }
         catch (Exception ex) { Debug.LogWarning("[SkiView] codeOptimization not set: " + ex.Message); }
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
         PlayerSettings.WebGL.template = "PROJECT:SkiViewMinimal";   // Phase 1 review #2: canvas-only page, no Unity footer/logo
+        ApplyWebGLLoadSettings();
         SkiViewContent.Setup(); SkiViewContent.SelectBuilder(false);   // pass 16: lakes as Addressables bundles
         string outp = Path.Combine(Root, "Builds/WebGL");
         var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions
@@ -116,7 +118,21 @@ public static class SkiViewBuild
             target = BuildTarget.WebGL,
             options = BuildOptions.None
         });
-        Report("WebGL (gzip + fallback)", r, outp);
+        Report("WebGL (brotli + fallback)", r, outp);
         SkiViewContent.BundleReport();
+    }
+
+    /// <summary>perf/webgl-load: WebGL load-time player settings, applied in code at build time (ProjectSettings.asset is
+    /// being edited on another branch, so we don't touch the asset here). Brotli (+ decompression fallback for hosts that
+    /// don't send Content-Encoding: br), 256 MB initial heap (was 512 MB legacy memorySize), High managed stripping
+    /// (Assets/link.xml preserves reflection-dependent code). Also available from the menu for interactive builds.</summary>
+    [MenuItem("SkiView/Apply WebGL Load Settings")]
+    public static void ApplyWebGLLoadSettings()
+    {
+        PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;
+        PlayerSettings.WebGL.decompressionFallback = true;
+        PlayerSettings.WebGL.initialMemorySize = 256;
+        PlayerSettings.SetManagedStrippingLevel(UnityEditor.Build.NamedBuildTarget.WebGL, ManagedStrippingLevel.High);
+        Debug.Log("[SkiView] WebGL load settings: Brotli, initialMemory 256 MB, managed stripping High");
     }
 }
