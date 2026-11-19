@@ -82,7 +82,13 @@ namespace SkiView
         {
             game = g; modePrev = g.mode; jPrev = g.jphase; crossPrev = g.sim != null ? g.sim.wakeCrossings : 0; skipPrev = g.SkipCount;
             buoysPrev = 0f; gatesPrev = false;
-            if (lakePrev != g.lakeId) { lakePrev = g.lakeId; StartAmbient(g.ambientClip); }
+            if (lakePrev != g.lakeId)
+            {
+                bool loadIn = !string.IsNullOrEmpty(lakePrev); lakePrev = g.lakeId; StartAmbient(g.ambientClip);
+                shoreDetail = null; shoreDetailLake = null; reedAt = lapAt = -1f;
+                // NextLake load-in: distant boat pass-by (BoatPassDistant) timed from the camera's distance to the boat
+                if (loadIn && started && Camera.main != null) { var bp = g.BoatPos; BoatPassDistant(bp, Vector3.Distance(Camera.main.transform.position, bp) / Mathf.Max(g.BoatSpeed, 5f)); }
+            }
             if (started && g.mode == SkiViewGame.Mode.DeepStart) ThrottleUp();
         }
         void Awake() { Instance = this; }
@@ -150,7 +156,7 @@ namespace SkiView
             Engine(dt, cm);
             Skier(dt, sp);
             Ambient(dt);
-            Music(dt); Birds(); SfxArg(); PassBy(); ShowPA(); Pending();
+            Music(dt); Birds(); SfxArg(); PassBy(); ShowPA(); ShoreEmitters(); Pending();
         }
 
         // ---------- pass 19: menu music, shore birds, tournament PA / scoreboard / applause ----------
@@ -221,7 +227,7 @@ namespace SkiView
             titlePrev = tOpen;
         }
         /// <summary>Pass 8 (§1 BoatPassDistant): distant boat passby, Src -6.1 (pass 9 file), baked Doppler (closest approach ~20 s into the clip).
-        /// TODO caller: lake intro flyover and NextLake load-in should call this with the boat's closest-approach point and the seconds until it.</summary>
+        /// Called on NextLake load-in (Attach) and when the title opens. TODO caller: a dedicated lake intro flyover does not exist yet; it should call this with the boat's closest-approach point and the seconds until it.</summary>
         public void BoatPassDistant(Vector3 cpaPoint, float tCPA)
         {
             var s = Play("boat_passby", cpaPoint, -6.1f, GBoat, 1f, 0f, Mathf.Max(0f, 20f - tCPA), 30f);
@@ -412,7 +418,8 @@ namespace SkiView
         }
 
         // ---------- pass 4: Clinic / Beat Wade stingers (Music), tip chime (UI) ----------
-        // TODO caller: the Clinic and Beat Wade modes do not exist yet; call these from their state changes.
+        // Clinic cues are called from SkiViewClinic (lesson start / tip / pass / fail). TODO caller: Beat Wade mode does not exist yet;
+        // ui_beatwade_near_miss.ogg and ui_beatwade_win.ogg are also not in the audio bank (only ui_beatwade_rung_unlock.ogg is).
         public void ClinicLessonStart() => Play("ui_clinic_lesson_start", null, -5f, GMusic, 1f, 0f, 0f, 1f);
         public void ClinicPass() => Play("ui_clinic_pass", null, -5f, GMusic, 1f, 0f, 0f, 1f);
         public void ClinicFail() => Play("ui_clinic_fail", null, -5f, GMusic, 1f, 0f, 0f, 1f);
@@ -421,13 +428,13 @@ namespace SkiView
         public void BeatWadeNearMiss() => Play("ui_beatwade_near_miss", null, -5f, GMusic, 1f, 0f, 0f, 1f);
         public void BeatWadeWin() => Play("ui_beatwade_win", null, -2f, GMusic, 1f, 0f, 0f, 2f);   // +3 dB vs the other stingers
         // ---------- pass 5: unlock / personal best (Music) ----------
-        // TODO caller: unlock and personal-best detection is not in the game yet.
+        // PersonalBest is called from SkiViewGame.RegisterJumpPass (persistent per-lake jump PB). TODO caller: SkiUnlock - there is no ski unlock system yet.
         public void SkiUnlock() => Play("ui_ski_unlock", null, -5f, GMusic, 1f, 0f, 0f, 1f);
         public void PersonalBest() => Play("ui_personal_best", null, -5f, GMusic, 1f, 0f, 0f, 1f);
 
         // ---------- pass 6: shoreline one-shots (Ambient group, Master only, 3D, random variation, pitch +-5%) ----------
-        /// <summary>kind = "reed" | "bank_lap" | "dock_creak". TODO caller: per-lake shoreline emitters (reeds, banks every 3-8 s,
-        /// docks every 10-30 s) should call this with a shore position.</summary>
+        /// <summary>kind = "reed" | "bank_lap" | "dock_creak". Reeds / bank laps are driven by ShoreEmitters (every 3-8 s, on the
+        /// LakeDetail.lakeBounds edge nearest the listener). TODO caller: dock_creak needs per-lake dock positions (none in the scenes' data yet).</summary>
         public AudioSource Shoreline(string kind, Vector3 at)
         {
             string id = kind == "reed" ? "amb_reed_rustle_0" : kind == "bank_lap" ? "amb_bank_lap_0" : kind == "dock_creak" ? "amb_dock_creak_0" : null;
@@ -435,6 +442,28 @@ namespace SkiView
             var s = Play(id + Random.Range(1, 4), at, kind == "dock_creak" ? -8f : -6f, GAmb, 1f, 0.05f);
             if (s != null) { s.minDistance = 4f; s.maxDistance = 80f; }
             return s;
+        }
+
+        LakeDetail shoreDetail; string shoreDetailLake; float reedAt = -1f, lapAt = -1f;
+        /// <summary>Shoreline one-shot emitters: a point on the nearest lakeBounds edge (+-25 m along it), only when within 70 m of the listener.</summary>
+        void ShoreEmitters()
+        {
+            if (game == null || !started || Camera.main == null) return;
+            if (shoreDetailLake != game.lakeId) { shoreDetailLake = game.lakeId; shoreDetail = FindFirstObjectByType<LakeDetail>(); }
+            if (shoreDetail == null) return;
+            var b = shoreDetail.lakeBounds; if (b.y <= b.x || b.w <= b.z) return;
+            if (reedAt < 0f) reedAt = Time.time + Random.Range(3f, 8f);
+            if (lapAt < 0f) lapAt = Time.time + Random.Range(3f, 8f);
+            bool reed = Time.time >= reedAt, lap = Time.time >= lapAt; if (!reed && !lap) return;
+            if (reed) reedAt = Time.time + Random.Range(3f, 8f); if (lap) lapAt = Time.time + Random.Range(3f, 8f);
+            var c = Camera.main.transform.position; float wy = game.SkierPos.y;
+            float dx0 = Mathf.Abs(c.x - b.x), dx1 = Mathf.Abs(b.y - c.x), dz0 = Mathf.Abs(c.z - b.z), dz1 = Mathf.Abs(b.w - c.z);
+            float m = Mathf.Min(Mathf.Min(dx0, dx1), Mathf.Min(dz0, dz1)); Vector3 p;
+            if (m == dx0 || m == dx1) p = new Vector3(m == dx0 ? b.x : b.y, wy, Mathf.Clamp(c.z + Random.Range(-25f, 25f), b.z, b.w));
+            else p = new Vector3(Mathf.Clamp(c.x + Random.Range(-25f, 25f), b.x, b.y), wy, m == dz0 ? b.z : b.w);
+            if ((p - c).sqrMagnitude > 70f * 70f) return;
+            if (reed) Shoreline("reed", p);
+            if (lap) Shoreline("bank_lap", p);
         }
 
         // ---------- pass 7 / b10.11 Phase A: TRICK event set ----------
@@ -467,7 +496,7 @@ namespace SkiView
         // ---------- pass 10: tournament jump-event ambience (no speech) ----------
         bool tourneyBed;
         /// <summary>Swap the lake bed for amb_bed_tournament_jump_loop (Ambient group, Master only, Src -6 via the amb_bed_ rule) while on;
-        /// off restores the lake's own SkiViewGame.ambientClip. TODO caller: the tournament jump event start / end (not in the game yet).</summary>
+        /// off restores the lake's own SkiViewGame.ambientClip. Called from SkiViewGame.SetJumpGear (jump gear on / off).</summary>
         public void TournamentJumpAmbience(bool on)
         {
             if (on == tourneyBed || game == null) return; tourneyBed = on;
@@ -475,7 +504,7 @@ namespace SkiView
             StartAmbient(on && e != null ? e.clip : game.ambientClip);
         }
         /// <summary>Distant shoreline spectators react to a big jump (2D, Ambient group, Src -6, random of 2).
-        /// TODO caller: tournament jump landing when the distance is a big one (Karthik picks the threshold).</summary>
+        /// Called from the SkiViewGame.Jump scored landing at 40 m+ (placeholder threshold; Karthik to tune).</summary>
         public void SpectatorReaction() => Play(Random.value < 0.5f ? "amb_crowd_react_big_01" : "amb_crowd_react_big_02", null, -6f, GAmb, 1f, 0.03f, 0f, 4f);
         public void TrickRunResult() { TrickSlide(false); Play("ui_trick_result_sting", null, 1f, GMusic, 1f, 0f, 0f, 3f); }
     }
