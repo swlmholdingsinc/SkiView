@@ -32,7 +32,6 @@ namespace SkiView.UI
             var ht = hp != null ? Resources.Load<Texture2D>(hp) : null;
             if (ht != null) hero.style.backgroundImage = new StyleBackground(ht); else hero.style.display = DisplayStyle.None;
             // Scott Oct 24 ~11:54: title = jagged SWLM wordmark; no Wade hero. Hex Holdings is HUD-only.
-            title.Q("rights-tag").style.display = DisplayStyle.None;
             hero.style.display = DisplayStyle.None;
             title.Q("watermark").style.display = SkiViewBranding.Flag.wadeLicenseSigned ? DisplayStyle.None : DisplayStyle.Flex;
             var logoEl = title.Q("logo");
@@ -56,7 +55,7 @@ namespace SkiView.UI
             title.Q<Button>("ev-slalom").clicked += () => OpenEventPanel(false, false);
             title.Q<Button>("ev-jump").clicked += () => OpenEventPanel(true, false);
             title.Q<Button>("ev-tricks").clicked += () => OpenEventPanel(false, true);
-            // b10.17 Clinic Phase A: enable Clinic; Beat Wade stays Coming soon
+            // b10.17 Clinic Phase A: enable Clinic; Beat the Record stays Coming soon
             var clinicBtn = title.Q<Button>("sec-clinic");
             if (clinicBtn != null)
             {
@@ -64,7 +63,12 @@ namespace SkiView.UI
                 clinicBtn.clicked += () => OpenClinicList();
                 clinicBtn.SetEnabled(true);
             }
-            title.Q<Button>("sec-beat").clicked += () => SoonToast("CHALLENGE · COMING SOON", title.Q("sec-row"));
+            var beatBtn = title.Q<Button>("sec-beat");
+            if (beatBtn != null)
+            {
+                beatBtn.text = "BEAT THE RECORD";
+                beatBtn.clicked += () => SoonToast("BEAT THE RECORD · COMING SOON", title.Q("sec-row"));
+            }
             title.Q<Button>("sec-settings").clicked += () => { titleReturn = true; Open(settings); };
             title.Q<Button>("sec-credits").clicked += () => { titleReturn = true; Open(credits); };
             var recordsBtn = title.Q<Button>("sec-records");
@@ -87,13 +91,17 @@ namespace SkiView.UI
             {
                 var jsub = jBtn.Q(className: "sv-event__sub"); if (jsub is Label jl) jl.text = "3 passes · longest jump";
             }
-            if (!SkipTitle() && !skipTitleOnce) root.schedule.Execute(OpenTitle).StartingIn(50);
+            if (Application.isPlaying && SkiViewPlayer.BlocksRun)
+                root.schedule.Execute(() => OpenPlayerName(true)).StartingIn(50);
+            else if (!SkipTitle() && !skipTitleOnce)
+                root.schedule.Execute(OpenTitle).StartingIn(50);
             skipTitleOnce = false;
         }
 
         public void OpenTitle()
         {
             game?.FlushSlalomSet();
+            if (SkiViewPlayer.BlocksRun) { OpenPlayerName(true); return; }
             if (title == null) return;
             titleReturn = false; Open(title); titlePanel.RemoveFromClassList("sv-event-panel--open");
             var tr = title.Q("title-root"); tr.RemoveFromClassList("sv-title--in");

@@ -411,8 +411,9 @@ namespace SkiView
             if (trickSlide.volume > 0f && !trickSlide.isPlaying && trickSlide.clip != null) trickSlide.Play(); else if (trickSlide.volume <= 0f && trickSlide.isPlaying) trickSlide.Stop();
         }
 
-        // ---------- pass 4: Clinic / Beat Wade stingers (Music), tip chime (UI) ----------
-        // TODO caller: the Clinic and Beat Wade modes do not exist yet; call these from their state changes.
+        // ---------- pass 4: Clinic / Beat the Record stingers (Music), tip chime (UI) ----------
+        // TODO caller: the Clinic and Beat the Record modes do not exist yet; call these from their state changes.
+        // Clip ids stay ui_beatwade_* so they keep matching Bank.asset. They are not shown to players.
         public void ClinicLessonStart() => Play("ui_clinic_lesson_start", null, -5f, GMusic, 1f, 0f, 0f, 1f);
         public void ClinicPass() => Play("ui_clinic_pass", null, -5f, GMusic, 1f, 0f, 0f, 1f);
         public void ClinicFail() => Play("ui_clinic_fail", null, -5f, GMusic, 1f, 0f, 0f, 1f);

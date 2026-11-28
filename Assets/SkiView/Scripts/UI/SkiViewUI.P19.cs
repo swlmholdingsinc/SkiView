@@ -396,7 +396,7 @@ namespace SkiView.UI
             help = Menu(out var safe, "PAUSE", "CONTROLS", NavBack);
             var hd = safe.Q(className: "sv-header"); var right = El("sv-header__right", hd);
             Btn("REPLAY TUTORIAL", "sv-btn sv-btn--sm", right, () => { CloseMenus(); StartTutorial(0); }, "retry");
-            safe.style.left = 0; safe.style.top = 0; safe.style.width = Length.Percent(100); safe.style.height = Length.Percent(100);   // the card grid has no fixed-width column to size the menu (SafeAreaRoot only insets the first .sv-safe)
+            // Width follows the safe container. SafeAreaRoot insets every .sv-safe; a forced full-screen width overflows the right inset.
             var body = El("sv-body", safe);
             // Phase 1 review #5 (Julia 20e, T20 spec): card grid; binding chips wrap instead of truncating. 1 column at 16:9/4:3, 2 at >= 20:9 and on desktop
             var plate = El("sv-plate sv-plate--card sv-panel sv-help19__table", body);
@@ -560,7 +560,7 @@ namespace SkiView.UI
                 }
                 pipCount.text = $"Buoys {SkierSim.Fmt(sim.passBuoys)} / 6";
             }
-            string c = game.bannerT > 0f && !string.IsNullOrEmpty(game.banner) ? game.banner.ToUpperInvariant() : game.HudCall;
+            string c = game.bannerT > 0f && !string.IsNullOrEmpty(game.banner) ? BannerForCall(game.banner) : game.HudCall;
             callText.text = c; call.style.display = string.IsNullOrEmpty(c) ? DisplayStyle.None : DisplayStyle.Flex;
             coach.text = game.CoachOn ? game.CoachLine : ""; coach.style.display = game.CoachOn ? DisplayStyle.Flex : DisplayStyle.None;
             skipPill.style.display = game.InTurnaround ? DisplayStyle.Flex : DisplayStyle.None;
@@ -569,6 +569,18 @@ namespace SkiView.UI
             if (lakes != null && lakes.ClassListContains("sv-menu--open") && Time.frameCount % 15 == 0 && forcedPack == null) RefreshLakes(false);
             TickJumpBar(); TickTutorial(); TickResults();
         }
+        /// <summary>Call-plate chrome is upper case. The saved player name in the banner keeps the typed case.</summary>
+        static string BannerForCall(string banner)
+        {
+            string skier = SkiViewPlayer.Name;
+            if (string.IsNullOrEmpty(banner) || string.IsNullOrEmpty(skier)) return banner == null ? "" : banner.ToUpperInvariant();
+            string token = " · " + skier + " · ";
+            int at = banner.IndexOf(token, StringComparison.Ordinal);
+            if (at < 0) return banner.ToUpperInvariant();
+            int nameAt = at + 3;
+            return banner.Substring(0, nameAt).ToUpperInvariant() + skier + banner.Substring(nameAt + skier.Length).ToUpperInvariant();
+        }
+
         void TickJumpBar()
         {
             if (jbar == null) return;
@@ -590,7 +602,7 @@ namespace SkiView.UI
         struct TutCopy { public string title, touch, keys; }
         static readonly TutCopy[] TUT =
         {
-            new TutCopy { title = "Welcome to {TITLE}", touch = "Thirty seconds of basics, then the lake is yours.", keys = "Thirty seconds of basics, then the lake is yours." },
+            new TutCopy { title = "Welcome to Ski View", touch = "Thirty seconds of basics, then the lake is yours.", keys = "Thirty seconds of basics, then the lake is yours." },
             new TutCopy { title = "HANG ON", touch = "Sit back, tips up. The boat does the work.", keys = "Sit back, tips up. The boat does the work." },
             new TutCopy { title = "LEAN TO CUT", touch = "Hold the left side of the screen to lean left. Hold the right side to lean right. Let go to ride flat.", keys = "Hold A / ← or D / → to lean. Let go to ride flat." },
             new TutCopy { title = "GATES, THEN SIX BUOYS", touch = "Go through the gate, then round the outside of each orange buoy. Half a buoy still counts.", keys = "Go through the gate, then round the outside of each orange buoy. Half a buoy still counts." },
@@ -613,7 +625,7 @@ namespace SkiView.UI
             tutCard.style.display = DisplayStyle.None;
             int forced = SkiViewArgs.I("tutorial", -1);
             if (forced >= 0) root.schedule.Execute(() => StartTutorial(forced)).StartingIn(200);
-            else if (PlayerPrefs.GetInt(TUT_PREF, 0) == 0 && !SkiViewGame.HudHidden && !SkiViewArgs.Has("at") && !SkiViewArgs.Has("ui") && Application.isPlaying)
+            else if (PlayerPrefs.GetInt(TUT_PREF, 0) == 0 && SkiViewPlayer.HasName && !SkiViewGame.HudHidden && !SkiViewArgs.Has("at") && !SkiViewArgs.Has("ui") && Application.isPlaying)
                 root.schedule.Execute(() => StartTutorial(0)).StartingIn(400);
         }
         public void StartTutorial(int step) { if (game == null) return; tutStep = step; ShowStep(); }
@@ -631,7 +643,20 @@ namespace SkiView.UI
             tutCard.style.display = DisplayStyle.Flex;
             tutCrumb.text = tutStep == 0 ? "TUTORIAL" : $"TUTORIAL · STEP {tutStep} OF 10";
             int di = 0; foreach (var d in tutDots.Children()) { d.EnableInClassList("sv-tut19__dot--on", di == tutStep - 1); d.EnableInClassList("sv-tut19__dot--done", di < tutStep - 1); di++; }
-            tutTitle.text = t.title.Replace("{TITLE}", Title(SkiViewBranding.Title).Replace(" With ", " with "));   // T26: "Welcome to Ski with Wade" tutText.text = touch ? t.touch : t.keys; tutKeys.Clear(); tutProg.text = "";
+            string who = SkiViewPlayer.Name;
+            if (tutStep == 0 && !string.IsNullOrEmpty(who))
+            {
+                tutTitle.text = "Welcome to Ski View, " + who;
+                tutTitle.EnableInClassList("sv-tut19__name", true);
+            }
+            else
+            {
+                tutTitle.text = t.title;
+                tutTitle.EnableInClassList("sv-tut19__name", false);
+            }
+            tutText.text = touch ? t.touch : t.keys;
+            tutKeys.Clear();
+            tutProg.text = "";
             if (tutStep == 2)
             {
                 if (touch) { Lb("HOLD LEFT HALF", "t-label", tutKeys); Lb("·", "t-label", tutKeys); Lb("HOLD RIGHT HALF", "t-label", tutKeys); }

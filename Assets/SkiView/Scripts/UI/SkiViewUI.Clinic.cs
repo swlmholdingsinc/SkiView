@@ -9,7 +9,7 @@ namespace SkiView.UI
     {
         VisualElement clinicList, clinicPlan, clinicResults;
         VisualElement clinicListBody, clinicCueBody, clinicNotesBody;
-        Label clinicListTitle, clinicPlanTitle, clinicPlanPrompt, clinicPlanTip, clinicResultsTitle, clinicData, clinicPending;
+        Label clinicListTitle, clinicPlanTitle, clinicPlanPrompt, clinicPlanTip, clinicResultsTitle, clinicData;
         Button clinicStartBtn;
         string clinicPendingLesson, clinicPendingCue;
         readonly List<Button> clinicCueBtns = new List<Button>();
@@ -35,18 +35,16 @@ namespace SkiView.UI
             clinicPlanPrompt.style.whiteSpace = WhiteSpace.Normal;
             clinicPlanTip = Lb("", "t-caption", planPlate);
             clinicPlanTip.style.whiteSpace = WhiteSpace.Normal; clinicPlanTip.style.marginTop = 8; clinicPlanTip.style.marginBottom = 8;
+            clinicPlanTip.style.display = DisplayStyle.None;
             clinicCueBody = El(null, planPlate); clinicCueBody.style.marginTop = 16; clinicCueBody.style.marginBottom = 16;
             clinicStartBtn = Btn("START PASS", "sv-btn sv-btn--primary", planPlate, StartClinicPass, "play");
             clinicStartBtn.SetEnabled(false);
-            Lb("PENDING_WADE_APPROVAL", "t-micro", planPlate).style.unityFontStyleAndWeight = FontStyle.Bold;
 
             clinicResults = El("sv-screen sv-menu", root, "clinic-results"); menus.Add(clinicResults);
             El("sv-scrim-full", clinicResults);
             var rSafe = El("sv-safe", clinicResults);
             var rPlate = El("sv-plate sv-plate--card sv-results19", rSafe); El("sv-strip", rPlate);
             clinicResultsTitle = Lb("CLINIC RESULT", "t-h2", rPlate);
-            clinicPending = Lb("PENDING_WADE_APPROVAL", "t-micro", rPlate);
-            clinicPending.style.color = new StyleColor(new Color(0.85f, 0.7f, 0.2f));
             Lb("DATA", "t-micro", rPlate);
             clinicData = Lb("", "t-caption", rPlate); clinicData.style.whiteSpace = WhiteSpace.Normal;
             Lb("NOTES", "t-micro", rPlate);
@@ -85,8 +83,9 @@ namespace SkiView.UI
                 bool unlocked = SkiViewClinic.IsUnlocked(L.id);
                 bool playable = SkiViewClinic.IsPlayable(L.id);
                 bool done = SkiViewClinic.IsComplete(L.id);
-                string title = L.title?.text ?? L.id;
-                string goal = L.goal?.text ?? "";
+                string title = SkiViewClinic.ForPlayer(L.title?.text);
+                if (string.IsNullOrEmpty(title)) title = L.id;
+                string goal = SkiViewClinic.ForPlayer(L.goal?.text);
                 var row = new Button(() => OnClinicLessonTap(L.id)) { focusable = true };
                 row.AddToClassList("srow");
                 row.style.marginBottom = 8;
@@ -120,9 +119,11 @@ namespace SkiView.UI
             if (L == null) return;
             clinicPendingLesson = lessonId;
             clinicPendingCue = null;
-            clinicPlanTitle.text = (L.title?.text ?? lessonId).ToUpperInvariant();
+            string planTitle = SkiViewClinic.ForPlayer(L.title?.text);
+            clinicPlanTitle.text = (string.IsNullOrEmpty(planTitle) ? lessonId : planTitle).ToUpperInvariant();
             var plan = SkiViewClinic.Data?.plan_step;
-            clinicPlanPrompt.text = plan?.prompt?.text ?? "Pick one focus for this run.";
+            string prompt = SkiViewClinic.ForPlayer(plan?.prompt?.text);
+            clinicPlanPrompt.text = string.IsNullOrEmpty(prompt) ? "Pick one focus for this run." : prompt;
             string tip = SkiViewClinic.PlanTip(lessonId);
             if (clinicPlanTip != null)
             {
@@ -135,7 +136,8 @@ namespace SkiView.UI
                 foreach (var c in L.focus_cues)
                 {
                     string cid = c.id;
-                    string label = c.text?.text ?? cid;
+                    string label = SkiViewClinic.ForPlayer(c.text?.text);
+                    if (string.IsNullOrEmpty(label)) label = cid;
                     var b = Btn(label.ToUpperInvariant(), "sv-btn", clinicCueBody, () => SelectClinicCue(cid), null);
                     b.style.marginBottom = 8; b.style.width = Length.Percent(100);
                     clinicCueBtns.Add(b);

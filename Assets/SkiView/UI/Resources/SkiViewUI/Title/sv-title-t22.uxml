@@ -22,7 +22,7 @@
             </ui:VisualElement>
             <ui:VisualElement name="sec-row" class="sv-sec-row">
                 <ui:Button name="sec-clinic" class="sv-sec" text="CLINIC"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
-                <ui:Button name="sec-beat" class="sv-sec" text="CHALLENGE"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
+                <ui:Button name="sec-beat" class="sv-sec" text="BEAT THE RECORD"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
                 <ui:Button name="sec-settings" class="sv-sec" text="SETTINGS"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
                 <ui:Button name="sec-credits" class="sv-sec" text="CREDITS"><ui:VisualElement class="sv-focus-ring" picking-mode="Ignore" /></ui:Button>
             </ui:VisualElement>
@@ -38,7 +38,6 @@
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="soon-toast" class="sv-soon-toast" picking-mode="Ignore"><ui:Label text="TRICKS · COMING SOON" /></ui:VisualElement>
-        <ui:Label name="rights-tag" class="sv-rights-tag" text="WADE PHOTO · SUPPLIED BY SCOTT · RIGHTS TBC · SWAP FOR 3D RENDER" />
         <ui:Label name="copyright" class="sv-copyright" text="© 2026 SWLM Holdings Inc" />
         <ui:VisualElement name="watermark" class="sv-watermark" picking-mode="Ignore" />
     </ui:VisualElement>

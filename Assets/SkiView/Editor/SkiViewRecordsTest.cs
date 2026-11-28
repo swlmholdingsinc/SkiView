@@ -168,6 +168,23 @@ public static class SkiViewRecordsTest
             Check(HolderOf(renamed, 2) == "CASEY" && HolderOf(renamed, 4) == "CASEY" && HolderOf(renamed, 3) == "CASEY", "old SCOTT rows follow the saved player name");
             Check(!BoardHasHolder(renamed, "SCOTT"), "after the name changes, loaded rows do not contain an untyped SCOTT");
             Check(HolderOf(SkiViewRecords.Load(SkiViewRecords.Discipline.Trick), 60) == "CASEY", "a stored SCOTT row displays as the saved player name");
+
+            PlayerPrefs.DeleteKey(SkiViewRecords.PlayerNamePref);
+            PlayerPrefs.Save();
+            SkiViewRecords.HoldUnnamedForTests(true);
+            SkiViewRecords.SetRawForTests(SkiViewRecords.Discipline.Slalom, JsonUtility.ToJson(legacy));
+            var held = SkiViewRecords.Submit(SkiViewRecords.Discipline.Slalom, 30f, "held", seq: 80);
+            Check(held.pending && !held.qualified && SkiViewRecords.HasPending, "no saved name keeps the row pending");
+            var parked = SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom);
+            Check(parked.Count == 4 && HolderOf(parked, 80) == "", "a pending row is not written, and the imported board is left as it was");
+            Check(!SkiViewPlayer.TrySave("W4DE") && SkiViewRecords.HasPending, "a banned name leaves the row pending");
+            Check(SkiViewPlayer.TrySave("Ada"), "name screen saves Ada");
+            var landed = SkiViewRecords.CommitPending();
+            Check(!SkiViewRecords.HasPending && landed.qualified && landed.seq == 80, "the pending row is written once the name exists");
+            var after = SkiViewRecords.Load(SkiViewRecords.Discipline.Slalom);
+            Check(HolderOf(after, 80) == "Ada", "the held row uses the name from the name screen");
+            Check(HolderOf(after, 2) == "Ada" && HolderOf(after, 1) == "Ada" && HolderOf(after, 3) == "CASEY", "imported rows resolve after the name screen");
+            SkiViewRecords.HoldUnnamedForTests(false);
         }
         finally
         {

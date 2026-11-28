@@ -14,6 +14,7 @@ namespace SkiView.UI
 
         public void NavBack()
         {
+            if (IsOpen(nameScreen)) { ClosePlayerName(); return; }
             if (IsOpen(lakes)) { if (lakesFromSetup) OpenRunSetup(); else Open(pause); return; }
             if (IsOpen(runSetup)) { ToTitle(); OpenEventPanel(panelJump, panelTricks); return; }
             if (IsOpen(credits)) { Open(settings); return; }

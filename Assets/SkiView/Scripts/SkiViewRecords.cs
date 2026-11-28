@@ -15,8 +15,9 @@ namespace SkiView
     /// higher than 10th place. A tie with 10th place stays off the list.
     /// Scores at or below zero are not recorded. The same player can hold more than one row.
     /// Slalom records one score per set: the furthest pass that scored, not one row per pass.
-    /// The holder is always <see cref="HolderName"/>: PlayerPrefs sv.player.name, or PLAYER when that is empty.
+    /// The holder is always <see cref="HolderName"/>: the saved player name, or PLAYER when that is empty.
     /// Branding is not a name source. Old rows with a blank holder, or the old branding name, display as <see cref="HolderName"/>.
+    /// A submit with no valid name stays pending until the name screen saves one, so imported rows are not rewritten to PLAYER first.
     /// </summary>
     public static class SkiViewRecords
     {
@@ -25,6 +26,7 @@ namespace SkiView
         /// <summary>Saved on first launch by the player-name prompt. Records read it at write time.</summary>
         public const string PlayerNamePref = "sv.player.name";
         public const string FallbackHolder = "PLAYER";
+        const string PendingPref = "sv.records.v1.pending";
 
         public enum Discipline { Slalom, Jump, Trick }
 
@@ -45,10 +47,15 @@ namespace SkiView
         [Serializable]
         public class SaveBag { public Entry[] entries; }
 
+        [Serializable]
+        class PendingBag { public int[] discipline; public Entry[] entries; }
+
         public struct Place
         {
             public bool attempted;
             public bool qualified;
+            /// <summary>True when the row is waiting for a saved player name and is not on the board yet.</summary>
+            public bool pending;
             public int rank;
             public int count;
             public int seq;
@@ -56,10 +63,28 @@ namespace SkiView
             public Discipline discipline;
         }
 
+        struct PendingRow
+        {
+            public Discipline discipline;
+            public Entry entry;
+        }
+
         static Dictionary<string, string> memory;
+        static readonly List<PendingRow> pending = new List<PendingRow>();
+        static bool holdUnnamed;
 
         /// <summary>Test hook. When on, boards stay in memory and PlayerPrefs is left alone. Pass false to restore PlayerPrefs.</summary>
-        public static void UseMemoryStore(bool on) { memory = on ? new Dictionary<string, string>() : null; }
+        public static void UseMemoryStore(bool on)
+        {
+            memory = on ? new Dictionary<string, string>() : null;
+            pending.Clear();
+            holdUnnamed = false;
+        }
+
+        /// <summary>Test hook. A submit with no valid name stays pending instead of storing PLAYER. Pass false to restore the capture/editor path.</summary>
+        public static void HoldUnnamedForTests(bool on) { holdUnnamed = on; if (!on) pending.Clear(); }
+
+        public static bool HasPending { get { LoadPending(); return pending.Count > 0; } }
 
         /// <summary>Test hook. Replaces one saved board. Respects the memory store.</summary>
         public static void SetRawForTests(Discipline d, string json) { Write(Key(d), json ?? ""); }
@@ -115,15 +140,19 @@ namespace SkiView
         }
 
         /// <summary>
-        /// Saved player name. This is the only lookup: a later change can return SkiViewPlayer.Name from here.
-        /// PlayerPrefs <see cref="PlayerNamePref"/>, trimmed. Empty or missing becomes <see cref="FallbackHolder"/>.
+        /// Saved player name from <see cref="SkiViewPlayer.Name"/> (PlayerPrefs <see cref="PlayerNamePref"/>, validated).
+        /// Empty, missing, or rejected names become <see cref="FallbackHolder"/>.
         /// </summary>
         public static string HolderName()
         {
-            string n = PlayerPrefs.GetString(PlayerNamePref, "");
-            if (string.IsNullOrWhiteSpace(n)) return FallbackHolder;
-            return n.Trim();
+            string n = SkiViewPlayer.Name;
+            return string.IsNullOrEmpty(n) ? FallbackHolder : n;
         }
+
+        /// <summary>A playing release build with no valid name must not stamp PLAYER or rewrite imported rows. Captures and editor tests still store PLAYER.</summary>
+        static bool HoldUnnamedSubmit =>
+            string.IsNullOrEmpty(SkiViewPlayer.Name)
+            && (holdUnnamed || (Application.isPlaying && !SkiViewPlayer.CaptureExempt));
 
         /// <summary>
         /// Holder to write or display. Blank uses <see cref="HolderName"/>.
@@ -142,6 +171,32 @@ namespace SkiView
 
         public static Place Submit(Discipline d, float score, string detail, int rope = -1, float buoys = 0f, int seq = 0, long ticks = 0)
         {
+            if (float.IsNaN(score) || float.IsInfinity(score) || score <= 0f)
+                return new Place { attempted = true, qualified = false, discipline = d, score = !float.IsNaN(score) && !float.IsInfinity(score) ? score : 0f };
+
+            if (HoldUnnamedSubmit)
+            {
+                var existing = Load(d);
+                if (seq <= 0) seq = NextSeq(existing);
+                if (ticks <= 0) ticks = DateTime.UtcNow.Ticks;
+                pending.Add(new PendingRow
+                {
+                    discipline = d,
+                    entry = new Entry
+                    {
+                        holder = "",
+                        score = score,
+                        detail = detail ?? "",
+                        seq = seq,
+                        achieved = ticks.ToString(CultureInfo.InvariantCulture),
+                        rope = rope,
+                        buoys = buoys
+                    }
+                });
+                PersistPending();
+                return new Place { attempted = true, pending = true, qualified = false, count = existing.Count, seq = seq, score = score, discipline = d };
+            }
+
             var board = Load(d);
             if (seq <= 0) seq = NextSeq(board);
             if (ticks <= 0) ticks = DateTime.UtcNow.Ticks;
@@ -159,6 +214,29 @@ namespace SkiView
             place.discipline = d;
             if (place.qualified) Save(d, board);
             return place;
+        }
+
+        /// <summary>Write rows that were held for the name screen. Does nothing until <see cref="SkiViewPlayer.Name"/> is valid. The last written place is returned.</summary>
+        public static Place CommitPending()
+        {
+            LoadPending();
+            if (pending.Count == 0 || string.IsNullOrEmpty(SkiViewPlayer.Name)) return default;
+            var batch = pending.ToArray();
+            pending.Clear();
+            PersistPending();
+            Place last = default;
+            for (int i = 0; i < batch.Length; i++)
+            {
+                var item = batch[i];
+                if (item.entry == null) continue;
+                item.entry.holder = HolderName();
+                var board = Load(item.discipline);
+                var place = TryInsert(board, item.entry);
+                place.discipline = item.discipline;
+                if (place.qualified) Save(item.discipline, board);
+                last = place;
+            }
+            return last;
         }
 
         /// <summary>Insert into an already-ranked board. Does not touch PlayerPrefs. The board must be best-first.</summary>
@@ -274,6 +352,45 @@ namespace SkiView
             int m = 0;
             if (board != null) for (int i = 0; i < board.Count; i++) if (board[i] != null && board[i].seq > m) m = board[i].seq;
             return m + 1;
+        }
+
+        static void LoadPending()
+        {
+            if (memory != null || pending.Count > 0) return;
+            string json = PlayerPrefs.GetString(PendingPref, "");
+            if (string.IsNullOrEmpty(json)) return;
+            PendingBag bag = null;
+            try { bag = JsonUtility.FromJson<PendingBag>(json); }
+            catch (Exception e) { Debug.LogWarning("[SkiView] records pending: " + e.Message); }
+            if (bag?.entries == null || bag.discipline == null) return;
+            int n = Math.Min(bag.entries.Length, bag.discipline.Length);
+            for (int i = 0; i < n; i++)
+            {
+                var entry = bag.entries[i];
+                if (entry == null || float.IsNaN(entry.score) || float.IsInfinity(entry.score) || entry.score <= 0f) continue;
+                if (bag.discipline[i] < 0 || bag.discipline[i] > (int)Discipline.Trick) continue;
+                pending.Add(new PendingRow { discipline = (Discipline)bag.discipline[i], entry = entry });
+            }
+        }
+
+        static void PersistPending()
+        {
+            if (memory != null) return;
+            if (pending.Count == 0)
+            {
+                if (!PlayerPrefs.HasKey(PendingPref)) return;
+                PlayerPrefs.DeleteKey(PendingPref);
+                PlayerPrefs.Save();
+                return;
+            }
+            var bag = new PendingBag { discipline = new int[pending.Count], entries = new Entry[pending.Count] };
+            for (int i = 0; i < pending.Count; i++)
+            {
+                bag.discipline[i] = (int)pending[i].discipline;
+                bag.entries[i] = pending[i].entry;
+            }
+            PlayerPrefs.SetString(PendingPref, JsonUtility.ToJson(bag));
+            PlayerPrefs.Save();
         }
 
         static void Save(Discipline d, List<Entry> board)
